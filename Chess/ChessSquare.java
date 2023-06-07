@@ -9,7 +9,7 @@ public class ChessSquare extends JLabel{
 		 * creates a ChessSquare with a specified positions and a mouse
 		 * listener*/
 		//super(new ImageIcon("C:\\Users\\Mason\\Documents\\Java\\W.png"));
-        super(new ImageIcon("Chess/Elements/W.png"));
+        super(ChessGame.resizeImage(new ImageIcon("Chess/Elements/W.png")));
 		position = pos;		//sets the positions
 		MouseListener listener = new MouseListener();	//creates a mouse listener
 		addMouseListener(listener);	//Listens for clicks on the square

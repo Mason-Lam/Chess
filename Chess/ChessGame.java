@@ -3,6 +3,7 @@ package Chess;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.util.ArrayList;
 
 import javax.swing.*;
@@ -21,7 +22,7 @@ public class ChessGame {
 	public static boolean winner;
 	public static int difficulty;
 	@SuppressWarnings("static-access")
-	public ChessGame(int computerTurn,int difficulty){
+	public ChessGame(int computerTurn, int difficulty){
 		this.difficulty = difficulty;
 		this.computerTurn = computerTurn;
 		winner = false;
@@ -55,7 +56,7 @@ public class ChessGame {
 		update_display();					//Updates the display
 	}
 	
-	public static void update_display() {
+	private static void update_display() {
 		/*ChessGame.upadate_display()-> None
 		 * a function that updates every chess square
 		 * with the correct piece and color*/
@@ -81,7 +82,7 @@ public class ChessGame {
 					else {
 						address += "G";
 					}
-					GUI[count].setIcon(new ImageIcon(address + ".png"));
+					GUI[count].setIcon(resizeImage(new ImageIcon(address + ".png")));
 					count += 1;
 				}
 				continue;
@@ -99,7 +100,7 @@ public class ChessGame {
 				address += "W";
 			}
 			address += letter +".png";
-			GUI[count].setIcon(new ImageIcon(address));	//Changes the image of the square
+			GUI[count].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
 			count += 1;
 		}
 		if(click1 != -1) {
@@ -119,7 +120,7 @@ public class ChessGame {
 						address += "G";
 					}
 					address += "D.png";
-					GUI[newPos].setIcon(new ImageIcon(address));	//Changes the image of the square
+					GUI[newPos].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
 				}
 			}
 			System.out.println();
@@ -129,7 +130,7 @@ public class ChessGame {
 		}
 	}
 	
-	public static void computer_turn() {
+	private static void computer_turn() {
 //		Move move = board.computer_move(difficulty);
 //		board.make_move(move,true);
 //		if(board.is_promote()) {
@@ -191,7 +192,7 @@ public class ChessGame {
 			next_turn();					//NEXT
 		}
 	}
-	public static void check_Win() {
+	private static void check_Win() {
 		/*ChessBoard.check_Win() -> None
 		 * function to check if a player has won
 		 * the game*/
@@ -222,7 +223,8 @@ public class ChessGame {
 		w2.setVisible(true);	//I see you
 		winner = true;
 	}
-	public static void next_turn() {
+
+	private static void next_turn() {
 		/*ChessBoard.next_turn()-> None
 		 * function to move on to the next
 		 * players turn*/
@@ -232,5 +234,11 @@ public class ChessGame {
 		board.displayAttacks();
 //		System.out.println(computer.totalMoves(count));
 //		count --;
+	}
+
+	public static ImageIcon resizeImage(ImageIcon imageIcon) {
+		Image image = imageIcon.getImage();
+		Image newImg = image.getScaledInstance(90, 90, java.awt.Image.SCALE_SMOOTH);
+		return new ImageIcon(newImg);
 	}
 }
