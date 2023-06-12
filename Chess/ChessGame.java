@@ -18,9 +18,9 @@ public class ChessGame {
 	public static ArrayList<Move> legal;	//A list to store the legal moves of a chess piece
 	public static int computerTurn;			//int to store the computer
 	public static Computer computer;
-	public static int count = 2;
 	public static boolean winner;
 	public static int difficulty;
+
 	@SuppressWarnings("static-access")
 	public ChessGame(int computerTurn, int difficulty){
 		this.difficulty = difficulty;
@@ -28,15 +28,17 @@ public class ChessGame {
 		winner = false;
 		click1 = -1;		//sets var as no clicks
 		//rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
-		long currentTime = System.currentTimeMillis();
-		//Tests.runTests();
-		System.out.println(currentTime - System.currentTimeMillis());
-		Tests.Test test = Tests.test20;
-		test.runTest();
-		board = new ChessBoard(test.fen);	//Creates a new ChessBoard object
-		board.displayAttacks();
+		// long prevTime = System.currentTimeMillis();
+		// Tests.runTests();
+		// System.out.println(System.currentTimeMillis() - prevTime);
+
+		board = new ChessBoard();	//Creates a new ChessBoard object
+		//board.displayAttacks();
 		
 		computer = board.getComputer();
+		long prevTime = System.currentTimeMillis();
+		System.out.println(computer.totalMoves(5));
+		System.out.println(System.currentTimeMillis() - prevTime);
 		
 		panel.setBorder(BorderFactory.createEmptyBorder(30,30,10,30));	//Creates a border
 		panel.setLayout(new GridLayout(8,8));		//Creates an 8*8 grid for the squares
@@ -231,8 +233,7 @@ public class ChessGame {
 		click1 =-1;	//Resets click variable
 		check_Win();		//Checks for a win
 		update_display();	//Updates the display
-		board.displayAttacks();
-//		System.out.println(computer.totalMoves(count));
+		//board.displayAttacks();
 //		count --;
 	}
 

@@ -13,7 +13,7 @@ public class Computer {
 		return totalMoves(depth, board);
 	}
 	
-	public int totalMoves(int depth, ChessBoard board) {
+	private int totalMoves(int depth, ChessBoard board) {
 		int count = 0;
 		var positions = board.getPiecePositions(board.turn);
 		for(Integer i : positions) {

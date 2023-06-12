@@ -32,7 +32,7 @@ public class ChessBoard {
 	
 	@SuppressWarnings("unchecked")
 	public ChessBoard (String fen) {
-		turn = Constants.WHITE;
+		turn = Constants.BLACK;
 		fenString = fen;
 		
 		attacks = new int[2][1];
@@ -66,7 +66,6 @@ public class ChessBoard {
 	
 	public ChessBoard copyBoard() {
 		ChessBoard newBoard = new ChessBoard(new String(fenString));
-		newBoard.enPassant = enPassant;
 		newBoard.promotingPawn = promotingPawn;
 		newBoard.GAME_OVER = GAME_OVER;
 		return newBoard;
@@ -104,8 +103,8 @@ public class ChessBoard {
 		
 		if (enPassant == Constants.EMPTY) fen += " -";
 		else {
-			int passant = turn == Constants.BLACK ? enPassant + 8 : enPassant - 8;
-			fen += " " + Constants.COLUMNS[getColumn(passant)] + getRow(passant);
+			int passant = (turn == Constants.BLACK) ? enPassant + 8 : enPassant - 8;
+			fen += " " + Constants.indexToSquare(getColumn(passant), 8 - getRow(passant));
 		}
 		
 		return fen;
@@ -122,8 +121,8 @@ public class ChessBoard {
 			if (index > 63) {
 				
 				//Turn
-				if (letter == 'b') {
-					turn = Constants.BLACK;
+				if (letter == 'w') {
+					turn = Constants.WHITE;
 				}
 				
 				//Castling
@@ -141,8 +140,8 @@ public class ChessBoard {
 				}
 				
 				else if ((int) letter <= 104 && (int) letter >= 97 && Character.isDigit(fen.charAt(i + 1))) {
-					enPassant = ((int) letter - 97) + (8 - Character.getNumericValue(fen.charAt(i + 1))) * 8;
-					enPassant = turn == Constants.BLACK ? enPassant - 8: enPassant + 8;
+					enPassant = Constants.squareToIndex(Character.toString(letter) + fen.charAt(i + 1));
+					enPassant = (turn == Constants.BLACK) ? enPassant - 8 : enPassant + 8;
 					i++;
 				}
 				
@@ -233,6 +232,7 @@ public class ChessBoard {
 		pieceAttacks(move.finish, piece.color, 1);
 		
 		softAttackUpdate(move, 1);
+
 		check = isChecked(next(piece.color));
 		enPassant = passant;
 		if (!is_promote()) next_turn();
@@ -301,7 +301,7 @@ public class ChessBoard {
 		//EnPassant
 		if (types[2]) {
 			if (enPassant == -1) return;
-			if (Math.abs(enPassant - pos) != 1) return;
+			if (Math.abs(enPassant - pos) != 1 || getDistance(enPassant, pos) != 1) return;
 			int newPos = color == Constants.WHITE ? enPassant - 8 : enPassant + 8;
 			if (board[newPos].isEmpty()) addMove(moves, new Move(pos, newPos, Move.Type.SPECIAL));
 		}
@@ -384,7 +384,7 @@ public class ChessBoard {
 			//Queenside
 			if (castling[color][0]) {
 				for (int i = 1; i < 4; i++) {
-					if (!(board[pos - i].isEmpty() && !isAttacked(pos - i, color))) {
+					if (!(board[pos - i].isEmpty() && (!isAttacked(pos - i, color) || i == 3))) {
 						canCastle = false;
 						break;
 					}	
@@ -426,6 +426,12 @@ public class ChessBoard {
 		}
 		return !isPinned(move);
 	}
+
+	private boolean testValidMove(Move move) {
+		ChessBoard copy = copyBoard();
+		copy.make_move(move, false);
+		return !copy.isChecked(turn);
+	}
 	
 	private boolean kingCheck(Move move) {
 		if (isAttacked(move.finish, turn)) return false;
@@ -434,10 +440,10 @@ public class ChessBoard {
 			ChessPiece attacker = attackers.get(i);
 			int attackerPos = piecePositions[next(turn)].get(attacker);
 			if (attacker.type == Constants.QUEEN || attacker.type == Constants.BISHOP) {
-				if (onDiagonal(move.finish, attackerPos) && move.finish != attackerPos) return false;
+				if (onSameDiagonal(move.start, move.finish, attackerPos) && move.finish != attackerPos) return false;
 			}
 			if (attacker.type == Constants.QUEEN || attacker.type == Constants.ROOK) {
-				if (onLine(move.finish, attackerPos) && move.finish != attackerPos) return false;
+				if (onSameLine(move.start, move.finish, attackerPos) && move.finish != attackerPos) return false;
 			}
 		}
 		return true;
@@ -563,14 +569,18 @@ public class ChessBoard {
 			for (Integer i : straight) {
 				if ((onLine(move.finish, i) || onLine(move.start, i) || (onLine(enPassant, i) && passant)) 
 						&& !(i == move.start || i == move.finish)) {
-					pieceAttacks(i, color, amount);
+					int attackCount = numAttacks(kingPos[next(color)], next(color));
+					rookAttacks(i, color, amount);
+					if (numAttacks(kingPos[next(color)], next(color)) > attackCount && amount != -1) attackers.add(board[i]);
 				}
 			}
 			
 			for (Integer j : diagonal) {
 				if ((onDiagonal(move.finish, j) || onDiagonal(move.start, j) || (onDiagonal(enPassant, j) && passant)) 
 						&& !(j == move.start || j == move.finish)) {
-					pieceAttacks(j, color, amount);
+					int attackCount = numAttacks(kingPos[next(color)], next(color));
+					bishopAttacks(j, color, amount);
+					if (numAttacks(kingPos[next(color)], next(color)) > attackCount && amount != -1) attackers.add(board[j]);
 				}
 			}
 		}
@@ -804,6 +814,7 @@ public class ChessBoard {
 			System.out.println();
 		}
 		System.out.println(check);
+		System.out.println(fenString);
 		if (!valid) System.out.println("ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR");
 	}
 	

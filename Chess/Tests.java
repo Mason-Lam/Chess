@@ -89,9 +89,9 @@ public class Tests {
 		test6.runTest();
 		System.out.println("Test 7:");
 		test7.runTest();
-		System.out.println("Test 8:"); //HELP
+		System.out.println("Test 8:");
 		test8.runTest();
-		System.out.println("Test 9:"); //HELP
+		System.out.println("Test 9:");
 		test9.runTest();
 		System.out.println("Test 10:");
 		test10.runTest();
@@ -103,23 +103,23 @@ public class Tests {
 		test13.runTest();
 		System.out.println("Test 14:");
 		test14.runTest();
-		System.out.println("Test 15:"); //HELP
+		System.out.println("Test 15:");
 		test15.runTest();
-		System.out.println("Test 16:"); //HELP
+		System.out.println("Test 16:");
 		test16.runTest();
-		System.out.println("Test 17:"); //HELP
+		System.out.println("Test 17:");
 		test17.runTest();
-		System.out.println("Test 18:"); //HELP
+		System.out.println("Test 18:");
 		test18.runTest();
 		System.out.println("Test 19:");
 		test19.runTest();
-		System.out.println("Test 20:"); //HELP - attack update
+		System.out.println("Test 20:");
 		test20.runTest();
 		System.out.println("Test 21:");
 		test21.runTest();
-		System.out.println("Test 22:"); //HELP - attack update
+		System.out.println("Test 22:");
 		test22.runTest();
-		System.out.println("Test 23:"); //HELP
+		System.out.println("Test 23:");
 		test23.runTest();
 	}
 }

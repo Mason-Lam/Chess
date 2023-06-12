@@ -90,6 +90,15 @@ public class Constants {
 		new char[] {'p','n','b','r','q','k'}, //Black
 		new char[] {'P','N','B','R','Q','K'} // White
 	};
+
+	public static int squareToIndex(String square) {
+		int ascii = (int) square.charAt(0);
+		return (ascii - 97) +  (8 - Character.getNumericValue(square.charAt(1))) * 8;
+	}
+
+	public static String indexToSquare(int column, int row) {
+		return Character.toString(COLUMNS[column]) + row;
+	}
 	
 	public static ChessPiece charToPiece(char letter) {
 		char[] pieces = PIECES[1];
