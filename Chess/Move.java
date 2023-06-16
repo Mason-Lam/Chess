@@ -11,11 +11,17 @@ public class Move {
 	public int start;
 	public int finish;
 	public Type type;
-	
-	public Move(int Start, int Finish, Type type){
-		this.start = Start;
-		this.finish = Finish;
+	public ChessPiece capturedPiece;
+
+	public Move(int start, int finish, Type type, ChessPiece capturedPiece) {
+		this.start = start;
+		this.finish = finish;
 		this.type = type;
+		this.capturedPiece = capturedPiece;
+	}
+	
+	public Move(int start, int finish, Type type){
+		this(start, finish, type, ChessPiece.empty());
 	}
 
 	public boolean isSpecial() {

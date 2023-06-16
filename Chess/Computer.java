@@ -1,28 +1,99 @@
 package Chess;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class Computer {
-	ChessBoard board;
+
+	public static class BoardStorage {
+		public final String fenString;
+		public final int enPassant;
+		private final boolean[] castling;
+		public final HashSet<ChessPiece> attackers;
+
+		public BoardStorage(String fenString, int enPassant, boolean[] castling, HashSet<ChessPiece> attackers) {
+			this.fenString = fenString;
+			this.enPassant = enPassant;
+			this.castling = new boolean[2];
+			this.castling[0] = castling[0];
+			this.castling[1] = castling[1];
+			this.attackers = attackers;
+		}
+
+		public boolean[] getCastling() {
+			boolean[] castle = new boolean[2];
+			castle[0] = castling[0];
+			castle[1] = castling[1];
+			return castle;
+		}
+	}
+
+	private ChessBoard board;
 	
 	public Computer(ChessBoard board) {
 		this.board = board;
 	}
-	
+
 	public int totalMoves(int depth) {
-		return totalMoves(depth, board);
-	}
-	
-	private int totalMoves(int depth, ChessBoard board) {
 		int count = 0;
-		var positions = board.getPiecePositions(board.turn);
+		BoardStorage store = new BoardStorage(board.getFenString(), board.getEnPassant(), board.getCastling(board.getTurn()), board.getAttackers());
+		var poses = board.getPiecePositions(board.getTurn());
+		HashSet<Integer> positions = new HashSet<Integer>();
+		for (Integer i : poses) {
+			positions.add(i);
+		}
+
 		for(Integer i : positions) {
 			ArrayList<Move> moves = new ArrayList<Move>();
 			ChessPiece piece = board.getPiece(i);
 			board.piece_moves(i, Constants.ALL_MOVES, moves);
 			if(depth == 1) {
 				if (moves.size() > 0) {
-					if(piece.type == Constants.PAWN && board.getRow(moves.get(0).finish) == Constants.PROMOTION_LINE[board.turn]) {
+					if(piece.type == Constants.PAWN && board.getRow(moves.get(0).finish) == Constants.PROMOTION_LINE[board.getTurn()]) {
+						count += moves.size() * 4;
+						continue;
+					}
+				}
+				count += moves.size();
+				continue;
+			}
+			
+			for (int j = 0; j < moves.size(); j++) {
+				Move move = moves.get(j);
+				board.make_move(move, false);
+				if (board.is_promote()) {
+					for (byte type : Constants.PROMOTION_PIECES) {
+						board.promote(type);
+						count += totalMoves(depth - 1);
+						board.unPromote(move.finish, store);
+					}
+				}
+				else {
+					count += totalMoves(depth - 1);
+				}
+
+				board.undoMove(move, store);
+			}
+		}
+		return count;
+	}
+
+	@Deprecated
+	public int totalMovesOld(int depth) {
+		return totalMovesOld(depth, board);
+	}
+	
+	@Deprecated
+	private int totalMovesOld(int depth, ChessBoard board) {
+		int count = 0;
+		var positions = board.getPiecePositions(board.getTurn());
+		for(Integer i : positions) {
+			ArrayList<Move> moves = new ArrayList<Move>();
+			ChessPiece piece = board.getPiece(i);
+			board.piece_moves(i, Constants.ALL_MOVES, moves);
+			if(depth == 1) {
+				if (moves.size() > 0) {
+					if(piece.type == Constants.PAWN && board.getRow(moves.get(0).finish) == Constants.PROMOTION_LINE[board.getTurn()]) {
 						count += moves.size() * 4;
 						continue;
 					}
@@ -39,11 +110,11 @@ public class Computer {
 					for (byte type : Constants.PROMOTION_PIECES) {
 						ChessBoard promoteBoard = copyBoard.copyBoard();
 						promoteBoard.promote(type);
-						count += totalMoves(depth - 1, promoteBoard);
+						count += totalMovesOld(depth - 1, promoteBoard);
 					}
 					continue;
 				}
-				count += totalMoves(depth - 1, copyBoard);
+				count += totalMovesOld(depth - 1, copyBoard);
 			}
 		}
 		return count;

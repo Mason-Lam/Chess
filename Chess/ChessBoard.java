@@ -4,13 +4,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+
+import Chess.Computer.BoardStorage;
 
 public class ChessBoard {
 	
-	public int turn;
-	public String fenString;
+	private int turn;
+	private String fenString;
 	
-	private ArrayList<ChessPiece> attackers;
+	private HashSet<ChessPiece> attackers;
 	private int[][] attacks;
 	
 	private int[] kingPos;
@@ -38,7 +41,7 @@ public class ChessBoard {
 		attacks = new int[2][1];
 		attacks[Constants.BLACK] = new int[64];
 		attacks[Constants.WHITE] = new int[64];
-		attackers = new ArrayList<ChessPiece>();
+		attackers = new HashSet<ChessPiece>();
 
 		diagonalAttackers = new HashMap[2];
 		straightAttackers = new HashMap[2];
@@ -182,7 +185,7 @@ public class ChessBoard {
 	public void make_move(Move move, boolean permanent) {
 		ChessPiece piece = board[move.start];
 		int passant = -1;
-		attackers = new ArrayList<ChessPiece>();
+		attackers = new HashSet<ChessPiece>();
 		
 		softAttackUpdate(move, -1);
 		pieceAttacks(move.start, piece.color, -1);
@@ -233,10 +236,59 @@ public class ChessBoard {
 		
 		softAttackUpdate(move, 1);
 
-		check = isChecked(next(piece.color));
+		check = isChecked(next(turn));
 		enPassant = passant;
 		if (!is_promote()) next_turn();
 		if (permanent) fenString = board_to_fen();
+	}
+
+	//Fix this shit
+	public void undoMove(Move move, Computer.BoardStorage store) {
+		if (!is_promote()) next_turn();
+
+		ChessPiece piece = board[move.finish];
+		fenString = store.fenString;
+		castling[turn] = store.getCastling();
+		enPassant = store.enPassant;
+		GAME_OVER = false;
+
+		attackers = new HashSet<ChessPiece>();
+
+		softAttackUpdate(move, -1);
+		pieceAttacks(move.finish, piece.color, -1);
+
+		if (piece.type == Constants.KING) {
+			if (move.isSpecial()) {
+				if (move.finish > move.start) {
+					updatePosition(board[move.finish - 1], Constants.ROOK_POSITIONS[turn][1], false);
+					board[move.finish - 1] = ChessPiece.empty();
+				}
+				else {
+					updatePosition(board[move.finish + 1], Constants.ROOK_POSITIONS[turn][0], false);
+					board[move.finish + 1] = ChessPiece.empty();
+				}
+			}
+		}
+
+		if (piece.type == Constants.PAWN && move.isSpecial()) {
+			updatePosition(move.capturedPiece, enPassant, false);
+			pieceAttacks(enPassant, next(piece.color), 1);
+		}
+
+		board[move.finish] = ChessPiece.empty();
+		updatePosition(piece, move.start, false);
+
+		if (move.type == Move.Type.ATTACK) {
+			updatePosition(move.capturedPiece, move.finish, false);
+			pieceAttacks(move.finish, next(piece.color), 1);
+		}
+
+		softAttackUpdate(move, 1);
+		pieceAttacks(move.start, piece.color, 1);
+		
+		check = isChecked(turn);
+		promotingPawn = -1;
+		attackers = store.attackers;
 	}
 	
 	private void updatePosition(ChessPiece piece, int newPos, boolean remove) {
@@ -295,7 +347,7 @@ public class ChessBoard {
 				int newPos = pos + Constants.PAWN_DIAGONALS[color][i];
 				if (!onBoard(newPos) || !onDiagonal(pos,newPos)) continue;
 				if (!board[newPos].isEmpty() && board[newPos].color != color) 
-					addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
+					addMove(moves, new Move(pos, newPos, Move.Type.ATTACK, board[newPos]));
 			}
 		}
 		//EnPassant
@@ -303,7 +355,7 @@ public class ChessBoard {
 			if (enPassant == -1) return;
 			if (Math.abs(enPassant - pos) != 1 || getDistance(enPassant, pos) != 1) return;
 			int newPos = color == Constants.WHITE ? enPassant - 8 : enPassant + 8;
-			if (board[newPos].isEmpty()) addMove(moves, new Move(pos, newPos, Move.Type.SPECIAL));
+			if (board[newPos].isEmpty()) addMove(moves, new Move(pos, newPos, Move.Type.SPECIAL, board[enPassant]));
 		}
 	}
 	
@@ -317,7 +369,7 @@ public class ChessBoard {
 					addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
 			}
 			else if (board[newPos].color != color && types[1]) 
-				addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
+				addMove(moves, new Move(pos, newPos, Move.Type.ATTACK, board[newPos]));
 		}
 	}
 	
@@ -332,7 +384,7 @@ public class ChessBoard {
 				if (board[newPos].color == color) break;
 				if (!board[newPos].isEmpty()) {
 					if (types[1])
-						addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
+						addMove(moves, new Move(pos, newPos, Move.Type.ATTACK, board[newPos]));
 					break;
 				}
 				if (types[0])
@@ -351,7 +403,7 @@ public class ChessBoard {
 				if (board[newPos].color == color) break;
 				if (!board[newPos].isEmpty()) {
 					if (types[1])
-						addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
+						addMove(moves, new Move(pos, newPos, Move.Type.ATTACK, board[newPos]));
 					break;
 				}
 				if (types[0])
@@ -375,7 +427,7 @@ public class ChessBoard {
 						addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
 				}
 				else if (board[newPos].color != color && types[1]) 
-					addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
+					addMove(moves, new Move(pos, newPos, Move.Type.ATTACK, board[newPos]));
 			}
 		}
 		//Castling
@@ -436,8 +488,7 @@ public class ChessBoard {
 	private boolean kingCheck(Move move) {
 		if (isAttacked(move.finish, turn)) return false;
 		if (!check) return true;
-		for (int i = 0; i < attackers.size(); i++) {
-			ChessPiece attacker = attackers.get(i);
+		for (ChessPiece attacker : attackers) {
 			int attackerPos = piecePositions[next(turn)].get(attacker);
 			if (attacker.type == Constants.QUEEN || attacker.type == Constants.BISHOP) {
 				if (onSameDiagonal(move.start, move.finish, attackerPos) && move.finish != attackerPos) return false;
@@ -450,7 +501,13 @@ public class ChessBoard {
 	}
 	
 	private boolean stopsCheck(Move move) {
-		ChessPiece attacker = attackers.get(0);
+		ChessPiece attacker = ChessPiece.empty();
+		for (ChessPiece piece : attackers) attacker = piece;
+		if(attacker.isEmpty()) {
+			System.out.println("ERROR, ERROR");
+			displayAttacks();
+			System.out.println(kingPos[turn]);
+		}
 		int attackerPos = piecePositions[next(turn)].get(attacker);
 		if (attacker.type == Constants.PAWN && move.isSpecial() && enPassant == attackerPos) return true;
 		if (attacker.type == Constants.PAWN || attacker.type == Constants.KNIGHT) return move.finish == attackerPos;
@@ -734,6 +791,10 @@ public class ChessBoard {
 	public Collection<Integer> getPiecePositions(int color) {
 		return piecePositions[color].values();
 	}
+
+	public HashSet<ChessPiece> getAttackers() {
+		return attackers;
+	}
 	
 	public ChessPiece getPiece(int pos) {
 		return board[pos];
@@ -743,10 +804,25 @@ public class ChessBoard {
 		board[promotingPawn].type = type;
 		updatePosition(board[promotingPawn], promotingPawn, false);
 		pieceAttacks(promotingPawn, turn, 1);
-		check = isChecked(next(turn));
 		next_turn();
+		check = isChecked(turn);
 		promotingPawn = -1;
 		fenString = board_to_fen();
+	}
+
+	public void unPromote(int pos, BoardStorage store) {
+		next_turn();
+		promotingPawn = pos;
+
+		ChessPiece piece = board[pos];
+
+		pieceAttacks(promotingPawn, piece.color, -1);
+		updatePosition(piece, promotingPawn, true);
+		piece.type = Constants.PAWN;
+		updatePosition(piece, promotingPawn, false);
+
+		attackers = store.attackers;
+		fenString = store.fenString;
 	}
 	
 	public int isWinner() {
@@ -798,6 +874,22 @@ public class ChessBoard {
 	public void next_turn() {
 		turn = next(turn);
 	}
+
+	public String getFenString() {
+		return fenString;
+	}
+
+	public int getEnPassant() {
+		return enPassant;
+	}
+
+	public int getTurn() {
+		return turn;
+	}
+
+	public boolean[] getCastling(int turn) {
+		return castling[turn];
+	}
 	
 	public void displayAttacks() {
 		boolean valid = true;
@@ -816,6 +908,26 @@ public class ChessBoard {
 		System.out.println(check);
 		System.out.println(fenString);
 		if (!valid) System.out.println("ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR");
+	}
+
+	public boolean debug() {
+		boolean valid = true;
+		for (int color = 0; color < 2; color++) {
+			var colorAttacks = attacks[color];
+			for (int i = 0; i < 8; i++) {
+				for (int j = 0; j < 8; j++) {
+					int attacks = colorAttacks[i * 8 + j];
+					if (attacks < 0) valid = false;
+					//System.out.print(attacks + " ");
+				}
+				//System.out.println();
+			}
+			//System.out.println();
+		}
+		// System.out.println(check);
+		// System.out.println(fenString);
+		//if (!valid) System.out.println("ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR");
+		return !valid;
 	}
 	
 	public Computer getComputer() {

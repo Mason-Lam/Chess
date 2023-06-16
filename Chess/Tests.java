@@ -101,11 +101,11 @@ public class Tests {
 		test12.runTest();
 		System.out.println("Test 13:");
 		test13.runTest();
-		System.out.println("Test 14:");
+		System.out.println("Test 14:"); //Help
 		test14.runTest();
-		System.out.println("Test 15:");
+		System.out.println("Test 15:"); //Help
 		test15.runTest();
-		System.out.println("Test 16:");
+		System.out.println("Test 16:"); //Help
 		test16.runTest();
 		System.out.println("Test 17:");
 		test17.runTest();

@@ -37,7 +37,7 @@ public class ChessGame {
 		
 		computer = board.getComputer();
 		long prevTime = System.currentTimeMillis();
-		System.out.println(computer.totalMoves(5));
+		System.out.println(computer.totalMoves(5)); //Goal: (3, 0), (4, 11), (5, 259), (6, 6502)
 		System.out.println(System.currentTimeMillis() - prevTime);
 		
 		panel.setBorder(BorderFactory.createEmptyBorder(30,30,10,30));	//Creates a border
@@ -63,7 +63,7 @@ public class ChessGame {
 		 * a function that updates every chess square
 		 * with the correct piece and color*/
 		String address;		//Stores the location of the correct image
-		String fen = board.fenString;
+		String fen = board.getFenString();
 		char letter;
 		int emptySpaces;
 		int count = 0;
@@ -127,7 +127,7 @@ public class ChessGame {
 			}
 			System.out.println();
 		}
-		if(board.turn == computerTurn && winner == false) {
+		if(board.getTurn() == computerTurn && winner == false) {
 			computer_turn();
 		}
 	}
@@ -147,11 +147,11 @@ public class ChessGame {
 		 * Function that runs when a ChessSquare is clicked
 		 * processes the users click and selects a ChessPiece/Square*/
 		//Checks if a promotion is happening
-		if(board.is_promote() || board.turn == computerTurn) {
+		if(board.is_promote() || board.getTurn() == computerTurn) {
 			return;	//Nope
 		}
 		//Checks if the click is on the correct Chess pieces.
-		if(board.getPiece(pos).color == board.turn && !board.getPiece(pos).isEmpty()) {
+		if(board.getPiece(pos).color == board.getTurn() && !board.getPiece(pos).isEmpty()) {
 			click1 = pos;		//Stores the users first click
 			legal = new ArrayList<Move>();
 			board.piece_moves(click1, Constants.ALL_MOVES, legal);	//Generates all the legal moves for a player
@@ -211,7 +211,7 @@ public class ChessGame {
 		String[] colors = {"White","Black"};	//Colors
 		//Checks for a win
 		if(win == Constants.WIN) {
-			l2 = new JLabel(colors[board.turn] + " is the winner!");	//Displays winner
+			l2 = new JLabel(colors[board.getTurn()] + " is the winner!");	//Displays winner
 		}
 		//Checks for a draw
 		else{
