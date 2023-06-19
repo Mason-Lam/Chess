@@ -531,72 +531,36 @@ public class ChessBoard {
 
 			int attacker = piecePositions[piece.color].get(piece);
 			if (piece.type == Constants.BISHOP || piece.type == Constants.QUEEN) {
-				if (onSameDiagonal (move.start, king, attacker) && blocksDiagonal(attacker, king, move.start)) {
-					if (move.finish == attacker) continue;
-					
-					if (onSameDiagonal(move.finish, king, attacker)) continue;
+				if (blocksDiagonal(attacker, king, move.start)) {
+					if (onSameDiagonal(move.finish, king, attacker)) return false;
 
 					int direction = Math.abs(attacker - move.start) % 7 == 0 ? 7 : 9;
 					if (attacker - move.start > 0) direction *= -1;
 					
-					int newPos = attacker;
-					boolean blocked = false;
-					for (int j = 0; j < getDistanceVert(move.start, attacker) - 1; j++) {
-						newPos += direction;
-						if (!board[newPos].isEmpty()) {
-							blocked = true;
-							break;
-						}
-					}
-					
-					if (blocked) continue;
-					
-					newPos = move.start;
+					int newPos = move.start;
 					for (int j = 0; j < getDistanceVert(move.start, king) - 1; j++) {
 						newPos += direction;
-						if (!board[newPos].isEmpty()) {
-							blocked = true;
-							break;
-						}
+						if (!board[newPos].isEmpty()) return false;
 					}
-					
-					if (!blocked) return true;
+					return true;
 				}
 			}
 
 			if (piece.type == Constants.ROOK || piece.type == Constants.QUEEN) {
-				if (onSameLine(move.start, king, attacker) && blocksLine(attacker, king, move.start)) {
-					if (move.finish == attacker) continue;
-					
-					if (onSameLine(move.finish, king, attacker)) continue;
+				if (blocksLine(attacker, king, move.start)) {
+					if (onSameLine(move.finish, king, attacker)) return false;
 
 					int direction = onColumn(move.start, attacker) ? 8 : 1;
 					if (attacker - move.start > 0) direction *= -1;
 					
 					int newPos = attacker;
-					boolean blocked = false;
-					for (int j = 0; j < getDistance(move.start, attacker) - 1; j++) {
-						newPos += direction;
-						if (!board[newPos].isEmpty()) {
-							if (move.isSpecial() && newPos == enPassant) continue;
-							blocked = true;
-							break;
-						}
-					}
-					
-					if (blocked) continue;
 					
 					newPos = move.start;
 					for (int j = 0; j < getDistance(move.start, king) - 1; j++) {
 						newPos += direction;
-						if (!board[newPos].isEmpty()) {
-							if (move.isSpecial() && newPos == enPassant) continue;
-							blocked = true;
-							break;
-						}
+						if (!board[newPos].isEmpty() && !(passant && newPos == enPassant)) return false;
 					}
-					
-					if (!blocked) return true;
+					return true;
 					}
 				}
 			}
