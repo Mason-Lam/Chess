@@ -28,17 +28,17 @@ public class ChessGame {
 		winner = false;
 		click1 = -1;		//sets var as no clicks
 		//rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
-		// long prevTime = System.currentTimeMillis();
-		// Tests.runTests();
-		// System.out.println(System.currentTimeMillis() - prevTime);
+		long prevTime = System.currentTimeMillis();
+		Tests.runTests(); //5800, 8315
+		System.out.println(System.currentTimeMillis() - prevTime);
 
 		board = new ChessBoard();	//Creates a new ChessBoard object
 		//board.displayAttacks();
 		
 		computer = board.getComputer();
-		long prevTime = System.currentTimeMillis();
-		System.out.println(computer.totalMoves(5)); //Goal: (3, 0), (4, 11), (5, 259), (6, 6502)
-		System.out.println(System.currentTimeMillis() - prevTime);
+		// long prevTime = System.currentTimeMillis();
+		// System.out.println(computer.totalMoves(5)); //Goal: (3, 0), (4, 11), (5, 259), (6, 6502)
+		// System.out.println(System.currentTimeMillis() - prevTime);
 		
 		panel.setBorder(BorderFactory.createEmptyBorder(30,30,10,30));	//Creates a border
 		panel.setLayout(new GridLayout(8,8));		//Creates an 8*8 grid for the squares

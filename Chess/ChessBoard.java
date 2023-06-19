@@ -14,7 +14,7 @@ public class ChessBoard {
 	private String fenString;
 	
 	private HashSet<ChessPiece> attackers;
-	private int[][] attacks;
+	private HashSet<ChessPiece>[][] attacks;
 	
 	private int[] kingPos;
 	private HashMap<ChessPiece, Integer>[] diagonalAttackers;
@@ -38,9 +38,9 @@ public class ChessBoard {
 		turn = Constants.BLACK;
 		fenString = fen;
 		
-		attacks = new int[2][1];
-		attacks[Constants.BLACK] = new int[64];
-		attacks[Constants.WHITE] = new int[64];
+		attacks = new HashSet[2][1];
+		attacks[Constants.BLACK] = new HashSet[64];
+		attacks[Constants.WHITE] = new HashSet[64];
 		attackers = new HashSet<ChessPiece>();
 
 		diagonalAttackers = new HashMap[2];
@@ -187,11 +187,11 @@ public class ChessBoard {
 		int passant = -1;
 		attackers = new HashSet<ChessPiece>();
 		
-		softAttackUpdate(move, -1);
-		pieceAttacks(move.start, piece.color, -1);
+		softAttackUpdate(move, true);
+		pieceAttacks(move.start, true);
 
 		if (move.type == Move.Type.ATTACK) {
-			pieceAttacks(move.finish, next(piece.color), -1);
+			pieceAttacks(move.finish, true);
 			updatePosition(board[move.finish], move.finish, true);
 		}
 		
@@ -199,7 +199,7 @@ public class ChessBoard {
 
 		if (piece.type == Constants.PAWN) {
 			if (move.isSpecial()) {
-				pieceAttacks(enPassant, next(piece.color), -1);
+				pieceAttacks(enPassant, true);
 				updatePosition(board[enPassant], enPassant, true);
 			}
 			if (getDistanceVert(move.start, move.finish) == 2) {
@@ -232,9 +232,9 @@ public class ChessBoard {
 		}
 		
 		updatePosition(piece, move.finish, false);
-		pieceAttacks(move.finish, piece.color, 1);
+		pieceAttacks(move.finish, false);
 		
-		softAttackUpdate(move, 1);
+		softAttackUpdate(move, false);
 
 		check = isChecked(next(turn));
 		enPassant = passant;
@@ -254,8 +254,8 @@ public class ChessBoard {
 
 		attackers = new HashSet<ChessPiece>();
 
-		softAttackUpdate(move, -1);
-		pieceAttacks(move.finish, piece.color, -1);
+		softAttackUpdate(move, true);
+		pieceAttacks(move.finish, true);
 
 		if (piece.type == Constants.KING) {
 			if (move.isSpecial()) {
@@ -272,7 +272,7 @@ public class ChessBoard {
 
 		if (piece.type == Constants.PAWN && move.isSpecial()) {
 			updatePosition(move.capturedPiece, enPassant, false);
-			pieceAttacks(enPassant, next(piece.color), 1);
+			pieceAttacks(enPassant, false);
 		}
 
 		board[move.finish] = ChessPiece.empty();
@@ -280,11 +280,11 @@ public class ChessBoard {
 
 		if (move.type == Move.Type.ATTACK) {
 			updatePosition(move.capturedPiece, move.finish, false);
-			pieceAttacks(move.finish, next(piece.color), 1);
+			pieceAttacks(move.finish, false);
 		}
 
-		softAttackUpdate(move, 1);
-		pieceAttacks(move.start, piece.color, 1);
+		softAttackUpdate(move, false);
+		pieceAttacks(move.start, false);
 		
 		check = isChecked(turn);
 		promotingPawn = -1;
@@ -610,15 +610,17 @@ public class ChessBoard {
 	
 	private void hardAttackUpdate() {
 		for (int color = 0; color < 2; color ++) {
-			Arrays.fill(attacks[color], 0);
+			for (int j = 0;  j < attacks[color].length; j++) {
+				attacks[color][j] = new HashSet<ChessPiece>();
+			}
 			var pieces =  piecePositions[color].values();
 			for (Integer i : pieces) {
-				pieceAttacks(i, color, 1);
+				pieceAttacks(i, false);
 			}
 		}
 	}
 	
-	private void softAttackUpdate(Move move, int amount) {
+	private void softAttackUpdate(Move move, boolean remove) {
 		boolean passant = move.isSpecial() && (board[move.start].type == Constants.PAWN || board[move.finish].type == Constants.PAWN);
 		for (int color = 0; color < 2; color ++) {
 			var straight = straightAttackers[color].values();
@@ -627,8 +629,8 @@ public class ChessBoard {
 				if ((onLine(move.finish, i) || onLine(move.start, i) || (onLine(enPassant, i) && passant)) 
 						&& !(i == move.start || i == move.finish)) {
 					int attackCount = numAttacks(kingPos[next(color)], next(color));
-					rookAttacks(i, color, amount);
-					if (numAttacks(kingPos[next(color)], next(color)) > attackCount && amount != -1) attackers.add(board[i]);
+					rookAttacks(i, remove);
+					if (numAttacks(kingPos[next(color)], next(color)) > attackCount && !remove) attackers.add(board[i]);
 				}
 			}
 			
@@ -636,77 +638,107 @@ public class ChessBoard {
 				if ((onDiagonal(move.finish, j) || onDiagonal(move.start, j) || (onDiagonal(enPassant, j) && passant)) 
 						&& !(j == move.start || j == move.finish)) {
 					int attackCount = numAttacks(kingPos[next(color)], next(color));
-					bishopAttacks(j, color, amount);
-					if (numAttacks(kingPos[next(color)], next(color)) > attackCount && amount != -1) attackers.add(board[j]);
+					bishopAttacks(j, remove);
+					if (numAttacks(kingPos[next(color)], next(color)) > attackCount && !remove) attackers.add(board[j]);
 				}
 			}
 		}
 	}
 	
-	private void pieceAttacks(int pos, int color, int amount) {
+	private void pieceAttacks(int pos, boolean remove) {
 		ChessPiece piece = board[pos];
-		int attackCount = numAttacks(kingPos[next(color)], next(color));
-		if (piece.type == Constants.PAWN) pawnAttacks(pos, color, amount); 
-		else if (piece.type == Constants.KNIGHT) knightAttacks(pos, color, amount); 
-		else if (piece.type == Constants.BISHOP) bishopAttacks(pos, color, amount); 
-		else if (piece.type == Constants.ROOK) rookAttacks(pos, color, amount); 
-		else if (piece.type == Constants.QUEEN) queenAttacks(pos, color, amount); 
-		else if (piece.type == Constants.KING) kingAttacks(pos, color, amount);
-		if (numAttacks(kingPos[next(color)], next(color)) > attackCount && amount != -1) attackers.add(piece);
+		int attackCount = numAttacks(kingPos[next(piece.color)], next(piece.color));
+		if (piece.type == Constants.PAWN) pawnAttacks(pos, remove); 
+		else if (piece.type == Constants.KNIGHT) knightAttacks(pos, remove); 
+		else if (piece.type == Constants.BISHOP) bishopAttacks(pos, remove);
+		else if (piece.type == Constants.ROOK) rookAttacks(pos, remove); 
+		else if (piece.type == Constants.QUEEN) queenAttacks(pos, remove); 
+		else if (piece.type == Constants.KING) kingAttacks(pos, remove);
+		if (numAttacks(kingPos[next(piece.color)], next(piece.color)) > attackCount && !remove) attackers.add(piece);
 	}
 	
-	private void pawnAttacks(int pos, int color, int amount) {
+	private void pawnAttacks(int pos, boolean remove) {
+		ChessPiece piece = board[pos];
 		for (int i = 0; i < 2; i++) {
-			int newPos = pos + Constants.PAWN_DIAGONALS[color][i];
+			int newPos = pos + Constants.PAWN_DIAGONALS[piece.color][i];
 			if (!onBoard(newPos) || !onDiagonal(pos,newPos)) continue;
-			attacks[color][newPos] += amount;
+
+			if (remove) {
+				attacks[piece.color][newPos].remove(piece);
+				continue;
+			}
+			attacks[piece.color][newPos].add(piece);
 		}
 	}
 	
-	private void knightAttacks(int pos, int color, int amount) {
+	private void knightAttacks(int pos, boolean remove) {
+		ChessPiece piece = board[pos];
 		for (int i = 0; i < Constants.KNIGHT_MOVES.length; i++) {
 			int newPos = pos + Constants.KNIGHT_MOVES[i];
 			if (!onBoard(newPos) || !onL(pos, newPos)) continue;
-			attacks[color][newPos] += amount;
+
+			if (remove) {
+				attacks[piece.color][newPos].remove(piece);
+				continue;
+			}
+			attacks[piece.color][newPos].add(piece);
 		}
 	}
 	
-	private void bishopAttacks(int pos, int color, int amount) {
+	private void bishopAttacks(int pos, boolean remove) {
+		ChessPiece piece = board[pos];
 		for (int i = 0; i < Constants.DIAGONALS.length; i++) {
 			int newPos = pos;
 			while (true) {
 				newPos += Constants.DIAGONALS[i];
 				if (!onBoard(newPos) || !onDiagonal(pos, newPos)) break;
 				
-				attacks[color][newPos] += amount;
+				if (remove) {
+					attacks[piece.color][newPos].remove(piece);
+					continue;
+				}
+				attacks[piece.color][newPos].add(piece);
+
 				if (!board[newPos].isEmpty()) break;
 			}
 		}
 	}
 	
-	private void rookAttacks(int pos, int color, int amount) {
+	private void rookAttacks(int pos, boolean remove) {
+		ChessPiece piece = board[pos];
 		for (int i = 0; i < Constants.STRAIGHT.length; i++) {
 			int newPos = pos;
 			while (true) {
 				newPos += Constants.STRAIGHT[i];
 				if (!onBoard(newPos) || (!onColumn(pos, newPos) && i < 2) || (!onRow(pos, newPos) && i >= 2)) break;
 				
-				attacks[color][newPos] += amount;
+				if (remove) {
+					attacks[piece.color][newPos].remove(piece);
+					continue;
+				}
+				attacks[piece.color][newPos].add(piece);
+
 				if (!board[newPos].isEmpty()) break;
 			}
 		}
 	}
 	
-	private void queenAttacks(int pos, int color, int amount) {
-		rookAttacks(pos, color, amount);
-		bishopAttacks(pos, color, amount);
+	private void queenAttacks(int pos, boolean remove) {
+		rookAttacks(pos, remove);
+		bishopAttacks(pos, remove);
 	}
 	
-	private void kingAttacks(int pos, int color, int amount) {
+	private void kingAttacks(int pos, boolean remove) {
+		ChessPiece piece = board[pos];
 		for (int i = 0; i < Constants.KING_MOVES.length; i++) {
 			int newPos = pos + Constants.KING_MOVES[i];
 			if (!onBoard(newPos) || getDistance(pos, newPos) > 2) continue;
-			attacks[color][newPos] += amount;
+
+			if (remove) {
+				attacks[piece.color][newPos].remove(piece);
+				continue;
+			}
+			attacks[piece.color][newPos].add(piece);
 		}
 	}
 	
@@ -785,7 +817,7 @@ public class ChessBoard {
 	}
 	
 	private int numAttacks(int pos, int color) {
-		return attacks[next(color)][pos];
+		return attacks[next(color)][pos].size();
 	}
 	
 	public Collection<Integer> getPiecePositions(int color) {
@@ -803,7 +835,7 @@ public class ChessBoard {
 	public void promote(byte type) {
 		board[promotingPawn].type = type;
 		updatePosition(board[promotingPawn], promotingPawn, false);
-		pieceAttacks(promotingPawn, turn, 1);
+		pieceAttacks(promotingPawn, false);
 		next_turn();
 		check = isChecked(turn);
 		promotingPawn = -1;
@@ -816,7 +848,7 @@ public class ChessBoard {
 
 		ChessPiece piece = board[pos];
 
-		pieceAttacks(promotingPawn, piece.color, -1);
+		pieceAttacks(promotingPawn, true);
 		updatePosition(piece, promotingPawn, true);
 		piece.type = Constants.PAWN;
 		updatePosition(piece, promotingPawn, false);
@@ -897,7 +929,7 @@ public class ChessBoard {
 			var colorAttacks = attacks[color];
 			for (int i = 0; i < 8; i++) {
 				for (int j = 0; j < 8; j++) {
-					int attacks = colorAttacks[i * 8 + j];
+					int attacks = colorAttacks[i * 8 + j].size();
 					if (attacks < 0) valid = false;
 					System.out.print(attacks + " ");
 				}
@@ -916,7 +948,7 @@ public class ChessBoard {
 			var colorAttacks = attacks[color];
 			for (int i = 0; i < 8; i++) {
 				for (int j = 0; j < 8; j++) {
-					int attacks = colorAttacks[i * 8 + j];
+					int attacks = colorAttacks[i * 8 + j].size();
 					if (attacks < 0) valid = false;
 					//System.out.print(attacks + " ");
 				}
