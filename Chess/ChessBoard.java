@@ -12,8 +12,7 @@ public class ChessBoard {
 	
 	private int turn;
 	private String fenString;
-	
-	private HashSet<ChessPiece> attackers;
+
 	private HashSet<ChessPiece>[][] attacks;
 	
 	private int[] kingPos;
@@ -41,7 +40,6 @@ public class ChessBoard {
 		attacks = new HashSet[2][1];
 		attacks[Constants.BLACK] = new HashSet[64];
 		attacks[Constants.WHITE] = new HashSet[64];
-		attackers = new HashSet<ChessPiece>();
 
 		diagonalAttackers = new HashMap[2];
 		straightAttackers = new HashMap[2];
@@ -185,7 +183,6 @@ public class ChessBoard {
 	public void make_move(Move move, boolean permanent) {
 		ChessPiece piece = board[move.start];
 		int passant = -1;
-		attackers = new HashSet<ChessPiece>();
 		HashSet<ChessPiece> updatePieces = softAttackUpdate(move);
 		for (ChessPiece i : updatePieces) {
 			pieceAttacks(piecePositions[i.color].get(i), true);
@@ -256,8 +253,6 @@ public class ChessBoard {
 		enPassant = store.enPassant;
 		GAME_OVER = false;
 
-		attackers = new HashSet<ChessPiece>();
-
 		HashSet<ChessPiece> updatePieces = softAttackUpdate(move);
 		for (ChessPiece i : updatePieces) {
 			pieceAttacks(piecePositions[i.color].get(i), true);
@@ -297,7 +292,6 @@ public class ChessBoard {
 		
 		check = isChecked(turn);
 		promotingPawn = -1;
-		attackers = store.attackers;
 	}
 	
 	private void updatePosition(ChessPiece piece, int newPos, boolean remove) {
@@ -497,7 +491,7 @@ public class ChessBoard {
 	private boolean kingCheck(Move move) {
 		if (isAttacked(move.finish, turn)) return false;
 		if (!check) return true;
-		for (ChessPiece attacker : attackers) {
+		for (ChessPiece attacker : attacks[next(turn)][move.start]) {
 			int attackerPos = piecePositions[next(turn)].get(attacker);
 			if (attacker.type == Constants.QUEEN || attacker.type == Constants.BISHOP) {
 				if (onSameDiagonal(move.start, move.finish, attackerPos) && move.finish != attackerPos) return false;
@@ -511,7 +505,7 @@ public class ChessBoard {
 	
 	private boolean stopsCheck(Move move) {
 		ChessPiece attacker = ChessPiece.empty();
-		for (ChessPiece piece : attackers) attacker = piece;
+		for (ChessPiece piece : attacks[next(turn)][kingPos[turn]]) attacker = piece;
 		if(attacker.isEmpty()) {
 			System.out.println("ERROR, ERROR");
 			displayAttacks();
@@ -668,14 +662,12 @@ public class ChessBoard {
 	
 	private void pieceAttacks(int pos, boolean remove) {
 		ChessPiece piece = board[pos];
-		int attackCount = numAttacks(kingPos[next(piece.color)], next(piece.color));
 		if (piece.type == Constants.PAWN) pawnAttacks(pos, remove); 
 		else if (piece.type == Constants.KNIGHT) knightAttacks(pos, remove); 
 		else if (piece.type == Constants.BISHOP) bishopAttacks(pos, remove);
 		else if (piece.type == Constants.ROOK) rookAttacks(pos, remove); 
 		else if (piece.type == Constants.QUEEN) queenAttacks(pos, remove); 
 		else if (piece.type == Constants.KING) kingAttacks(pos, remove);
-		if (numAttacks(kingPos[next(piece.color)], next(piece.color)) > attackCount && !remove) attackers.add(piece);
 	}
 	
 	private void pawnAttacks(int pos, boolean remove) {
@@ -844,10 +836,6 @@ public class ChessBoard {
 	public Collection<Integer> getPiecePositions(int color) {
 		return piecePositions[color].values();
 	}
-
-	public HashSet<ChessPiece> getAttackers() {
-		return attackers;
-	}
 	
 	public ChessPiece getPiece(int pos) {
 		return board[pos];
@@ -874,7 +862,6 @@ public class ChessBoard {
 		piece.type = Constants.PAWN;
 		updatePosition(piece, promotingPawn, false);
 
-		attackers = store.attackers;
 		fenString = store.fenString;
 	}
 	
