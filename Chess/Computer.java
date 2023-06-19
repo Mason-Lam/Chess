@@ -9,15 +9,13 @@ public class Computer {
 		public final String fenString;
 		public final int enPassant;
 		private final boolean[] castling;
-		public final HashSet<ChessPiece> attackers;
 
-		public BoardStorage(String fenString, int enPassant, boolean[] castling, HashSet<ChessPiece> attackers) {
+		public BoardStorage(String fenString, int enPassant, boolean[] castling) {
 			this.fenString = fenString;
 			this.enPassant = enPassant;
 			this.castling = new boolean[2];
 			this.castling[0] = castling[0];
 			this.castling[1] = castling[1];
-			this.attackers = attackers;
 		}
 
 		public boolean[] getCastling() {
@@ -36,7 +34,7 @@ public class Computer {
 
 	public int totalMoves(int depth) {
 		int count = 0;
-		BoardStorage store = new BoardStorage(board.getFenString(), board.getEnPassant(), board.getCastling(board.getTurn()), board.getAttackers());
+		BoardStorage store = new BoardStorage(board.getFenString(), board.getEnPassant(), board.getCastling(board.getTurn()));
 		var poses = board.getPiecePositions(board.getTurn());
 		HashSet<Integer> positions = new HashSet<Integer>();
 		for (Integer i : poses) {
