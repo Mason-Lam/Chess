@@ -32,7 +32,7 @@ public class ChessGame {
 		Tests.runTests(); //5800, 8315
 		System.out.println(System.currentTimeMillis() - prevTime);
 
-		board = new ChessBoard();	//Creates a new ChessBoard object
+		board = new ChessBoard(Tests.test10.fen);	//Creates a new ChessBoard object
 		//board.displayAttacks();
 		
 		computer = board.getComputer();

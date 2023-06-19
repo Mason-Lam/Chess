@@ -16,8 +16,6 @@ public class ChessBoard {
 	private HashSet<ChessPiece>[][] attacks;
 	
 	private int[] kingPos;
-	private HashMap<ChessPiece, Integer>[] diagonalAttackers;
-	private HashMap<ChessPiece, Integer>[] straightAttackers;
 	private HashMap<ChessPiece, Integer>[] piecePositions;
 	
 	private ChessPiece[] board;
@@ -41,13 +39,7 @@ public class ChessBoard {
 		attacks[Constants.BLACK] = new HashSet[64];
 		attacks[Constants.WHITE] = new HashSet[64];
 
-		diagonalAttackers = new HashMap[2];
-		straightAttackers = new HashMap[2];
 		piecePositions = new HashMap[2];
-		diagonalAttackers[Constants.BLACK] = new HashMap<ChessPiece,Integer>();
-		diagonalAttackers[Constants.WHITE] = new HashMap<ChessPiece,Integer>();
-		straightAttackers[Constants.BLACK] = new HashMap<ChessPiece,Integer>();
-		straightAttackers[Constants.WHITE] = new HashMap<ChessPiece,Integer>();
 		piecePositions[Constants.BLACK] = new HashMap<ChessPiece,Integer>();
 		piecePositions[Constants.WHITE] = new HashMap<ChessPiece,Integer>();
 		
@@ -171,10 +163,6 @@ public class ChessBoard {
 			
 			if (piece.type == Constants.KING) 
 				kingPos[piece.color] = index;
-			if (piece.type == Constants.BISHOP || piece.type == Constants.QUEEN) 
-				diagonalAttackers[piece.color].put(piece, index);
-			if (piece.type == Constants.ROOK || piece.type == Constants.QUEEN) 
-				straightAttackers[piece.color].put(piece, index);
 			
 			index++;
 		}
@@ -298,22 +286,12 @@ public class ChessBoard {
 		if (remove) {
 			//pieceAttacks(newPos, piece.color, -1);
 			piecePositions[piece.color].remove(piece);
-			if (piece.type == Constants.BISHOP || piece.type == Constants.QUEEN)
-				diagonalAttackers[piece.color].remove(piece);
-			
-			if (piece.type == Constants.ROOK || piece.type == Constants.QUEEN)
-				straightAttackers[piece.color].remove(piece);
 			board[newPos] = ChessPiece.empty();
 			return;
 		}
 		board[newPos] = piece;
 		//pieceAttacks(newPos, piece.color, 1);
 		piecePositions[piece.color].put(piece, newPos);
-		if (piece.type == Constants.BISHOP || piece.type == Constants.QUEEN)
-			diagonalAttackers[piece.color].put(piece, newPos);
-		
-		if (piece.type == Constants.ROOK || piece.type == Constants.QUEEN)
-			straightAttackers[piece.color].put(piece, newPos);
 		
 		if (piece.type == Constants.KING)
 			kingPos[piece.color] = newPos;
@@ -531,11 +509,28 @@ public class ChessBoard {
 	}
 	
 	private boolean isPinned(Move move) {
-		if (!isAttacked(move.start, board[move.start].color) && !(move.isSpecial() && board[move.start].type == Constants.PAWN)) return false;
+		boolean passant = (move.isSpecial() && board[move.start].type == Constants.PAWN);
+		HashSet<ChessPiece> attackers;
+		if (passant) {
+			if (!isAttacked(move.start, turn) && !isAttacked(enPassant, turn)) return false;
+			attackers = new HashSet<ChessPiece>() {
+				{
+					addAll(attacks[next(turn)][move.start]);
+					addAll(attacks[next(turn)][enPassant]);
+				}
+			};
+		}
+		else {
+			if (!isAttacked(move.start, turn)) return false;
+			attackers = attacks[next(turn)][move.start];
+		}
+
 		int king = kingPos[board[move.start].color];
-		//Checking if pinned by bishop or queen
-		if (onDiagonal(move.start, king)) {
-			for (Integer attacker : diagonalAttackers[next(board[move.start].color)].values()) {
+		for (ChessPiece piece : attackers) {
+			if (piece.type == Constants.PAWN || piece.type == Constants.KNIGHT || piece.type == Constants.KING) continue;
+
+			int attacker = piecePositions[piece.color].get(piece);
+			if (piece.type == Constants.BISHOP || piece.type == Constants.QUEEN) {
 				if (onSameDiagonal (move.start, king, attacker) && blocksDiagonal(attacker, king, move.start)) {
 					if (move.finish == attacker) continue;
 					
@@ -568,10 +563,8 @@ public class ChessBoard {
 					if (!blocked) return true;
 				}
 			}
-		}
-		
-		if (onLine(move.start, king)) {
-			for (Integer attacker : straightAttackers[next(board[move.start].color)].values()) {
+
+			if (piece.type == Constants.ROOK || piece.type == Constants.QUEEN) {
 				if (onSameLine(move.start, king, attacker) && blocksLine(attacker, king, move.start)) {
 					if (move.finish == attacker) continue;
 					
@@ -604,9 +597,9 @@ public class ChessBoard {
 					}
 					
 					if (!blocked) return true;
+					}
 				}
 			}
-		}
 		
 		return false;
 	}
