@@ -231,7 +231,6 @@ public class ChessBoard {
 		if (permanent) fenString = board_to_fen();
 	}
 
-	//Fix this shit
 	public void undoMove(Move move, Computer.BoardStorage store) {
 		if (!is_promote()) next_turn();
 
@@ -484,31 +483,22 @@ public class ChessBoard {
 	private boolean stopsCheck(Move move) {
 		ChessPiece attacker = ChessPiece.empty();
 		for (ChessPiece piece : attacks[next(turn)][kingPos[turn]]) attacker = piece;
-		if(attacker.isEmpty()) {
-			System.out.println("ERROR, ERROR");
-			displayAttacks();
-			System.out.println(kingPos[turn]);
-		}
 		int attackerPos = piecePositions[next(turn)].get(attacker);
 		if (attacker.type == Constants.PAWN && move.isSpecial() && enPassant == attackerPos) return true;
 		if (attacker.type == Constants.PAWN || attacker.type == Constants.KNIGHT) return move.finish == attackerPos;
 		if (move.finish == attackerPos) return true;
 		
 		int king = kingPos[turn];
-		if (attacker.type == Constants.QUEEN || attacker.type == Constants.BISHOP) {
-			if (blocksDiagonal(attackerPos, king, move.finish))
-				return true;
+		if (onDiagonal(king, attackerPos)) {
+			return blocksDiagonal(attackerPos, king, move.finish);
 		}
-		
-		if (attacker.type == Constants.QUEEN || attacker.type == Constants.ROOK) {
-			if (blocksLine(attackerPos, king, move.finish)) 
-				return true;
-		}
-		
-		return false;
+		return blocksLine(attackerPos, king, move.finish);
 	}
 	
 	private boolean isPinned(Move move) {
+		int king = kingPos[board[move.start].color];
+		if (!onDiagonal(king, move.start) && !onLine(king, move.start)) return false;
+
 		boolean passant = (move.isSpecial() && board[move.start].type == Constants.PAWN);
 		HashSet<ChessPiece> attackers;
 		if (passant) {
@@ -525,7 +515,6 @@ public class ChessBoard {
 			attackers = attacks[next(turn)][move.start];
 		}
 
-		int king = kingPos[board[move.start].color];
 		for (ChessPiece piece : attackers) {
 			if (piece.type == Constants.PAWN || piece.type == Constants.KNIGHT || piece.type == Constants.KING) continue;
 
