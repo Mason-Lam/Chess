@@ -100,7 +100,7 @@ public class Constants {
 		return Character.toString(COLUMNS[column]) + row;
 	}
 	
-	public static ChessPiece charToPiece(char letter) {
+	public static ChessPiece charToPiece(char letter, int pos) {
 		char[] pieces = PIECES[1];
 		byte color = WHITE;
 		if (Character.isLowerCase(letter)) {
@@ -109,7 +109,7 @@ public class Constants {
 		}
 		for (byte i = 0; i < pieces.length; i++) {
 			if (letter == pieces[i]) {
-				return new ChessPiece(i,color);
+				return new ChessPiece(i, color, pos);
 			}
 		}
 		return null;

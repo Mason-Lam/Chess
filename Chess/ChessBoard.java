@@ -157,7 +157,7 @@ public class ChessBoard {
 				}
 				continue;
 			}
-			ChessPiece piece = Constants.charToPiece(letter);
+			ChessPiece piece = Constants.charToPiece(letter, index);
 			board[index] = piece;
 			piecePositions[piece.color].put(piece, index);
 			
@@ -173,7 +173,7 @@ public class ChessBoard {
 		int passant = -1;
 		HashSet<ChessPiece> updatePieces = softAttackUpdate(move);
 		for (ChessPiece i : updatePieces) {
-			pieceAttacks(piecePositions[i.color].get(i), true);
+			pieceAttacks(i.pos, true);
 		}
 		pieceAttacks(move.start, true);
 
@@ -222,7 +222,7 @@ public class ChessBoard {
 		pieceAttacks(move.finish, false);
 
 		for (ChessPiece i : updatePieces) {
-			pieceAttacks(piecePositions[i.color].get(i), false);
+			pieceAttacks(i.pos, false);
 		}
 
 		check = isChecked(next(turn));
@@ -242,7 +242,7 @@ public class ChessBoard {
 
 		HashSet<ChessPiece> updatePieces = softAttackUpdate(move);
 		for (ChessPiece i : updatePieces) {
-			pieceAttacks(piecePositions[i.color].get(i), true);
+			pieceAttacks(i.pos, true);
 		}
 		pieceAttacks(move.finish, true);
 
@@ -273,7 +273,7 @@ public class ChessBoard {
 		}
 
 		for (ChessPiece i : updatePieces) {
-			pieceAttacks(piecePositions[i.color].get(i), false);
+			pieceAttacks(i.pos, false);
 		}
 		pieceAttacks(move.start, false);
 		
@@ -283,13 +283,12 @@ public class ChessBoard {
 	
 	private void updatePosition(ChessPiece piece, int newPos, boolean remove) {
 		if (remove) {
-			//pieceAttacks(newPos, piece.color, -1);
 			piecePositions[piece.color].remove(piece);
 			board[newPos] = ChessPiece.empty();
 			return;
 		}
 		board[newPos] = piece;
-		//pieceAttacks(newPos, piece.color, 1);
+		piece.setPos(newPos);
 		piecePositions[piece.color].put(piece, newPos);
 		
 		if (piece.type == Constants.KING)
