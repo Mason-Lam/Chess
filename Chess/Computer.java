@@ -35,10 +35,10 @@ public class Computer {
 	public int totalMoves(int depth) {
 		int count = 0;
 		BoardStorage store = new BoardStorage(board.getFenString(), board.getEnPassant(), board.getCastling(board.getTurn()));
-		var poses = board.getPiecePositions(board.getTurn());
+		HashSet<ChessPiece> pieces = board.getPieces(board.getTurn());
 		HashSet<Integer> positions = new HashSet<Integer>();
-		for (Integer i : poses) {
-			positions.add(i);
+		for (ChessPiece i : pieces) {
+			positions.add(i.pos);
 		}
 
 		for(Integer i : positions) {
@@ -71,48 +71,6 @@ public class Computer {
 				}
 
 				board.undoMove(move, store);
-			}
-		}
-		return count;
-	}
-
-	@Deprecated
-	public int totalMovesOld(int depth) {
-		return totalMovesOld(depth, board);
-	}
-	
-	@Deprecated
-	private int totalMovesOld(int depth, ChessBoard board) {
-		int count = 0;
-		var positions = board.getPiecePositions(board.getTurn());
-		for(Integer i : positions) {
-			ArrayList<Move> moves = new ArrayList<Move>();
-			ChessPiece piece = board.getPiece(i);
-			board.piece_moves(i, Constants.ALL_MOVES, moves);
-			if(depth == 1) {
-				if (moves.size() > 0) {
-					if(piece.type == Constants.PAWN && board.getRow(moves.get(0).finish) == Constants.PROMOTION_LINE[board.getTurn()]) {
-						count += moves.size() * 4;
-						continue;
-					}
-				}
-				count += moves.size();
-				continue;
-			}
-			
-			for (int j = 0; j < moves.size(); j++) {
-				Move move = moves.get(j);
-				ChessBoard copyBoard = board.copyBoard();
-				copyBoard.make_move(move, true);
-				if (copyBoard.is_promote()) {
-					for (byte type : Constants.PROMOTION_PIECES) {
-						ChessBoard promoteBoard = copyBoard.copyBoard();
-						promoteBoard.promote(type);
-						count += totalMovesOld(depth - 1, promoteBoard);
-					}
-					continue;
-				}
-				count += totalMovesOld(depth - 1, copyBoard);
 			}
 		}
 		return count;

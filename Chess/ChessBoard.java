@@ -16,7 +16,7 @@ public class ChessBoard {
 	private HashSet<ChessPiece>[][] attacks;
 	
 	private int[] kingPos;
-	private HashMap<ChessPiece, Integer>[] piecePositions;
+	private HashSet<ChessPiece>[] pieces;
 	
 	private ChessPiece[] board;
 	private boolean[][] castling;
@@ -39,9 +39,9 @@ public class ChessBoard {
 		attacks[Constants.BLACK] = new HashSet[64];
 		attacks[Constants.WHITE] = new HashSet[64];
 
-		piecePositions = new HashMap[2];
-		piecePositions[Constants.BLACK] = new HashMap<ChessPiece,Integer>();
-		piecePositions[Constants.WHITE] = new HashMap<ChessPiece,Integer>();
+		pieces = new HashSet[2];
+		pieces[Constants.BLACK] = new HashSet<ChessPiece>();
+		pieces[Constants.WHITE] = new HashSet<ChessPiece>();
 		
 		kingPos = new int[2];
 		board = new ChessPiece[64];
@@ -159,7 +159,7 @@ public class ChessBoard {
 			}
 			ChessPiece piece = Constants.charToPiece(letter, index);
 			board[index] = piece;
-			piecePositions[piece.color].put(piece, index);
+			pieces[piece.color].add(piece);
 			
 			if (piece.type == Constants.KING) 
 				kingPos[piece.color] = index;
@@ -283,13 +283,13 @@ public class ChessBoard {
 	
 	private void updatePosition(ChessPiece piece, int newPos, boolean remove) {
 		if (remove) {
-			piecePositions[piece.color].remove(piece);
+			pieces[piece.color].remove(piece);
 			board[newPos] = ChessPiece.empty();
 			return;
 		}
 		board[newPos] = piece;
 		piece.setPos(newPos);
-		piecePositions[piece.color].put(piece, newPos);
+		pieces[piece.color].add(piece);
 		
 		if (piece.type == Constants.KING)
 			kingPos[piece.color] = newPos;
@@ -468,12 +468,11 @@ public class ChessBoard {
 		if (isAttacked(move.finish, turn)) return false;
 		if (!check) return true;
 		for (ChessPiece attacker : attacks[next(turn)][move.start]) {
-			int attackerPos = piecePositions[next(turn)].get(attacker);
 			if (attacker.type == Constants.QUEEN || attacker.type == Constants.BISHOP) {
-				if (onSameDiagonal(move.start, move.finish, attackerPos) && move.finish != attackerPos) return false;
+				if (onSameDiagonal(move.start, move.finish, attacker.pos) && move.finish != attacker.pos) return false;
 			}
 			if (attacker.type == Constants.QUEEN || attacker.type == Constants.ROOK) {
-				if (onSameLine(move.start, move.finish, attackerPos) && move.finish != attackerPos) return false;
+				if (onSameLine(move.start, move.finish, attacker.pos) && move.finish != attacker.pos) return false;
 			}
 		}
 		return true;
@@ -482,16 +481,15 @@ public class ChessBoard {
 	private boolean stopsCheck(Move move) {
 		ChessPiece attacker = ChessPiece.empty();
 		for (ChessPiece piece : attacks[next(turn)][kingPos[turn]]) attacker = piece;
-		int attackerPos = piecePositions[next(turn)].get(attacker);
-		if (attacker.type == Constants.PAWN && move.isSpecial() && enPassant == attackerPos) return true;
-		if (attacker.type == Constants.PAWN || attacker.type == Constants.KNIGHT) return move.finish == attackerPos;
-		if (move.finish == attackerPos) return true;
+		if (attacker.type == Constants.PAWN && move.isSpecial() && enPassant == attacker.pos) return true;
+		if (attacker.type == Constants.PAWN || attacker.type == Constants.KNIGHT) return move.finish == attacker.pos;
+		if (move.finish == attacker.pos) return true;
 		
 		int king = kingPos[turn];
-		if (onDiagonal(king, attackerPos)) {
-			return blocksDiagonal(attackerPos, king, move.finish);
+		if (onDiagonal(king, attacker.pos)) {
+			return blocksDiagonal(attacker.pos, king, move.finish);
 		}
-		return blocksLine(attackerPos, king, move.finish);
+		return blocksLine(attacker.pos, king, move.finish);
 	}
 	
 	private boolean isPinned(Move move) {
@@ -517,13 +515,12 @@ public class ChessBoard {
 		for (ChessPiece piece : attackers) {
 			if (piece.type == Constants.PAWN || piece.type == Constants.KNIGHT || piece.type == Constants.KING) continue;
 
-			int attacker = piecePositions[piece.color].get(piece);
 			if (piece.type == Constants.BISHOP || piece.type == Constants.QUEEN) {
-				if (blocksDiagonal(attacker, king, move.start)) {
-					if (onSameDiagonal(move.finish, king, attacker)) return false;
+				if (blocksDiagonal(piece.pos, king, move.start)) {
+					if (onSameDiagonal(move.finish, king, piece.pos)) return false;
 
-					int direction = Math.abs(attacker - move.start) % 7 == 0 ? 7 : 9;
-					if (attacker - move.start > 0) direction *= -1;
+					int direction = Math.abs(piece.pos - move.start) % 7 == 0 ? 7 : 9;
+					if (piece.pos - move.start > 0) direction *= -1;
 					
 					int newPos = move.start;
 					for (int j = 0; j < getDistanceVert(move.start, king) - 1; j++) {
@@ -535,15 +532,13 @@ public class ChessBoard {
 			}
 
 			if (piece.type == Constants.ROOK || piece.type == Constants.QUEEN) {
-				if (blocksLine(attacker, king, move.start)) {
-					if (onSameLine(move.finish, king, attacker)) return false;
+				if (blocksLine(piece.pos, king, move.start)) {
+					if (onSameLine(move.finish, king, piece.pos)) return false;
 
-					int direction = onColumn(move.start, attacker) ? 8 : 1;
-					if (attacker - move.start > 0) direction *= -1;
+					int direction = onColumn(move.start, piece.pos) ? 8 : 1;
+					if (piece.pos - move.start > 0) direction *= -1;
 					
-					int newPos = attacker;
-					
-					newPos = move.start;
+					int newPos = move.start;
 					for (int j = 0; j < getDistance(move.start, king) - 1; j++) {
 						newPos += direction;
 						if (!board[newPos].isEmpty() && !(passant && newPos == enPassant)) return false;
@@ -561,9 +556,8 @@ public class ChessBoard {
 			for (int j = 0;  j < attacks[color].length; j++) {
 				attacks[color][j] = new HashSet<ChessPiece>();
 			}
-			var pieces =  piecePositions[color].values();
-			for (Integer i : pieces) {
-				pieceAttacks(i, false);
+			for (ChessPiece piece : pieces[color]) {
+				pieceAttacks(piece.pos, false);
 			}
 		}
 	}
@@ -574,8 +568,7 @@ public class ChessBoard {
 		for (int color = 0; color < 2; color ++) {
 			for (ChessPiece attacker : attacks[color][move.start]) {
 				if (attacker.type == Constants.BISHOP || attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
-					int pos = piecePositions[color].get(attacker);
-					if (pos != move.finish) {
+					if (attacker.pos != move.finish) {
 						pieces.add(attacker);
 					}
 				}
@@ -583,8 +576,7 @@ public class ChessBoard {
 
 			for (ChessPiece attacker : attacks[color][move.finish]) {
 				if (attacker.type == Constants.BISHOP || attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
-					int pos = piecePositions[color].get(attacker);
-					if (pos != move.start) {
+					if (attacker.pos != move.start) {
 						pieces.add(attacker);
 					}
 				}
@@ -593,8 +585,7 @@ public class ChessBoard {
 			if (passant) {
 				for (ChessPiece attacker : attacks[color][enPassant]) {
 					if (attacker.type == Constants.BISHOP || attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
-						int pos = piecePositions[color].get(attacker);
-						if (pos != move.finish && pos != move.start) {
+						if (attacker.pos != move.finish && attacker.pos != move.start) {
 							pieces.add(attacker);
 						}
 					}
@@ -778,8 +769,8 @@ public class ChessBoard {
 		return attacks[next(color)][pos].size();
 	}
 	
-	public Collection<Integer> getPiecePositions(int color) {
-		return piecePositions[color].values();
+	public HashSet<ChessPiece> getPieces(int color) {
+		return pieces[color];
 	}
 	
 	public ChessPiece getPiece(int pos) {
@@ -812,10 +803,9 @@ public class ChessBoard {
 	
 	public int isWinner() {
 		if (hasInsufficientMaterial()) return Constants.DRAW;
-		var positions = piecePositions[turn].values();
-		for(Integer i : positions) {
+		for(ChessPiece piece : pieces[turn]) {
 			ArrayList<Move> moves = new ArrayList<Move>();
-			piece_moves(i, Constants.ALL_MOVES, moves);
+			piece_moves(piece.pos, Constants.ALL_MOVES, moves);
 			//System.out.println(moves.size());
 			if(moves.size()>0) {
 				return Constants.PROGRESS;
@@ -827,19 +817,19 @@ public class ChessBoard {
 	
 	private boolean hasInsufficientMaterial() {
 		for (int color = 0; color < 2; color++) {
-			HashMap<ChessPiece, Integer> pieces = piecePositions[color];
-			if (pieces.size() > 3) return false;
+			HashSet<ChessPiece> colorPieces = pieces[color];
+			if (colorPieces.size() > 3) return false;
 			
-			if (pieces.size() == 3) {
+			if (colorPieces.size() == 3) {
 				int knightCount = 0;
-				for (ChessPiece piece : pieces.keySet()) {
+				for (ChessPiece piece : colorPieces) {
 					if (piece.type == Constants.KNIGHT) knightCount ++;
 				}
 				if (knightCount != 2) return false;
 			}
 			
-			if (pieces.size() == 2) {
-				for (ChessPiece piece : pieces.keySet()) {
+			if (colorPieces.size() == 2) {
+				for (ChessPiece piece : colorPieces) {
 					if (piece.type != Constants.KNIGHT && piece.type != Constants.BISHOP && piece.type != Constants.KING) return false; 
 				}
 			}
