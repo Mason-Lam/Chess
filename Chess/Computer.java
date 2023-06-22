@@ -19,14 +19,14 @@ public class Computer {
 		}
 
 		public boolean[] getCastling() {
-			boolean[] castle = new boolean[2];
+			final boolean[] castle = new boolean[2];
 			castle[0] = castling[0];
 			castle[1] = castling[1];
 			return castle;
 		}
 	}
 
-	private ChessBoard board;
+	private final ChessBoard board;
 	
 	public Computer(ChessBoard board) {
 		this.board = board;
@@ -34,16 +34,15 @@ public class Computer {
 
 	public int totalMoves(int depth) {
 		int count = 0;
-		BoardStorage store = new BoardStorage(board.getFenString(), board.getEnPassant(), board.getCastling(board.getTurn()));
-		HashSet<ChessPiece> pieces = board.getPieces(board.getTurn());
-		HashSet<Integer> positions = new HashSet<Integer>();
-		for (ChessPiece i : pieces) {
-			positions.add(i.pos);
+		final BoardStorage store = new BoardStorage(board.getFenString(), board.getEnPassant(), board.getCastling(board.getTurn()));
+		final HashSet<Integer> positions = new HashSet<Integer>();
+		for (final ChessPiece piece : board.getPieces(board.getTurn())) {
+			positions.add(piece.pos);
 		}
 
-		for(Integer i : positions) {
-			ArrayList<Move> moves = new ArrayList<Move>();
-			ChessPiece piece = board.getPiece(i);
+		for(final Integer i : positions) {
+			final ArrayList<Move> moves = new ArrayList<Move>();
+			final ChessPiece piece = board.getPiece(i);
 			board.piece_moves(i, Constants.ALL_MOVES, moves);
 			if(depth == 1) {
 				if (moves.size() > 0) {
@@ -57,7 +56,7 @@ public class Computer {
 			}
 			
 			for (int j = 0; j < moves.size(); j++) {
-				Move move = moves.get(j);
+				final Move move = moves.get(j);
 				board.make_move(move, false);
 				if (board.is_promote()) {
 					for (byte type : Constants.PROMOTION_PIECES) {

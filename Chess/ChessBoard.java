@@ -2,8 +2,6 @@ package Chess;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 
 import Chess.Computer.BoardStorage;
@@ -13,13 +11,13 @@ public class ChessBoard {
 	private int turn;
 	private String fenString;
 
-	private HashSet<ChessPiece>[][] attacks;
+	private final HashSet<ChessPiece>[][] attacks;
 	
-	private int[] kingPos;
-	private HashSet<ChessPiece>[] pieces;
+	private final int[] kingPos;
+	private final HashSet<ChessPiece>[] pieces;
 	
-	private ChessPiece[] board;
-	private boolean[][] castling;
+	private final ChessPiece[] board;
+	private final boolean[][] castling;
 	
 	private int enPassant;
 	private int promotingPawn;
@@ -84,7 +82,7 @@ public class ChessBoard {
 			if (i != 8) fen += "/";
 		}
 		
-		fen = turn == Constants.WHITE ? fen + " w" : fen + " b";
+		fen = (turn == Constants.WHITE) ? fen + " w" : fen + " b";
 		
 		if (!castling[Constants.WHITE][0] && !castling[Constants.WHITE][1]) fen += " -";
 		if (castling[Constants.WHITE][1]) fen += " K";
@@ -102,8 +100,7 @@ public class ChessBoard {
 		
 		return fen;
 	}
-	
-	//Ex: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 -> starting position
+
 	private void fen_to_board(String fen) {
 		int index = 0;
 		for (int i = 0; i < fen.length(); i++) {
@@ -169,9 +166,8 @@ public class ChessBoard {
 	}
 	
 	public void make_move(Move move, boolean permanent) {
-		ChessPiece piece = board[move.start];
-		int passant = -1;
-		HashSet<ChessPiece> updatePieces = softAttackUpdate(move);
+		final ChessPiece piece = board[move.start];
+		final HashSet<ChessPiece> updatePieces = softAttackUpdate(move);
 		for (ChessPiece i : updatePieces) {
 			pieceAttacks(i.pos, true);
 		}
@@ -184,6 +180,7 @@ public class ChessBoard {
 		
 		board[move.start] = ChessPiece.empty();
 
+		int passant = -1;
 		if (piece.type == Constants.PAWN) {
 			if (move.isSpecial()) {
 				pieceAttacks(enPassant, true);
@@ -234,13 +231,13 @@ public class ChessBoard {
 	public void undoMove(Move move, Computer.BoardStorage store) {
 		if (!is_promote()) next_turn();
 
-		ChessPiece piece = board[move.finish];
 		fenString = store.fenString;
 		castling[turn] = store.getCastling();
 		enPassant = store.enPassant;
 		GAME_OVER = false;
 
-		HashSet<ChessPiece> updatePieces = softAttackUpdate(move);
+		final ChessPiece piece = board[move.finish];
+		final HashSet<ChessPiece> updatePieces = softAttackUpdate(move);
 		for (ChessPiece i : updatePieces) {
 			pieceAttacks(i.pos, true);
 		}
@@ -297,13 +294,19 @@ public class ChessBoard {
 	
 	public void piece_moves(int pos, boolean[] types, ArrayList<Move> moves) {
 		if (is_promote() || GAME_OVER) return;
-		boolean doubleCheck = doubleCheck(board[pos].color);
-		if (board[pos].type == Constants.PAWN && !doubleCheck) pawn(pos, board[pos].color, types, moves);
-		else if (board[pos].type == Constants.KNIGHT && !doubleCheck) knight(pos, board[pos].color, types, moves);
-		else if (board[pos].type == Constants.BISHOP && !doubleCheck) bishop(pos,board[pos].color, types, moves);
-		else if (board[pos].type == Constants.ROOK && !doubleCheck) rook(pos, board[pos].color, types, moves);
-		else if (board[pos].type == Constants.QUEEN && !doubleCheck) queen(pos,board[pos].color, types, moves);
-		else if (board[pos].type == Constants.KING) king(pos, board[pos].color, types, moves);
+
+		if (board[pos].type == Constants.KING) {
+			king(pos, board[pos].color, types, moves);
+			return;
+		}
+
+		if (doubleCheck(board[pos].color)) return;
+
+		if (board[pos].type == Constants.PAWN) pawn(pos, board[pos].color, types, moves);
+		else if (board[pos].type == Constants.KNIGHT) knight(pos, board[pos].color, types, moves);
+		else if (board[pos].type == Constants.BISHOP) bishop(pos,board[pos].color, types, moves);
+		else if (board[pos].type == Constants.ROOK) rook(pos, board[pos].color, types, moves);
+		else if (board[pos].type == Constants.QUEEN) queen(pos,board[pos].color, types, moves);
 	}
 	
 	private void pawn(int pos, int color, boolean[] types, ArrayList<Move> moves) {
@@ -311,7 +314,7 @@ public class ChessBoard {
 		if (types[0]) {
 			int newPos = pos;
 			for (int i = 0; i < 2; i++) {
-				newPos = color == Constants.WHITE ? newPos - 8 : newPos + 8;
+				newPos = (color == Constants.WHITE) ? newPos - 8 : newPos + 8;
 				if (!onBoard(newPos)) break;
 				
 				if (board[newPos].isEmpty()) addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
@@ -446,7 +449,7 @@ public class ChessBoard {
 	}
 	
 	private boolean validMove(Move move) {
-		ChessPiece piece = board[move.start];
+		final ChessPiece piece = board[move.start];
 		if (piece.type == Constants.KING) return kingCheck(move);
 		if (doubleCheck(turn)) return false;
 		if (isChecked(turn)) {
@@ -457,17 +460,11 @@ public class ChessBoard {
 		}
 		return !isPinned(move);
 	}
-
-	private boolean testValidMove(Move move) {
-		ChessBoard copy = copyBoard();
-		copy.make_move(move, false);
-		return !copy.isChecked(turn);
-	}
 	
 	private boolean kingCheck(Move move) {
 		if (isAttacked(move.finish, turn)) return false;
 		if (!check) return true;
-		for (ChessPiece attacker : attacks[next(turn)][move.start]) {
+		for (final ChessPiece attacker : attacks[next(turn)][move.start]) {
 			if (attacker.type == Constants.QUEEN || attacker.type == Constants.BISHOP) {
 				if (onSameDiagonal(move.start, move.finish, attacker.pos) && move.finish != attacker.pos) return false;
 			}
@@ -485,7 +482,7 @@ public class ChessBoard {
 		if (attacker.type == Constants.PAWN || attacker.type == Constants.KNIGHT) return move.finish == attacker.pos;
 		if (move.finish == attacker.pos) return true;
 		
-		int king = kingPos[turn];
+		final int king = kingPos[turn];
 		if (onDiagonal(king, attacker.pos)) {
 			return blocksDiagonal(attacker.pos, king, move.finish);
 		}
@@ -493,11 +490,11 @@ public class ChessBoard {
 	}
 	
 	private boolean isPinned(Move move) {
-		int king = kingPos[board[move.start].color];
+		final int king = kingPos[board[move.start].color];
 		if (!onDiagonal(king, move.start) && !onLine(king, move.start)) return false;
 
-		boolean passant = (move.isSpecial() && board[move.start].type == Constants.PAWN);
-		HashSet<ChessPiece> attackers;
+		final boolean passant = (move.isSpecial() && board[move.start].type == Constants.PAWN);
+		final HashSet<ChessPiece> attackers;
 		if (passant) {
 			if (!isAttacked(move.start, turn) && !isAttacked(enPassant, turn)) return false;
 			attackers = new HashSet<ChessPiece>() {
@@ -512,7 +509,7 @@ public class ChessBoard {
 			attackers = attacks[next(turn)][move.start];
 		}
 
-		for (ChessPiece piece : attackers) {
+		for (final ChessPiece piece : attackers) {
 			if (piece.type == Constants.PAWN || piece.type == Constants.KNIGHT || piece.type == Constants.KING) continue;
 
 			if (piece.type == Constants.BISHOP || piece.type == Constants.QUEEN) {
@@ -556,17 +553,17 @@ public class ChessBoard {
 			for (int j = 0;  j < attacks[color].length; j++) {
 				attacks[color][j] = new HashSet<ChessPiece>();
 			}
-			for (ChessPiece piece : pieces[color]) {
+			for (final ChessPiece piece : pieces[color]) {
 				pieceAttacks(piece.pos, false);
 			}
 		}
 	}
 	
 	private HashSet<ChessPiece> softAttackUpdate(Move move) {
-		boolean passant = move.isSpecial() && (board[move.start].type == Constants.PAWN || board[move.finish].type == Constants.PAWN);
-		HashSet<ChessPiece> pieces = new HashSet<ChessPiece>();
+		final boolean passant = move.isSpecial() && (board[move.start].type == Constants.PAWN || board[move.finish].type == Constants.PAWN);
+		final HashSet<ChessPiece> pieces = new HashSet<ChessPiece>();
 		for (int color = 0; color < 2; color ++) {
-			for (ChessPiece attacker : attacks[color][move.start]) {
+			for (final ChessPiece attacker : attacks[color][move.start]) {
 				if (attacker.type == Constants.BISHOP || attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
 					if (attacker.pos != move.finish) {
 						pieces.add(attacker);
@@ -574,7 +571,7 @@ public class ChessBoard {
 				}
 			}
 
-			for (ChessPiece attacker : attacks[color][move.finish]) {
+			for (final ChessPiece attacker : attacks[color][move.finish]) {
 				if (attacker.type == Constants.BISHOP || attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
 					if (attacker.pos != move.start) {
 						pieces.add(attacker);
@@ -583,7 +580,7 @@ public class ChessBoard {
 			}
 
 			if (passant) {
-				for (ChessPiece attacker : attacks[color][enPassant]) {
+				for (final ChessPiece attacker : attacks[color][enPassant]) {
 					if (attacker.type == Constants.BISHOP || attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
 						if (attacker.pos != move.finish && attacker.pos != move.start) {
 							pieces.add(attacker);
@@ -597,7 +594,7 @@ public class ChessBoard {
 	}
 	
 	private void pieceAttacks(int pos, boolean remove) {
-		ChessPiece piece = board[pos];
+		final ChessPiece piece = board[pos];
 		if (piece.type == Constants.PAWN) pawnAttacks(pos, remove); 
 		else if (piece.type == Constants.KNIGHT) knightAttacks(pos, remove); 
 		else if (piece.type == Constants.BISHOP) bishopAttacks(pos, remove);
@@ -607,7 +604,7 @@ public class ChessBoard {
 	}
 	
 	private void pawnAttacks(int pos, boolean remove) {
-		ChessPiece piece = board[pos];
+		final ChessPiece piece = board[pos];
 		for (int i = 0; i < 2; i++) {
 			int newPos = pos + Constants.PAWN_DIAGONALS[piece.color][i];
 			if (!onBoard(newPos) || !onDiagonal(pos,newPos)) continue;
@@ -621,7 +618,7 @@ public class ChessBoard {
 	}
 	
 	private void knightAttacks(int pos, boolean remove) {
-		ChessPiece piece = board[pos];
+		final ChessPiece piece = board[pos];
 		for (int i = 0; i < Constants.KNIGHT_MOVES.length; i++) {
 			int newPos = pos + Constants.KNIGHT_MOVES[i];
 			if (!onBoard(newPos) || !onL(pos, newPos)) continue;
@@ -635,7 +632,7 @@ public class ChessBoard {
 	}
 	
 	private void bishopAttacks(int pos, boolean remove) {
-		ChessPiece piece = board[pos];
+		final ChessPiece piece = board[pos];
 		for (int i = 0; i < Constants.DIAGONALS.length; i++) {
 			int newPos = pos;
 			while (true) {
@@ -654,7 +651,7 @@ public class ChessBoard {
 	}
 	
 	private void rookAttacks(int pos, boolean remove) {
-		ChessPiece piece = board[pos];
+		final ChessPiece piece = board[pos];
 		for (int i = 0; i < Constants.STRAIGHT.length; i++) {
 			int newPos = pos;
 			while (true) {
@@ -678,7 +675,7 @@ public class ChessBoard {
 	}
 	
 	private void kingAttacks(int pos, boolean remove) {
-		ChessPiece piece = board[pos];
+		final ChessPiece piece = board[pos];
 		for (int i = 0; i < Constants.KING_MOVES.length; i++) {
 			int newPos = pos + Constants.KING_MOVES[i];
 			if (!onBoard(newPos) || getDistance(pos, newPos) > 2) continue;
@@ -817,7 +814,7 @@ public class ChessBoard {
 	
 	private boolean hasInsufficientMaterial() {
 		for (int color = 0; color < 2; color++) {
-			HashSet<ChessPiece> colorPieces = pieces[color];
+			final HashSet<ChessPiece> colorPieces = pieces[color];
 			if (colorPieces.size() > 3) return false;
 			
 			if (colorPieces.size() == 3) {
@@ -869,7 +866,7 @@ public class ChessBoard {
 	public void displayAttacks() {
 		boolean valid = true;
 		for (int color = 0; color < 2; color++) {
-			var colorAttacks = attacks[color];
+			final var colorAttacks = attacks[color];
 			for (int i = 0; i < 8; i++) {
 				for (int j = 0; j < 8; j++) {
 					int attacks = colorAttacks[i * 8 + j].size();

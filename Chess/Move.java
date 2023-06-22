@@ -8,10 +8,10 @@ public class Move {
 		SPECIAL
 	}
 	
-	public int start;
-	public int finish;
-	public Type type;
-	public ChessPiece capturedPiece;
+	public final int start;
+	public final int finish;
+	public final Type type;
+	public final ChessPiece capturedPiece;
 
 	public Move(int start, int finish, Type type, ChessPiece capturedPiece) {
 		this.start = start;

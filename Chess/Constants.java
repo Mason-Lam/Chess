@@ -31,8 +31,8 @@ public class Constants {
 	};
 	
 	//Teams
-	public static final int BLACK = 0;
-	public static final int WHITE = 1;
+	public static final byte BLACK = 0;
+	public static final byte WHITE = 1;
 	
 	//OutcomeConstants
 	public static final int DRAW = 0;
@@ -92,7 +92,7 @@ public class Constants {
 	};
 
 	public static int squareToIndex(String square) {
-		int ascii = (int) square.charAt(0);
+		final int ascii = (int) square.charAt(0);
 		return (ascii - 97) +  (8 - Character.getNumericValue(square.charAt(1))) * 8;
 	}
 
@@ -101,12 +101,8 @@ public class Constants {
 	}
 	
 	public static ChessPiece charToPiece(char letter, int pos) {
-		char[] pieces = PIECES[1];
-		byte color = WHITE;
-		if (Character.isLowerCase(letter)) {
-			pieces = PIECES[0];
-			color = BLACK;
-		}
+		final byte color = Character.isLowerCase(letter) ? BLACK : WHITE;
+		final char[] pieces = PIECES[color];
 		for (byte i = 0; i < pieces.length; i++) {
 			if (letter == pieces[i]) {
 				return new ChessPiece(i, color, pos);
@@ -116,6 +112,6 @@ public class Constants {
 	}
 	
 	public static char pieceToChar(ChessPiece piece) {
-		return PIECES [piece.color][piece.type];
+		return PIECES[piece.color][piece.type];
 	}
 }
