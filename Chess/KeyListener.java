@@ -2,8 +2,16 @@ package Chess;
 
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.function.Consumer;
 
 public class KeyListener extends KeyAdapter{
+
+	private final Consumer<Byte> promotion;
+
+	public KeyListener(Consumer<Byte> promotion) {
+		this.promotion = promotion;
+	}
+
 	/*Extends Key Adapter and overrides keyPressed function*/
 	@Override
 	public void keyPressed(KeyEvent event) {
@@ -34,6 +42,6 @@ public class KeyListener extends KeyAdapter{
 		else {
 			return;
 		}
-		ChessGame.promotion(type);		//Promotes the piece
+		promotion.accept(type); //Promotes the piece
 	}
 }

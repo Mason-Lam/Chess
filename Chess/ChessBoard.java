@@ -94,7 +94,7 @@ public class ChessBoard {
 		
 		if (enPassant == Constants.EMPTY) fen += " -";
 		else {
-			int passant = (turn == Constants.BLACK) ? enPassant + 8 : enPassant - 8;
+			final int passant = (turn == Constants.BLACK) ? enPassant + 8 : enPassant - 8;
 			fen += " " + Constants.indexToSquare(getColumn(passant), 8 - getRow(passant));
 		}
 		
@@ -146,7 +146,7 @@ public class ChessBoard {
 			
 			//Filling board with pieces
 			if (letter == '/') continue;
-			int pieceValue = Character.getNumericValue(letter);
+			final int pieceValue = Character.getNumericValue(letter);
 			if (pieceValue < 10 && pieceValue > 0) {
 				for (int j = 0; j < pieceValue; j++) {
 					board[index] = ChessPiece.empty();
@@ -154,7 +154,7 @@ public class ChessBoard {
 				}
 				continue;
 			}
-			ChessPiece piece = Constants.charToPiece(letter, index);
+			final ChessPiece piece = Constants.charToPiece(letter, index);
 			board[index] = piece;
 			pieces[piece.color].add(piece);
 			

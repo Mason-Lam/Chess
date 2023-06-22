@@ -10,18 +10,18 @@ import javax.swing.*;
 
 public class ChessGame {
 	/*A Chess Game class*/
-	public JFrame frame = new JFrame();	//Frame to display the ChessGame
-	public JPanel panel = new JPanel();	//Panel to display the Chess Squares
-	public static int click1;			//Stores the user first input
-	public static ChessSquare[] GUI;	//An array to store the Chess Squares
-	public static ChessBoard board;		//A ChessBoard object to handle the logic of the Chess Game
-	public static ArrayList<Move> legal;	//A list to store the legal moves of a chess piece
-	public static int computerTurn;			//int to store the computer
-	public static Computer computer;
-	public static boolean winner;
-	public static int difficulty;
+	private final JFrame frame = new JFrame();	//Frame to display the ChessGame
+	private final JPanel panel = new JPanel();	//Panel to display the Chess Squares
+	private final ChessSquare[] GUI;	//An array to store the Chess Squares
+	private final ChessBoard board;		//A ChessBoard object to handle the logic of the Chess Game
+	private final int computerTurn;			//int to store the computer
+	private final Computer computer;
+	private final int difficulty;
 
-	@SuppressWarnings("static-access")
+	private ArrayList<Move> legal;	//A list to store the legal moves of a chess piece
+	private boolean winner;
+	private int click1;			//Stores the user first input
+
 	public ChessGame(int computerTurn, int difficulty){
 		this.difficulty = difficulty;
 		this.computerTurn = computerTurn;
@@ -46,10 +46,10 @@ public class ChessGame {
 		GUI = new ChessSquare[64];					//ChessSquare array with a memory of 64
 		//For loop to create 64 chess squares and add them to the panel
 		for(int i=0; i< 64; i++) {
-			GUI[i] = new ChessSquare(i);	//Elon Musk
+			GUI[i] = new ChessSquare(i, (Integer pos) -> get_click(pos));	//Elon Musk
 			panel.add(GUI[i]);				//Tesla
 		}
-		frame.addKeyListener(new KeyListener());	//Adds a key listner for promotion
+		frame.addKeyListener(new KeyListener((Byte type)-> promotion(type)));	//Adds a key listner for promotion
 		frame.add(panel,BorderLayout.CENTER);		//Adds the panel to the frame
 		frame.setSize(300,300);						//Sets the size of the new frame
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);	//Allows the frame to commit seppuku
@@ -59,7 +59,7 @@ public class ChessGame {
 		update_display();					//Updates the display
 	}
 	
-	private static void update_display() {
+	private void update_display() {
 		/*ChessGame.upadate_display()-> None
 		 * a function that updates every chess square
 		 * with the correct piece and color*/
@@ -133,7 +133,7 @@ public class ChessGame {
 		}
 	}
 	
-	private static void computer_turn() {
+	private void computer_turn() {
 //		Move move = board.computer_move(difficulty);
 //		board.make_move(move,true);
 //		if(board.is_promote()) {
@@ -143,7 +143,7 @@ public class ChessGame {
 //		next_turn();
 	}
 	
-	public static void get_click(int pos) {
+	private void get_click(int pos) {
 		/*ChessGame.get_click(int pos) - > None
 		 * Function that runs when a ChessSquare is clicked
 		 * processes the users click and selects a ChessPiece/Square*/
@@ -166,7 +166,7 @@ public class ChessGame {
 		}	
 		int coord;	//var to store the location of a legal move
 		//for loop to cycle through every legal move
-		for(int i = 0; i<legal.size();i++) {
+		for(int i = 0; i < legal.size(); i++) {
 			coord = legal.get(i).finish;		//gets the legal move
 			//Checks if the click is a legal move
 			if(coord == pos) {
@@ -185,7 +185,7 @@ public class ChessGame {
 			}
 		}
 	}
-	public static void promotion(byte type) {
+	private void promotion(byte type) {
 		/*ChessBoard.promotion(int type) -> Void
 		 * function that checks if a promotion is happening
 		 * then takes the users input and promotes a pawn*/
@@ -195,21 +195,20 @@ public class ChessGame {
 			next_turn();					//NEXT
 		}
 	}
-	private static void check_Win() {
+	private void check_Win() {
 		/*ChessBoard.check_Win() -> None
 		 * function to check if a player has won
 		 * the game*/
-		int win = board.isWinner();	//Checks if there is a winner
-		boolean draw = false;
-//		boolean draw = board.check_draw();
+		final int win = board.isWinner();	//Checks if there is a winner
+
 //		//checks for no winner
-		if(win == Constants.PROGRESS && draw == false) {
+		if(win == Constants.PROGRESS) {
 			return;
 		}
-		JFrame w2 = new JFrame();	//Cool frame
-		JPanel p2 = new JPanel();	//Cool panel
+		final JFrame w2 = new JFrame();	//Cool frame
+		final JPanel p2 = new JPanel();	//Cool panel
 		JLabel l2 = new JLabel();	//Cool label
-		String[] colors = {"White","Black"};	//Colors
+		final String[] colors = {"White","Black"};	//Colors
 		//Checks for a win
 		if(win == Constants.WIN) {
 			l2 = new JLabel(colors[board.getTurn()] + " is the winner!");	//Displays winner
@@ -227,7 +226,7 @@ public class ChessGame {
 		winner = true;
 	}
 
-	private static void next_turn() {
+	private void next_turn() {
 		/*ChessBoard.next_turn()-> None
 		 * function to move on to the next
 		 * players turn*/
@@ -239,8 +238,8 @@ public class ChessGame {
 	}
 
 	public static ImageIcon resizeImage(ImageIcon imageIcon) {
-		Image image = imageIcon.getImage();
-		Image newImg = image.getScaledInstance(90, 90, java.awt.Image.SCALE_SMOOTH);
+		final Image image = imageIcon.getImage();
+		final Image newImg = image.getScaledInstance(90, 90, java.awt.Image.SCALE_SMOOTH);
 		return new ImageIcon(newImg);
 	}
 }
