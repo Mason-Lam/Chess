@@ -292,7 +292,7 @@ public class ChessBoard {
 			kingPos[piece.color] = newPos;
 	}
 	
-	public void piece_moves(int pos, boolean[] types, ArrayList<Move> moves) {
+	public void piece_moves(int pos, boolean[] types, HashSet<Move> moves) {
 		if (is_promote() || GAME_OVER) return;
 
 		if (board[pos].type == Constants.KING) {
@@ -309,7 +309,7 @@ public class ChessBoard {
 		else if (board[pos].type == Constants.QUEEN) queen(pos,board[pos].color, types, moves);
 	}
 	
-	private void pawn(int pos, int color, boolean[] types, ArrayList<Move> moves) {
+	private void pawn(int pos, int color, boolean[] types, HashSet<Move> moves) {
 		//Moves
 		if (types[0]) {
 			int newPos = pos;
@@ -341,7 +341,7 @@ public class ChessBoard {
 		}
 	}
 	
-	private void knight(int pos, int color, boolean[] types, ArrayList<Move> moves) {
+	private void knight(int pos, int color, boolean[] types, HashSet<Move> moves) {
 		for (int i = 0; i < Constants.KNIGHT_MOVES.length; i++) {
 			int newPos = pos + Constants.KNIGHT_MOVES[i];
 			if (!onBoard(newPos) || !onL(pos, newPos)) continue;
@@ -355,7 +355,7 @@ public class ChessBoard {
 		}
 	}
 	
-	private void bishop(int pos, int color, boolean[] types, ArrayList<Move> moves) {
+	private void bishop(int pos, int color, boolean[] types, HashSet<Move> moves) {
 		for (int i = 0; i < Constants.DIAGONALS.length; i++) {
 			int newPos = pos;
 			while (true) {
@@ -375,7 +375,7 @@ public class ChessBoard {
 		}
 	}
 	
-	private void rook(int pos, int color, boolean[] types, ArrayList<Move> moves) {
+	private void rook(int pos, int color, boolean[] types, HashSet<Move> moves) {
 		for (int i = 0; i < Constants.STRAIGHT.length; i++) {
 			int newPos = pos;
 			while (true) {
@@ -394,12 +394,12 @@ public class ChessBoard {
 		}
 	}
 	
-	private void queen(int pos, int color, boolean[] types, ArrayList<Move> moves) {
+	private void queen(int pos, int color, boolean[] types, HashSet<Move> moves) {
 		rook(pos, color, types, moves);
 		bishop(pos, color, types, moves);
 	}
 	
-	private void king(int pos, int color, boolean[] types, ArrayList<Move> moves) {
+	private void king(int pos, int color, boolean[] types, HashSet<Move> moves) {
 		if (types[0] || types[1]) {
 			for (int i = 0; i < Constants.KING_MOVES.length; i++) {
 				int newPos = pos + Constants.KING_MOVES[i];
@@ -442,7 +442,7 @@ public class ChessBoard {
 		}
 	}
 	
-	private void addMove(ArrayList<Move> moves, Move move) {
+	private void addMove(HashSet<Move> moves, Move move) {
 		if (validMove(move) || !Constants.CHECKS) {
 			moves.add(move);
 		}
@@ -801,10 +801,10 @@ public class ChessBoard {
 	public int isWinner() {
 		if (hasInsufficientMaterial()) return Constants.DRAW;
 		for(ChessPiece piece : pieces[turn]) {
-			ArrayList<Move> moves = new ArrayList<Move>();
+			HashSet<Move> moves = new HashSet<Move>();
 			piece_moves(piece.pos, Constants.ALL_MOVES, moves);
 			//System.out.println(moves.size());
-			if(moves.size()>0) {
+			if(moves.size() > 0) {
 				return Constants.PROGRESS;
 			}
 		}

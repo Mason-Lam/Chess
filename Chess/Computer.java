@@ -1,6 +1,5 @@
 package Chess;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 
 public class Computer {
@@ -41,25 +40,26 @@ public class Computer {
 		}
 
 		for(final Integer i : positions) {
-			final ArrayList<Move> moves = new ArrayList<Move>();
+			final HashSet<Move> moves = new HashSet<Move>();
 			final ChessPiece piece = board.getPiece(i);
 			board.piece_moves(i, Constants.ALL_MOVES, moves);
 			if(depth == 1) {
 				if (moves.size() > 0) {
-					if(piece.type == Constants.PAWN && board.getRow(moves.get(0).finish) == Constants.PROMOTION_LINE[board.getTurn()]) {
-						count += moves.size() * 4;
-						continue;
+					for (final Move move : moves) {
+						if(piece.type == Constants.PAWN && board.getRow(move.finish) == Constants.PROMOTION_LINE[board.getTurn()]) {
+							count += moves.size() * 3;
+						}
+						break;
 					}
 				}
 				count += moves.size();
 				continue;
 			}
 			
-			for (int j = 0; j < moves.size(); j++) {
-				final Move move = moves.get(j);
+			for (final Move move : moves) {
 				board.make_move(move, false);
 				if (board.is_promote()) {
-					for (byte type : Constants.PROMOTION_PIECES) {
+					for (final byte type : Constants.PROMOTION_PIECES) {
 						board.promote(type);
 						count += totalMoves(depth - 1);
 						board.unPromote(move.finish, store);

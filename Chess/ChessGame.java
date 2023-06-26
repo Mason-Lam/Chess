@@ -4,7 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.Image;
-import java.util.ArrayList;
+import java.util.HashSet;
 
 import javax.swing.*;
 
@@ -17,14 +17,15 @@ public class ChessGame {
 	private final int computerTurn;			//int to store the computer
 	private final Computer computer;
 	private final int difficulty;
+	private final HashSet<Move> legal;	//A list to store the legal moves of a chess piece
 
-	private ArrayList<Move> legal;	//A list to store the legal moves of a chess piece
 	private boolean winner;
 	private int click1;			//Stores the user first input
 
 	public ChessGame(int computerTurn, int difficulty){
 		this.difficulty = difficulty;
 		this.computerTurn = computerTurn;
+		legal = new HashSet<Move>();
 		winner = false;
 		click1 = -1;		//sets var as no clicks
 		//rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
@@ -64,17 +65,14 @@ public class ChessGame {
 		 * a function that updates every chess square
 		 * with the correct piece and color*/
 		String address;		//Stores the location of the correct image
-		String fen = board.getFenString();
-		char letter;
-		int emptySpaces;
+		final String fen = board.getFenString();
 		int count = 0;
-		int newPos;
 		//For loop to cycle through all 64 squares
-		for(int i = 0; i<fen.length(); i++) {
+		for(int i = 0; i< fen.length(); i++) {
 			if (count > 63) break;
-			letter = fen.charAt(i);
+			char letter = fen.charAt(i);
 			//System.out.print(letter);
-			emptySpaces = Character.getNumericValue(letter);
+			int emptySpaces = Character.getNumericValue(letter);
 			if(emptySpaces <= 8) {
 				for(int j = 0; j < emptySpaces; j++) {
                     address = "Chess/Elements/";
@@ -107,23 +105,22 @@ public class ChessGame {
 			count += 1;
 		}
 		if(click1 != -1) {
-			for(int a = 0;a < legal.size(); a++) {
-				newPos = legal.get(a).finish;	//Gets the move
-				System.out.print(newPos +" : ");
-				System.out.print(board.getPiece(newPos).type+ " : ");
-				System.out.print(legal.get(a).type.toString() + ", ");
+			for(final Move move : legal) {
+				System.out.print(move.finish +" : ");
+				System.out.print(board.getPiece(move.finish).type+ " : ");
+				System.out.print(move.type.toString() + ", ");
 				//Checks if the square is a legal move
-				if(board.getPiece(newPos).isEmpty()) {
+				if(board.getPiece(move.finish).isEmpty()) {
                     address = "Chess/Elements/";
 					//address = "C:\\Users\\Mason\\Documents\\Java\\Elements\\";
-					if(newPos % 2 == (newPos/8) %2){
+					if(move.finish % 2 == (move.finish /8 ) %2){
 						address += "W";
 					}
 					else {
 						address += "G";
 					}
 					address += "D.png";
-					GUI[newPos].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
+					GUI[move.finish].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
 				}
 			}
 			System.out.println();
@@ -154,7 +151,7 @@ public class ChessGame {
 		//Checks if the click is on the correct Chess pieces.
 		if(board.getPiece(pos).color == board.getTurn() && !board.getPiece(pos).isEmpty()) {
 			click1 = pos;		//Stores the users first click
-			legal = new ArrayList<Move>();
+			legal.clear();
 			board.piece_moves(click1, Constants.ALL_MOVES, legal);	//Generates all the legal moves for a player
 			//System.out.println(legal.size());
 			update_display();	//Updates the display
@@ -164,15 +161,13 @@ public class ChessGame {
 		if(click1 == -1) {
 			return;		//Return to sender
 		}	
-		int coord;	//var to store the location of a legal move
 		//for loop to cycle through every legal move
-		for(int i = 0; i < legal.size(); i++) {
-			coord = legal.get(i).finish;		//gets the legal move
+		for(final Move move : legal) {
 			//Checks if the click is a legal move
-			if(coord == pos) {
+			if(move.finish == pos) {
 				//makes the move on the board
-				board.make_move(legal.get(i), true);
-				legal = new ArrayList<Move>();
+				board.make_move(move, true);
+				legal.clear();
 				//Checks if there is a pawn promoting
 				if(board.is_promote()) {
 					update_display();	//Updates the display
