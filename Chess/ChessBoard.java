@@ -1,6 +1,5 @@
 package Chess;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -8,8 +7,6 @@ import Chess.Computer.BoardStorage;
 
 public class ChessBoard {
 	
-	private int turn;
-	private String fenString;
 
 	private final HashSet<ChessPiece>[][] attacks;
 	
@@ -19,6 +16,8 @@ public class ChessBoard {
 	private final ChessPiece[] board;
 	private final boolean[][] castling;
 	
+	private String fenString;
+	private int turn;
 	private int enPassant;
 	private int promotingPawn;
 	private boolean check;
@@ -53,13 +52,6 @@ public class ChessBoard {
 		check = isChecked(turn);
 		GAME_OVER = false;
 		//System.out.println(board_to_fen());
-	}
-	
-	public ChessBoard copyBoard() {
-		ChessBoard newBoard = new ChessBoard(new String(fenString));
-		newBoard.promotingPawn = promotingPawn;
-		newBoard.GAME_OVER = GAME_OVER;
-		return newBoard;
 	}
 	
 	private String board_to_fen() {
@@ -228,7 +220,7 @@ public class ChessBoard {
 		if (permanent) fenString = board_to_fen();
 	}
 
-	public void undoMove(Move move, Computer.BoardStorage store) {
+	public void undoMove(Move move, ChessPiece capturedPiece, Computer.BoardStorage store) {
 		if (!is_promote()) next_turn();
 
 		fenString = store.fenString;
@@ -257,7 +249,7 @@ public class ChessBoard {
 		}
 
 		if (piece.type == Constants.PAWN && move.isSpecial()) {
-			updatePosition(move.capturedPiece, enPassant, false);
+			updatePosition(capturedPiece, enPassant, false);
 			pieceAttacks(enPassant, false);
 		}
 
@@ -265,7 +257,7 @@ public class ChessBoard {
 		updatePosition(piece, move.start, false);
 
 		if (move.type == Move.Type.ATTACK) {
-			updatePosition(move.capturedPiece, move.finish, false);
+			updatePosition(capturedPiece, move.finish, false);
 			pieceAttacks(move.finish, false);
 		}
 
@@ -329,7 +321,7 @@ public class ChessBoard {
 				int newPos = pos + Constants.PAWN_DIAGONALS[color][i];
 				if (!onBoard(newPos) || !onDiagonal(pos,newPos)) continue;
 				if (!board[newPos].isEmpty() && board[newPos].color != color) 
-					addMove(moves, new Move(pos, newPos, Move.Type.ATTACK, board[newPos]));
+					addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
 			}
 		}
 		//EnPassant
@@ -337,7 +329,7 @@ public class ChessBoard {
 			if (enPassant == -1) return;
 			if (Math.abs(enPassant - pos) != 1 || getDistance(enPassant, pos) != 1) return;
 			int newPos = color == Constants.WHITE ? enPassant - 8 : enPassant + 8;
-			if (board[newPos].isEmpty()) addMove(moves, new Move(pos, newPos, Move.Type.SPECIAL, board[enPassant]));
+			if (board[newPos].isEmpty()) addMove(moves, new Move(pos, newPos, Move.Type.SPECIAL));
 		}
 	}
 	
@@ -351,7 +343,7 @@ public class ChessBoard {
 					addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
 			}
 			else if (board[newPos].color != color && types[1]) 
-				addMove(moves, new Move(pos, newPos, Move.Type.ATTACK, board[newPos]));
+				addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
 		}
 	}
 	
@@ -366,7 +358,7 @@ public class ChessBoard {
 				if (board[newPos].color == color) break;
 				if (!board[newPos].isEmpty()) {
 					if (types[1])
-						addMove(moves, new Move(pos, newPos, Move.Type.ATTACK, board[newPos]));
+						addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
 					break;
 				}
 				if (types[0])
@@ -385,7 +377,7 @@ public class ChessBoard {
 				if (board[newPos].color == color) break;
 				if (!board[newPos].isEmpty()) {
 					if (types[1])
-						addMove(moves, new Move(pos, newPos, Move.Type.ATTACK, board[newPos]));
+						addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
 					break;
 				}
 				if (types[0])
@@ -409,7 +401,7 @@ public class ChessBoard {
 						addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
 				}
 				else if (board[newPos].color != color && types[1]) 
-					addMove(moves, new Move(pos, newPos, Move.Type.ATTACK, board[newPos]));
+					addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
 			}
 		}
 		//Castling
@@ -477,7 +469,7 @@ public class ChessBoard {
 	
 	private boolean stopsCheck(Move move) {
 		ChessPiece attacker = ChessPiece.empty();
-		for (ChessPiece piece : attacks[next(turn)][kingPos[turn]]) attacker = piece;
+		for (final ChessPiece piece : attacks[next(turn)][kingPos[turn]]) attacker = piece;
 		if (attacker.type == Constants.PAWN && move.isSpecial() && enPassant == attacker.pos) return true;
 		if (attacker.type == Constants.PAWN || attacker.type == Constants.KNIGHT) return move.finish == attacker.pos;
 		if (move.finish == attacker.pos) return true;
@@ -788,7 +780,7 @@ public class ChessBoard {
 		next_turn();
 		promotingPawn = pos;
 
-		ChessPiece piece = board[pos];
+		final ChessPiece piece = board[pos];
 
 		pieceAttacks(promotingPawn, true);
 		updatePosition(piece, promotingPawn, true);
@@ -801,7 +793,7 @@ public class ChessBoard {
 	public int isWinner() {
 		if (hasInsufficientMaterial()) return Constants.DRAW;
 		for(ChessPiece piece : pieces[turn]) {
-			HashSet<Move> moves = new HashSet<Move>();
+			final HashSet<Move> moves = new HashSet<Move>();
 			piece_moves(piece.pos, Constants.ALL_MOVES, moves);
 			//System.out.println(moves.size());
 			if(moves.size() > 0) {

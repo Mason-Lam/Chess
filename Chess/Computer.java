@@ -57,6 +57,7 @@ public class Computer {
 			}
 			
 			for (final Move move : moves) {
+				final ChessPiece capturedPiece = getCapturedPiece(move);
 				board.make_move(move, false);
 				if (board.is_promote()) {
 					for (final byte type : Constants.PROMOTION_PIECES) {
@@ -69,9 +70,14 @@ public class Computer {
 					count += totalMoves(depth - 1);
 				}
 
-				board.undoMove(move, store);
+				board.undoMove(move, capturedPiece, store);
 			}
 		}
 		return count;
+	}
+
+	private ChessPiece getCapturedPiece(Move move) {
+		return (move.isSpecial() && board.getPiece(move.start).type == Constants.PAWN) ? 
+			board.getPiece(board.getEnPassant()) : board.getPiece(move.finish);
 	}
 }
