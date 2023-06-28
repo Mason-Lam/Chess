@@ -66,9 +66,9 @@ public class ChessGame {
 		 * with the correct piece and color*/
 		String address;		//Stores the location of the correct image
 		final String fen = board.getFenString();
-		int count = 0;
 		//For loop to cycle through all 64 squares
 		for(int i = 0; i< fen.length(); i++) {
+			int count = 0;
 			if (count > 63) break;
 			char letter = fen.charAt(i);
 			//System.out.print(letter);

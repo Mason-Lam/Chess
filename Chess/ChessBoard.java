@@ -20,8 +20,6 @@ public class ChessBoard {
 	private int turn;
 	private int enPassant;
 	private int promotingPawn;
-	private boolean check;
-	private boolean GAME_OVER;
 	
 	public ChessBoard () {
 		this("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -49,8 +47,6 @@ public class ChessBoard {
 		promotingPawn = -1;
 		fen_to_board(fen);
 		hardAttackUpdate();
-		check = isChecked(turn);
-		GAME_OVER = false;
 		//System.out.println(board_to_fen());
 	}
 	
@@ -214,7 +210,6 @@ public class ChessBoard {
 			pieceAttacks(i.pos, false);
 		}
 
-		check = isChecked(next(turn));
 		enPassant = passant;
 		if (!is_promote()) next_turn();
 		if (permanent) fenString = board_to_fen();
@@ -226,7 +221,6 @@ public class ChessBoard {
 		fenString = store.fenString;
 		castling[turn] = store.getCastling();
 		enPassant = store.enPassant;
-		GAME_OVER = false;
 
 		final ChessPiece piece = board[move.finish];
 		final HashSet<ChessPiece> updatePieces = softAttackUpdate(move);
@@ -266,7 +260,6 @@ public class ChessBoard {
 		}
 		pieceAttacks(move.start, false);
 		
-		check = isChecked(turn);
 		promotingPawn = -1;
 	}
 	
@@ -283,22 +276,26 @@ public class ChessBoard {
 		if (piece.type == Constants.KING)
 			kingPos[piece.color] = newPos;
 	}
-	
-	public void piece_moves(int pos, boolean[] types, HashSet<Move> moves) {
-		if (is_promote() || GAME_OVER) return;
 
-		if (board[pos].type == Constants.KING) {
-			king(pos, board[pos].color, types, moves);
+	public void piece_moves(ChessPiece piece, boolean[] types, HashSet<Move> moves) {
+		if (is_promote() || turn != piece.color) return;
+
+		if (piece.type == Constants.KING) {
+			king(piece.pos, piece.color, types, moves);
 			return;
 		}
 
-		if (doubleCheck(board[pos].color)) return;
+		if (doubleCheck(piece.color)) return;
 
-		if (board[pos].type == Constants.PAWN) pawn(pos, board[pos].color, types, moves);
-		else if (board[pos].type == Constants.KNIGHT) knight(pos, board[pos].color, types, moves);
-		else if (board[pos].type == Constants.BISHOP) bishop(pos,board[pos].color, types, moves);
-		else if (board[pos].type == Constants.ROOK) rook(pos, board[pos].color, types, moves);
-		else if (board[pos].type == Constants.QUEEN) queen(pos,board[pos].color, types, moves);
+		if (piece.type == Constants.PAWN) pawn(piece.pos, piece.color, types, moves);
+		else if (piece.type == Constants.KNIGHT) knight(piece.pos, piece.color, types, moves);
+		else if (piece.type == Constants.BISHOP) bishop(piece.pos, piece.color, types, moves);
+		else if (piece.type == Constants.ROOK) rook(piece.pos, piece.color, types, moves);
+		else if (piece.type == Constants.QUEEN) queen(piece.pos, piece.color, types, moves);
+	}
+	
+	public void piece_moves(int pos, boolean[] types, HashSet<Move> moves) {
+		piece_moves(board[pos], types, moves);
 	}
 	
 	private void pawn(int pos, int color, boolean[] types, HashSet<Move> moves) {
@@ -455,7 +452,7 @@ public class ChessBoard {
 	
 	private boolean kingCheck(Move move) {
 		if (isAttacked(move.finish, turn)) return false;
-		if (!check) return true;
+		if (!isChecked(turn)) return true;
 		for (final ChessPiece attacker : attacks[next(turn)][move.start]) {
 			if (attacker.type == Constants.QUEEN || attacker.type == Constants.BISHOP) {
 				if (onSameDiagonal(move.start, move.finish, attacker.pos) && move.finish != attacker.pos) return false;
@@ -771,7 +768,6 @@ public class ChessBoard {
 		updatePosition(board[promotingPawn], promotingPawn, false);
 		pieceAttacks(promotingPawn, false);
 		next_turn();
-		check = isChecked(turn);
 		promotingPawn = -1;
 		fenString = board_to_fen();
 	}
@@ -794,14 +790,13 @@ public class ChessBoard {
 		if (hasInsufficientMaterial()) return Constants.DRAW;
 		for(ChessPiece piece : pieces[turn]) {
 			final HashSet<Move> moves = new HashSet<Move>();
-			piece_moves(piece.pos, Constants.ALL_MOVES, moves);
+			piece_moves(piece, Constants.ALL_MOVES, moves);
 			//System.out.println(moves.size());
 			if(moves.size() > 0) {
 				return Constants.PROGRESS;
 			}
 		}
-		GAME_OVER = true;
-		return check ? Constants.WIN : Constants.DRAW;
+		return isChecked(turn) ? Constants.WIN : Constants.DRAW;
 	}
 	
 	private boolean hasInsufficientMaterial() {
@@ -823,7 +818,6 @@ public class ChessBoard {
 				}
 			}
 		}
-		GAME_OVER = true;
 		return true;
 	}
 	
@@ -869,7 +863,7 @@ public class ChessBoard {
 			}
 			System.out.println();
 		}
-		System.out.println(check);
+		System.out.println(isChecked(turn));
 		System.out.println(fenString);
 		if (!valid) System.out.println("ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR");
 	}

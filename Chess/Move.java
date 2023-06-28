@@ -1,5 +1,7 @@
 package Chess;
 
+import java.util.Objects;
+
 public class Move {
 	
 	public enum Type {
@@ -20,6 +22,21 @@ public class Move {
 
 	public boolean isSpecial() {
 		return type == Type.SPECIAL;
+	}
+
+	@Override
+	public boolean equals(Object anObject) {
+		if (this == anObject) return true;
+		if (anObject instanceof Move) {
+			final Move aMove = (Move) anObject;
+			return (start == aMove.start && finish == aMove.finish && type == aMove.type);
+		}
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(start, finish, type);
 	}
 
 }

@@ -34,15 +34,14 @@ public class Computer {
 	public int totalMoves(int depth) {
 		int count = 0;
 		final BoardStorage store = new BoardStorage(board.getFenString(), board.getEnPassant(), board.getCastling(board.getTurn()));
-		final HashSet<Integer> positions = new HashSet<Integer>();
+		final HashSet<ChessPiece> pieces = new HashSet<ChessPiece>();
 		for (final ChessPiece piece : board.getPieces(board.getTurn())) {
-			positions.add(piece.pos);
+			pieces.add(piece);
 		}
 
-		for(final Integer i : positions) {
+		for(final ChessPiece piece : pieces) {
 			final HashSet<Move> moves = new HashSet<Move>();
-			final ChessPiece piece = board.getPiece(i);
-			board.piece_moves(i, Constants.ALL_MOVES, moves);
+			board.piece_moves(piece.pos, Constants.ALL_MOVES, moves);
 			if(depth == 1) {
 				if (moves.size() > 0) {
 					for (final Move move : moves) {
