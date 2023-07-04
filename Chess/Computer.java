@@ -33,11 +33,13 @@ public class Computer {
 
 	public int totalMoves(int depth) {
 		int count = 0;
+		long prevTime = System.currentTimeMillis();
 		final BoardStorage store = new BoardStorage(board.getFenString(), board.getEnPassant(), board.getCastling(board.getTurn()));
 		final HashSet<ChessPiece> pieces = new HashSet<ChessPiece>();
 		for (final ChessPiece piece : board.getPieces(board.getTurn())) {
 			pieces.add(piece);
 		}
+		ChessGame.timeMisc += System.currentTimeMillis() - prevTime;
 
 		for(final ChessPiece piece : pieces) {
 			final HashSet<Move> moves = new HashSet<Move>();
@@ -45,7 +47,7 @@ public class Computer {
 			if(depth == 1) {
 				if (moves.size() > 0) {
 					for (final Move move : moves) {
-						if(piece.type == Constants.PAWN && board.getRow(move.finish) == Constants.PROMOTION_LINE[board.getTurn()]) {
+						if(piece.type == Constants.PAWN && board.getRow(move.getFinish()) == Constants.PROMOTION_LINE[board.getTurn()]) {
 							count += moves.size() * 3;
 						}
 						break;
@@ -62,7 +64,7 @@ public class Computer {
 					for (final byte type : Constants.PROMOTION_PIECES) {
 						board.promote(type);
 						count += totalMoves(depth - 1);
-						board.unPromote(move.finish, store);
+						board.unPromote(move.getFinish(), store);
 					}
 				}
 				else {
@@ -76,7 +78,7 @@ public class Computer {
 	}
 
 	private ChessPiece getCapturedPiece(Move move) {
-		return (move.isSpecial() && board.getPiece(move.start).type == Constants.PAWN) ? 
-			board.getPiece(board.getEnPassant()) : board.getPiece(move.finish);
+		return (move.isSpecial() && board.getPiece(move.getStart()).type == Constants.PAWN) ? 
+			board.getPiece(board.getEnPassant()) : board.getPiece(move.getFinish());
 	}
 }

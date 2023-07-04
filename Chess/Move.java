@@ -10,6 +10,8 @@ public class Move {
 		SPECIAL
 	}
 	
+
+	//private final int moveID;
 	public final int start;
 	public final int finish;
 	public final Type type;
@@ -18,6 +20,36 @@ public class Move {
 		this.start = start;
 		this.finish = finish;
 		this.type = type;
+		// int typeAdd = 0;
+		// if (type == Type.ATTACK) {
+		// 	typeAdd = 1;
+		// }
+		// if (type == Type.SPECIAL) {
+		// 	typeAdd = 2;
+		// }
+		//moveID = typeAdd + (start << 2) + (finish << 8);
+	}
+
+	public int getFinish() {
+		return finish;
+		//return moveID >> 8;
+	}
+
+	public int getStart () {
+		return start;
+		//return 63 & (moveID >> 2);
+	}
+
+	public Type getType() {
+		return type;
+		// final int typeID = 3 & moveID;
+		// if (typeID == 2) {
+		// 	return Type.SPECIAL;
+		// }
+		// if (typeID == 1) {
+		// 	return Type.ATTACK;
+		// }
+		// return Type.MOVE;
 	}
 
 	public boolean isSpecial() {
@@ -29,7 +61,8 @@ public class Move {
 		if (this == anObject) return true;
 		if (anObject instanceof Move) {
 			final Move aMove = (Move) anObject;
-			return (start == aMove.start && finish == aMove.finish && type == aMove.type);
+			return (aMove.start == start && aMove.finish == finish && aMove.type == type);
+			//return aMove.moveID == moveID;
 		}
 		return false;
 	}

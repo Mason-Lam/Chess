@@ -22,6 +22,13 @@ public class ChessGame {
 	private boolean winner;
 	private int click1;			//Stores the user first input
 
+	public static long timeMoveGen = 0;
+	public static long timeValidMove = 0;
+	public static long timeValidPart = 0;
+	public static long timeMakeMove = 0;
+	public static long timeUndoMove = 0;
+	public static long timeMisc = 0;
+
 	public ChessGame(int computerTurn, int difficulty){
 		this.difficulty = difficulty;
 		this.computerTurn = computerTurn;
@@ -32,6 +39,13 @@ public class ChessGame {
 		long prevTime = System.currentTimeMillis();
 		Tests.runTests(); //5800, 8315, 3200
 		System.out.println(System.currentTimeMillis() - prevTime);
+
+		System.out.println("Move Generation: " + timeMoveGen);
+		System.out.println("Valid Move: " + timeValidMove);
+		System.out.println("Valid Part: " + timeValidPart);
+		System.out.println("Make Move: " + timeMakeMove);
+		System.out.println("Undo Move: " + timeUndoMove);
+		System.out.println("Misc: " + timeMisc);
 
 		board = new ChessBoard();	//Creates a new ChessBoard object
 		//board.displayAttacks();
@@ -66,9 +80,9 @@ public class ChessGame {
 		 * with the correct piece and color*/
 		String address;		//Stores the location of the correct image
 		final String fen = board.getFenString();
+		int count = 0;
 		//For loop to cycle through all 64 squares
 		for(int i = 0; i< fen.length(); i++) {
-			int count = 0;
 			if (count > 63) break;
 			char letter = fen.charAt(i);
 			//System.out.print(letter);
@@ -106,21 +120,21 @@ public class ChessGame {
 		}
 		if(click1 != -1) {
 			for(final Move move : legal) {
-				System.out.print(move.finish +" : ");
-				System.out.print(board.getPiece(move.finish).type+ " : ");
-				System.out.print(move.type.toString() + ", ");
+				System.out.print(move.getFinish() +" : ");
+				System.out.print(board.getPiece(move.getFinish()).type+ " : ");
+				System.out.print(move.getType().toString() + ", ");
 				//Checks if the square is a legal move
-				if(board.getPiece(move.finish).isEmpty()) {
+				if(board.getPiece(move.getFinish()).isEmpty()) {
                     address = "Chess/Elements/";
 					//address = "C:\\Users\\Mason\\Documents\\Java\\Elements\\";
-					if(move.finish % 2 == (move.finish /8 ) %2){
+					if(move.getFinish() % 2 == (move.getFinish() /8 ) %2){
 						address += "W";
 					}
 					else {
 						address += "G";
 					}
 					address += "D.png";
-					GUI[move.finish].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
+					GUI[move.getFinish()].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
 				}
 			}
 			System.out.println();
@@ -164,7 +178,7 @@ public class ChessGame {
 		//for loop to cycle through every legal move
 		for(final Move move : legal) {
 			//Checks if the click is a legal move
-			if(move.finish == pos) {
+			if(move.getFinish() == pos) {
 				//makes the move on the board
 				board.make_move(move, true);
 				legal.clear();
