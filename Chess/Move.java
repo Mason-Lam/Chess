@@ -1,7 +1,5 @@
 package Chess;
 
-import java.util.Objects;
-
 public class Move {
 	
 	public enum Type {
@@ -11,7 +9,7 @@ public class Move {
 	}
 	
 
-	//private final int moveID;
+	private final int moveID;
 	public final int start;
 	public final int finish;
 	public final Type type;
@@ -20,14 +18,14 @@ public class Move {
 		this.start = start;
 		this.finish = finish;
 		this.type = type;
-		// int typeAdd = 0;
-		// if (type == Type.ATTACK) {
-		// 	typeAdd = 1;
-		// }
-		// if (type == Type.SPECIAL) {
-		// 	typeAdd = 2;
-		// }
-		//moveID = typeAdd + (start << 2) + (finish << 8);
+		int typeAdd = 0;
+		if (type == Type.ATTACK) {
+			typeAdd = 1;
+		}
+		if (type == Type.SPECIAL) {
+			typeAdd = 2;
+		}
+		moveID = typeAdd + (start << 2) + (finish << 8);
 	}
 
 	public int getFinish() {
@@ -61,15 +59,15 @@ public class Move {
 		if (this == anObject) return true;
 		if (anObject instanceof Move) {
 			final Move aMove = (Move) anObject;
-			return (aMove.start == start && aMove.finish == finish && aMove.type == type);
-			//return aMove.moveID == moveID;
+			//return (aMove.start == start && aMove.finish == finish && aMove.type == type);
+			return aMove.moveID == moveID;
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(start, finish, type);
+		return moveID;
 	}
 
 }

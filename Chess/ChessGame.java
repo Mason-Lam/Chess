@@ -23,6 +23,11 @@ public class ChessGame {
 	private int click1;			//Stores the user first input
 
 	public static long timeMoveGen = 0;
+	public static long timePawnGen = 0;
+	public static long timeKnightGen = 0;
+	public static long timeBishopGen = 0;
+	public static long timeRookGen = 0;
+	public static long timeKingGen = 0;
 	public static long timeValidMove = 0;
 	public static long timeValidPart = 0;
 	public static long timeMakeMove = 0;
@@ -41,6 +46,12 @@ public class ChessGame {
 		System.out.println(System.currentTimeMillis() - prevTime);
 
 		System.out.println("Move Generation: " + timeMoveGen);
+		
+		System.out.println("Pawn Move: " + timePawnGen);
+		System.out.println("Knight Move: " + timeKnightGen);
+		System.out.println("Bishop Move: " + timeBishopGen);
+		System.out.println("Rook Move: " + timeRookGen);
+		System.out.println("King Move: " + timeKingGen);
 		System.out.println("Valid Move: " + timeValidMove);
 		System.out.println("Valid Part: " + timeValidPart);
 		System.out.println("Make Move: " + timeMakeMove);

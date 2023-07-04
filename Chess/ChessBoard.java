@@ -307,6 +307,7 @@ public class ChessBoard {
 	
 	private void pawn(int pos, int color, boolean[] types, HashSet<Move> moves) {
 		//Moves
+		long prevTime = System.currentTimeMillis();
 		if (types[0]) {
 			int newPos = pos;
 			for (int i = 0; i < 2; i++) {
@@ -335,9 +336,11 @@ public class ChessBoard {
 			int newPos = color == Constants.WHITE ? enPassant - 8 : enPassant + 8;
 			if (board[newPos].isEmpty()) addMove(moves, new Move(pos, newPos, Move.Type.SPECIAL));
 		}
+		ChessGame.timePawnGen += System.currentTimeMillis() - prevTime;
 	}
 	
 	private void knight(int pos, int color, boolean[] types, HashSet<Move> moves) {
+		long prevTime = System.currentTimeMillis();
 		for (int i = 0; i < Constants.KNIGHT_MOVES.length; i++) {
 			int newPos = pos + Constants.KNIGHT_MOVES[i];
 			if (!onBoard(newPos) || !onL(pos, newPos)) continue;
@@ -349,9 +352,11 @@ public class ChessBoard {
 			else if (board[newPos].color != color && types[1]) 
 				addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
 		}
+		ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
 	}
 	
 	private void bishop(int pos, int color, boolean[] types, HashSet<Move> moves) {
+		long prevTime = System.currentTimeMillis();
 		for (int i = 0; i < Constants.DIAGONALS.length; i++) {
 			int newPos = pos;
 			while (true) {
@@ -369,9 +374,11 @@ public class ChessBoard {
 					addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
 			}
 		}
+		ChessGame.timeBishopGen += System.currentTimeMillis() - prevTime;
 	}
 	
 	private void rook(int pos, int color, boolean[] types, HashSet<Move> moves) {
+		long prevTime = System.currentTimeMillis();
 		for (int i = 0; i < Constants.STRAIGHT.length; i++) {
 			int newPos = pos;
 			while (true) {
@@ -388,6 +395,7 @@ public class ChessBoard {
 					addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
 			}
 		}
+		ChessGame.timeRookGen += System.currentTimeMillis() - prevTime;
 	}
 	
 	private void queen(int pos, int color, boolean[] types, HashSet<Move> moves) {
@@ -396,6 +404,7 @@ public class ChessBoard {
 	}
 	
 	private void king(int pos, int color, boolean[] types, HashSet<Move> moves) {
+		long prevTime = System.currentTimeMillis();
 		if (types[0] || types[1]) {
 			for (int i = 0; i < Constants.KING_MOVES.length; i++) {
 				int newPos = pos + Constants.KING_MOVES[i];
@@ -436,6 +445,7 @@ public class ChessBoard {
 					addMove(moves, new Move(pos, Constants.ROOK_POSITIONS[color][1] - 1, Move.Type.SPECIAL));
 			}
 		}
+		ChessGame.timeKingGen += System.currentTimeMillis() - prevTime;
 	}
 	
 	private void addMove(HashSet<Move> moves, Move move) {
