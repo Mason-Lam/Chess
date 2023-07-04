@@ -42,8 +42,7 @@ public class Computer {
 		ChessGame.timeMisc += System.currentTimeMillis() - prevTime;
 
 		for(final ChessPiece piece : pieces) {
-			final HashSet<Move> moves = new HashSet<Move>();
-			board.piece_moves(piece.pos, Constants.ALL_MOVES, moves);
+			final HashSet<Move> moves = piece.piece_moves(Constants.ALL_MOVES);
 			if(depth == 1) {
 				if (moves.size() > 0) {
 					for (final Move move : moves) {

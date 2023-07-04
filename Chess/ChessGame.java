@@ -17,7 +17,7 @@ public class ChessGame {
 	private final int computerTurn;			//int to store the computer
 	private final Computer computer;
 	private final int difficulty;
-	private final HashSet<Move> legal;	//A list to store the legal moves of a chess piece
+	private HashSet<Move> legal;	//A list to store the legal moves of a chess piece
 
 	private boolean winner;
 	private int click1;			//Stores the user first input
@@ -176,8 +176,7 @@ public class ChessGame {
 		//Checks if the click is on the correct Chess pieces.
 		if(board.getPiece(pos).color == board.getTurn() && !board.getPiece(pos).isEmpty()) {
 			click1 = pos;		//Stores the users first click
-			legal.clear();
-			board.piece_moves(click1, Constants.ALL_MOVES, legal);	//Generates all the legal moves for a player
+			legal = board.getPiece(click1).piece_moves(Constants.ALL_MOVES);	//Generates all the legal moves for a player
 			//System.out.println(legal.size());
 			update_display();	//Updates the display
 			return;		//The return on your Bitcoin investment
@@ -192,7 +191,7 @@ public class ChessGame {
 			if(move.getFinish() == pos) {
 				//makes the move on the board
 				board.make_move(move, true);
-				legal.clear();
+				legal = new HashSet<Move>();
 				//Checks if there is a pawn promoting
 				if(board.is_promote()) {
 					update_display();	//Updates the display
