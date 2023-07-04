@@ -258,13 +258,15 @@ public class ChessPiece {
 			if (piece.type == Constants.PAWN || piece.type == Constants.KNIGHT || piece.type == Constants.KING) continue;
 
 			if (piece.type == Constants.BISHOP || piece.type == Constants.QUEEN) {
-				if (board.blocksDiagonal(piece.pos, king, move.getStart())) {
-					if (board.onSameDiagonal(move.getFinish(), king, piece.pos)) return false;
+				int pinnedPos = move.start;
+				if (passant && board.onDiagonal(piece.pos, board.getEnPassant())) pinnedPos = board.getEnPassant();
+				if (board.blocksDiagonal(piece.pos, king, pinnedPos)) {
+					if (board.onSameDiagonal(move.getFinish(), king, piece.pos) && pinnedPos == move.start) return false;
 
 					int direction = Math.abs(piece.pos - move.getStart()) % 7 == 0 ? 7 : 9;
-					if (piece.pos - move.getStart() > 0) direction *= -1;
+					if (piece.pos - pinnedPos > 0) direction *= -1;
 					
-					int newPos = move.getStart();
+					int newPos = pinnedPos;
 					for (int j = 0; j < board.getDistanceVert(move.getStart(), king) - 1; j++) {
 						newPos += direction;
 						if (!board.getPiece(newPos).isEmpty()) return false;
