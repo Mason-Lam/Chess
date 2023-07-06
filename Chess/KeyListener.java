@@ -4,7 +4,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.function.Consumer;
 
-public class KeyListener extends KeyAdapter{
+public class KeyListener extends KeyAdapter {
 
 	private final Consumer<Byte> promotion;
 

@@ -59,7 +59,7 @@ public class ChessGame {
 		System.out.println("Misc: " + timeMisc);
 		System.out.println("Debug: " + timeDebug);
 
-		board = new ChessBoard();	//Creates a new ChessBoard object
+		board = new ChessBoard(Tests.test10.fen);	//Creates a new ChessBoard object
 		//board.displayAttacks();
 		
 		computer = board.getComputer();

@@ -1,17 +1,16 @@
 package Chess;
 
 import java.util.Arrays;
-import java.util.HashSet;
 
 import Chess.Computer.BoardStorage;
 
 public class ChessBoard {
 	
 
-	private final HashSet<ChessPiece>[][] attacks;
+	private final PieceSet[][] attacks;
 	
 	private final int[] kingPos;
-	private final HashSet<ChessPiece>[] pieces;
+	private final PieceSet[] pieces;
 	
 	private final ChessPiece[] board;
 	private final boolean[][] castling;
@@ -24,19 +23,18 @@ public class ChessBoard {
 	public ChessBoard () {
 		this("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	}
-	
-	@SuppressWarnings("unchecked")
+
 	public ChessBoard (String fen) {
 		turn = Constants.BLACK;
 		fenString = fen;
 		
-		attacks = new HashSet[2][1];
-		attacks[Constants.BLACK] = new HashSet[64];
-		attacks[Constants.WHITE] = new HashSet[64];
+		attacks = new PieceSet[2][1];
+		attacks[Constants.BLACK] = new PieceSet[64];
+		attacks[Constants.WHITE] = new PieceSet[64];
 
-		pieces = new HashSet[2];
-		pieces[Constants.BLACK] = new HashSet<ChessPiece>();
-		pieces[Constants.WHITE] = new HashSet<ChessPiece>();
+		pieces = new PieceSet[2];
+		pieces[Constants.BLACK] = new PieceSet();
+		pieces[Constants.WHITE] = new PieceSet();
 		
 		kingPos = new int[2];
 		board = new ChessPiece[64];
@@ -90,6 +88,7 @@ public class ChessBoard {
 	}
 
 	private void fen_to_board(String fen) {
+		final int[] pieceIDs = new int[] {0, 0};
 		int index = 0;
 		for (int i = 0; i < fen.length(); i++) {
 			char letter = fen.charAt(i);
@@ -142,7 +141,7 @@ public class ChessBoard {
 				}
 				continue;
 			}
-			final ChessPiece piece = Constants.charToPiece(letter, index, this);
+			final ChessPiece piece = Constants.charToPiece(letter, index, this, pieceIDs);
 			board[index] = piece;
 			pieces[piece.color].add(piece);
 			
@@ -156,9 +155,11 @@ public class ChessBoard {
 	public void make_move(Move move, boolean permanent) {
 		long prevTime = System.currentTimeMillis();
 		final ChessPiece piece = board[move.getStart()];
-		final HashSet<ChessPiece> updatePieces = softAttackUpdate(move);
-		for (ChessPiece i : updatePieces) {
-			pieceAttacks(i.pos, true);
+		final PieceSet[] updatePieces = softAttackUpdate(move);
+		for (final PieceSet pieces : updatePieces) {
+			for (final ChessPiece attacker : pieces) {
+				pieceAttacks(attacker.pos, true);
+			}
 		}
 		pieceAttacks(move.getStart(), true);
 
@@ -207,8 +208,10 @@ public class ChessBoard {
 		updatePosition(piece, move.getFinish(), false);
 		pieceAttacks(move.getFinish(), false);
 
-		for (ChessPiece i : updatePieces) {
-			pieceAttacks(i.pos, false);
+		for (final PieceSet pieces : updatePieces) {
+			for (final ChessPiece attacker : pieces) {
+				pieceAttacks(attacker.pos, false);
+			}
 		}
 
 		enPassant = passant;
@@ -226,9 +229,11 @@ public class ChessBoard {
 		enPassant = store.enPassant;
 
 		final ChessPiece piece = board[move.getFinish()];
-		final HashSet<ChessPiece> updatePieces = softAttackUpdate(move);
-		for (ChessPiece i : updatePieces) {
-			pieceAttacks(i.pos, true);
+		final PieceSet[] updatePieces = softAttackUpdate(move);
+		for (final PieceSet pieces : updatePieces) {
+			for (final ChessPiece attacker : pieces) {
+				pieceAttacks(attacker.pos, true);
+			}
 		}
 		pieceAttacks(move.getFinish(), true);
 
@@ -258,8 +263,10 @@ public class ChessBoard {
 			pieceAttacks(move.getFinish(), false);
 		}
 
-		for (ChessPiece i : updatePieces) {
-			pieceAttacks(i.pos, false);
+		for (final PieceSet pieces : updatePieces) {
+			for (final ChessPiece attacker : pieces) {
+				pieceAttacks(attacker.pos, false);
+			}
 		}
 		pieceAttacks(move.getStart(), false);
 		
@@ -284,7 +291,7 @@ public class ChessBoard {
 	private void hardAttackUpdate() {
 		for (int color = 0; color < 2; color ++) {
 			for (int j = 0;  j < attacks[color].length; j++) {
-				attacks[color][j] = new HashSet<ChessPiece>();
+				attacks[color][j] = new PieceSet();
 			}
 			for (final ChessPiece piece : pieces[color]) {
 				pieceAttacks(piece.pos, false);
@@ -292,14 +299,16 @@ public class ChessBoard {
 		}
 	}
 	
-	private HashSet<ChessPiece> softAttackUpdate(Move move) {
+	private PieceSet[] softAttackUpdate(Move move) {
 		final boolean passant = move.isSpecial() && (board[move.getStart()].type == Constants.PAWN || board[move.getFinish()].type == Constants.PAWN);
-		final HashSet<ChessPiece> pieces = new HashSet<ChessPiece>();
+		final PieceSet[] pieces = new PieceSet[2];
+		pieces[0] = new PieceSet();
+		pieces[1] = new PieceSet();
 		for (int color = 0; color < 2; color ++) {
 			for (final ChessPiece attacker : attacks[color][move.getStart()]) {
 				if (attacker.type == Constants.BISHOP || attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
 					if (attacker.pos != move.getFinish()) {
-						pieces.add(attacker);
+						pieces[color].add(attacker);
 					}
 				}
 			}
@@ -307,7 +316,7 @@ public class ChessBoard {
 			for (final ChessPiece attacker : attacks[color][move.getFinish()]) {
 				if (attacker.type == Constants.BISHOP || attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
 					if (attacker.pos != move.getStart()) {
-						pieces.add(attacker);
+						pieces[color].add(attacker);
 					}
 				}
 			}
@@ -316,7 +325,7 @@ public class ChessBoard {
 				for (final ChessPiece attacker : attacks[color][enPassant]) {
 					if (attacker.type == Constants.BISHOP || attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
 						if (attacker.pos != move.getFinish() && attacker.pos != move.getStart()) {
-							pieces.add(attacker);
+							pieces[color].add(attacker);
 						}
 					}
 				}
@@ -499,7 +508,7 @@ public class ChessBoard {
 		return attacks[next(color)][pos].size();
 	}
 	
-	public HashSet<ChessPiece> getPieces(int color) {
+	public PieceSet getPieces(int color) {
 		return pieces[color];
 	}
 	
@@ -507,7 +516,7 @@ public class ChessBoard {
 		return board[pos];
 	}
 
-	public HashSet<ChessPiece> getAttackers(int pos, int color) {
+	public PieceSet getAttackers(int pos, int color) {
 		return attacks[next(color)][pos];
 	}
 
@@ -552,7 +561,7 @@ public class ChessBoard {
 	
 	private boolean hasInsufficientMaterial() {
 		for (int color = 0; color < 2; color++) {
-			final HashSet<ChessPiece> colorPieces = pieces[color];
+			final PieceSet colorPieces = pieces[color];
 			if (colorPieces.size() > 3) return false;
 			
 			if (colorPieces.size() == 3) {

@@ -1,22 +1,18 @@
 package Chess;
 
-import java.util.HashSet;
-
 public class ChessPiece {
 	public byte type;
 	public byte color;
 	public int pos;
 	public final int pieceID;
 	private final ChessBoard board;
-	private static int pieceIDCount = 0;
 	
-	public ChessPiece(byte type, byte color, int pos, ChessBoard board) {
+	public ChessPiece(byte type, byte color, int pos, ChessBoard board, int pieceID) {
 		this.type = type;
 		this.color = color;
 		this.pos = pos;
 		this.board = board;
-		pieceID = pieceIDCount;
-		pieceIDCount ++;
+		this.pieceID = pieceID;
 	}
 
 	public MoveList piece_moves(boolean[] types) {
@@ -243,10 +239,10 @@ public class ChessPiece {
 		if (!board.onDiagonal(king, move.getStart()) && !board.onLine(king, move.getStart())) return false;
 
 		final boolean passant = (move.isSpecial() && board.getPiece(move.start).type == Constants.PAWN);
-		final HashSet<ChessPiece> attackers;
+		final PieceSet attackers;
 		if (passant) {
 			if (!board.isAttacked(move.getStart(), color) && !board.isAttacked(board.getEnPassant(), color)) return false;
-			attackers = new HashSet<ChessPiece>() {
+			attackers = new PieceSet() { 
 				{
 					addAll(board.getAttackers(move.getStart(), color));
 					addAll(board.getAttackers(board.getEnPassant(), color));
@@ -308,6 +304,6 @@ public class ChessPiece {
 	}
 	
 	public static ChessPiece empty() {
-		return new ChessPiece(Constants.EMPTY, Constants.EMPTY, Constants.EMPTY, null);
+		return new ChessPiece(Constants.EMPTY, Constants.EMPTY, Constants.EMPTY, null, Constants.EMPTY);
 	}
 }

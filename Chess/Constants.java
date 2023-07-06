@@ -100,12 +100,13 @@ public class Constants {
 		return Character.toString(COLUMNS[column]) + row;
 	}
 	
-	public static ChessPiece charToPiece(char letter, int pos, ChessBoard board) {
+	public static ChessPiece charToPiece(char letter, int pos, ChessBoard board, int[] pieceIDs) {
 		final byte color = Character.isLowerCase(letter) ? BLACK : WHITE;
 		final char[] pieces = PIECES[color];
 		for (byte i = 0; i < pieces.length; i++) {
 			if (letter == pieces[i]) {
-				return new ChessPiece(i, color, pos, board);
+				pieceIDs[color] ++;
+				return new ChessPiece(i, color, pos, board, pieceIDs[color] - 1);
 			}
 		}
 		return null;

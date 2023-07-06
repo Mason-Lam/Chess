@@ -1,7 +1,5 @@
 package Chess;
 
-import java.util.HashSet;
-
 public class Computer {
 
 	public static class BoardStorage {
@@ -35,10 +33,7 @@ public class Computer {
 		int count = 0;
 		long prevTime = System.currentTimeMillis();
 		final BoardStorage store = new BoardStorage(board.getFenString(), board.getEnPassant(), board.getCastling(board.getTurn()));
-		final HashSet<ChessPiece> pieces = new HashSet<ChessPiece>();
-		for (final ChessPiece piece : board.getPieces(board.getTurn())) {
-			pieces.add(piece);
-		}
+		final PieceSet pieces = board.getPieces(board.getTurn()).clone();
 		ChessGame.timeMisc += System.currentTimeMillis() - prevTime;
 
 		for(final ChessPiece piece : pieces) {
