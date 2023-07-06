@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.Image;
-import java.util.HashSet;
 
 import javax.swing.*;
 
@@ -17,7 +16,7 @@ public class ChessGame {
 	private final int computerTurn;			//int to store the computer
 	private final Computer computer;
 	private final int difficulty;
-	private HashSet<Move> legal;	//A list to store the legal moves of a chess piece
+	private MoveList legal;	//A list to store the legal moves of a chess piece
 
 	private boolean winner;
 	private int click1;			//Stores the user first input
@@ -33,11 +32,12 @@ public class ChessGame {
 	public static long timeMakeMove = 0;
 	public static long timeUndoMove = 0;
 	public static long timeMisc = 0;
+	public static long timeDebug = 0;
 
 	public ChessGame(int computerTurn, int difficulty){
 		this.difficulty = difficulty;
 		this.computerTurn = computerTurn;
-		legal = new HashSet<Move>();
+		legal = new MoveList();
 		winner = false;
 		click1 = -1;		//sets var as no clicks
 		//rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
@@ -57,6 +57,7 @@ public class ChessGame {
 		System.out.println("Make Move: " + timeMakeMove);
 		System.out.println("Undo Move: " + timeUndoMove);
 		System.out.println("Misc: " + timeMisc);
+		System.out.println("Debug: " + timeDebug);
 
 		board = new ChessBoard();	//Creates a new ChessBoard object
 		//board.displayAttacks();
@@ -130,7 +131,8 @@ public class ChessGame {
 			count += 1;
 		}
 		if(click1 != -1) {
-			for(final Move move : legal) {
+			for(int j = 0; j < legal.size(); j++) {
+				final Move move = legal.get(j);
 				System.out.print(move.getFinish() +" : ");
 				System.out.print(board.getPiece(move.getFinish()).type+ " : ");
 				System.out.print(move.getType().toString() + ", ");
@@ -186,12 +188,13 @@ public class ChessGame {
 			return;		//Return to sender
 		}	
 		//for loop to cycle through every legal move
-		for(final Move move : legal) {
+		for(int i = 0; i < legal.size(); i ++) {
+			final Move move = legal.get(i);
 			//Checks if the click is a legal move
 			if(move.getFinish() == pos) {
 				//makes the move on the board
 				board.make_move(move, true);
-				legal = new HashSet<Move>();
+				legal = new MoveList();
 				//Checks if there is a pawn promoting
 				if(board.is_promote()) {
 					update_display();	//Updates the display

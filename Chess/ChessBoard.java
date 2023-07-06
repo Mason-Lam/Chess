@@ -541,7 +541,7 @@ public class ChessBoard {
 	public int isWinner() {
 		if (hasInsufficientMaterial()) return Constants.DRAW;
 		for(ChessPiece piece : pieces[turn]) {
-			final HashSet<Move> moves = piece.piece_moves(Constants.ALL_MOVES);
+			final MoveList moves = piece.piece_moves(Constants.ALL_MOVES);
 			//System.out.println(moves.size());
 			if(moves.size() > 0) {
 				return Constants.PROGRESS;

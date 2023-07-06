@@ -42,21 +42,21 @@ public class Computer {
 		ChessGame.timeMisc += System.currentTimeMillis() - prevTime;
 
 		for(final ChessPiece piece : pieces) {
-			final HashSet<Move> moves = piece.piece_moves(Constants.ALL_MOVES);
+			final MoveList moves = piece.piece_moves(Constants.ALL_MOVES);
 			if(depth == 1) {
 				if (moves.size() > 0) {
-					for (final Move move : moves) {
-						if(piece.type == Constants.PAWN && board.getRow(move.getFinish()) == Constants.PROMOTION_LINE[board.getTurn()]) {
-							count += moves.size() * 3;
-						}
-						break;
+					final Move move = moves.get(0);
+					if(piece.type == Constants.PAWN && board.getRow(move.getFinish()) == Constants.PROMOTION_LINE[board.getTurn()]) {
+						count += moves.size() * 4;
+						continue;
 					}
 				}
 				count += moves.size();
 				continue;
 			}
 			
-			for (final Move move : moves) {
+			for (int moveIndex = 0; moveIndex < moves.size(); moveIndex ++) {
+				final Move move = moves.get(moveIndex);
 				final ChessPiece capturedPiece = getCapturedPiece(move);
 				board.make_move(move, false);
 				if (board.is_promote()) {
