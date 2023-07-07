@@ -21,18 +21,25 @@ public class ChessPiece {
 		if (board.is_promote() || board.getTurn() != color) return moves;
 
 		if (type == Constants.KING) {
-			king(pos, color, types, moves);
+			king(types, moves);
 			ChessGame.timeMoveGen += System.currentTimeMillis() - prevTime;
 			return moves;
 		}
 
 		if (board.doubleCheck(color)) return moves;
 
-		if (type == Constants.PAWN) pawn(types, moves);
-		else if (type == Constants.KNIGHT) knight(pos, color, types, moves);
-		else if (type == Constants.BISHOP) bishop(pos, color, types, moves);
-		else if (type == Constants.ROOK) rook(pos, color, types, moves);
-		else if (type == Constants.QUEEN) queen(pos, color, types, moves);
+		switch (type) {
+			case Constants.PAWN: pawn(types, moves);
+				break;
+			case Constants.KNIGHT: knight(types, moves);
+				break;
+			case Constants.BISHOP: bishop(types, moves);
+				break;
+			case Constants.ROOK: rook(types, moves);
+				break;
+			case Constants.QUEEN: queen(types, moves);
+				break;
+		}
 		ChessGame.timeMoveGen += System.currentTimeMillis() - prevTime;
 		return moves;
 	}
@@ -71,7 +78,7 @@ public class ChessPiece {
 		ChessGame.timePawnGen += System.currentTimeMillis() - prevTime;
 	}
 	
-	private void knight(int pos, int color, boolean[] types, MoveList moves) {
+	private void knight(boolean[] types, MoveList moves) {
 		long prevTime = System.currentTimeMillis();
 		for (int i = 0; i < Constants.KNIGHT_MOVES.length; i++) {
 			int newPos = pos + Constants.KNIGHT_MOVES[i];
@@ -87,7 +94,7 @@ public class ChessPiece {
 		ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
 	}
 	
-	private void bishop(int pos, int color, boolean[] types, MoveList moves) {
+	private void bishop(boolean[] types, MoveList moves) {
 		long prevTime = System.currentTimeMillis();
 		for (int i = 0; i < Constants.DIAGONALS.length; i++) {
 			int newPos = pos;
@@ -109,7 +116,7 @@ public class ChessPiece {
 		ChessGame.timeBishopGen += System.currentTimeMillis() - prevTime;
 	}
 	
-	private void rook(int pos, int color, boolean[] types, MoveList moves) {
+	private void rook(boolean[] types, MoveList moves) {
 		long prevTime = System.currentTimeMillis();
 		for (int i = 0; i < Constants.STRAIGHT.length; i++) {
 			int newPos = pos;
@@ -130,20 +137,19 @@ public class ChessPiece {
 		ChessGame.timeRookGen += System.currentTimeMillis() - prevTime;
 	}
 	
-	private void queen(int pos, int color, boolean[] types, MoveList moves) {
-		rook(pos, color, types, moves);
-		bishop(pos, color, types, moves);
+	private void queen(boolean[] types, MoveList moves) {
+		rook(types, moves);
+		bishop(types, moves);
 	}
 	
-	private void king(int pos, int color, boolean[] types, MoveList moves) {
+	private void king(boolean[] types, MoveList moves) {
 		long prevTime = System.currentTimeMillis();
 		if (types[0] || types[1]) {
 			for (int i = 0; i < Constants.KING_MOVES.length; i++) {
-				int newPos = pos + Constants.KING_MOVES[i];
+				final int newPos = pos + Constants.KING_MOVES[i];
 				if (!board.onBoard(newPos) || board.getDistance(pos, newPos) > 2) continue;
-				if (board.getPiece(newPos).isEmpty()) {
-					if (types[0])
-						addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
+				if (board.getPiece(newPos).isEmpty() && types[0]) {
+					addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
 				}
 				else if (board.getPiece(newPos).color != color && types[1]) 
 					addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
@@ -210,11 +216,12 @@ public class ChessPiece {
 		if (board.isAttacked(move.getFinish(), color)) return false;
 		if (!board.isChecked(color)) return true;
 		for (final ChessPiece attacker : board.getAttackers(move.start, color)) {
+			if (move.finish == attacker.pos) return true;
 			if (attacker.type == Constants.QUEEN || attacker.type == Constants.BISHOP) {
-				if (board.onSameDiagonal(move.getStart(), move.getFinish(), attacker.pos) && move.getFinish() != attacker.pos) return false;
+				if (board.onSameDiagonal(move.getStart(), move.finish, attacker.pos)) return false;
 			}
 			if (attacker.type == Constants.QUEEN || attacker.type == Constants.ROOK) {
-				if (board.onSameLine(move.getStart(), move.getFinish(), attacker.pos) && move.getFinish() != attacker.pos) return false;
+				if (board.onSameLine(move.getStart(), move.finish, attacker.pos)) return false;
 			}
 		}
 		return true;

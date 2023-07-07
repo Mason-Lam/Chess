@@ -23,9 +23,8 @@ public class PieceSet implements Iterable<ChessPiece> {
     }
 
     public void remove(ChessPiece piece) {
-        if (map[piece.pieceID] == null) return;
+        if (map[piece.pieceID] != null) size --;
         map[piece.pieceID] = null;
-        size --;
     }
 
     public int size() {

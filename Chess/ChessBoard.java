@@ -337,18 +337,27 @@ public class ChessBoard {
 	
 	private void pieceAttacks(int pos, boolean remove) {
 		final ChessPiece piece = board[pos];
-		if (piece.type == Constants.PAWN) pawnAttacks(pos, remove); 
-		else if (piece.type == Constants.KNIGHT) knightAttacks(pos, remove); 
-		else if (piece.type == Constants.BISHOP) bishopAttacks(pos, remove);
-		else if (piece.type == Constants.ROOK) rookAttacks(pos, remove); 
-		else if (piece.type == Constants.QUEEN) queenAttacks(pos, remove); 
-		else if (piece.type == Constants.KING) kingAttacks(pos, remove);
+		switch(piece.type) {
+			case (Constants.PAWN): pawnAttacks(pos, remove);
+				break;
+			case (Constants.KNIGHT): knightAttacks(pos, remove);
+				break;
+			case (Constants.BISHOP): bishopAttacks(pos, remove);
+				break;
+			case (Constants.ROOK): rookAttacks(pos, remove);
+				break;
+			case (Constants.QUEEN): queenAttacks(pos, remove);
+				break;
+			case (Constants.KING): kingAttacks(pos, remove);
+				break;
+		}
 	}
 	
 	private void pawnAttacks(int pos, boolean remove) {
+		long prevTime = System.currentTimeMillis();
 		final ChessPiece piece = board[pos];
 		for (int i = 0; i < 2; i++) {
-			int newPos = pos + Constants.PAWN_DIAGONALS[piece.color][i];
+			final int newPos = pos + Constants.PAWN_DIAGONALS[piece.color][i];
 			if (!onBoard(newPos) || !onDiagonal(pos,newPos)) continue;
 
 			if (remove) {
@@ -357,12 +366,14 @@ public class ChessBoard {
 			}
 			attacks[piece.color][newPos].add(piece);
 		}
+		ChessGame.timePawnAttack += System.currentTimeMillis() - prevTime;
 	}
 	
 	private void knightAttacks(int pos, boolean remove) {
+		long prevTime = System.currentTimeMillis();
 		final ChessPiece piece = board[pos];
 		for (int i = 0; i < Constants.KNIGHT_MOVES.length; i++) {
-			int newPos = pos + Constants.KNIGHT_MOVES[i];
+			final int newPos = pos + Constants.KNIGHT_MOVES[i];
 			if (!onBoard(newPos) || !onL(pos, newPos)) continue;
 
 			if (remove) {
@@ -371,9 +382,11 @@ public class ChessBoard {
 			}
 			attacks[piece.color][newPos].add(piece);
 		}
+		ChessGame.timeKnightAttack += System.currentTimeMillis() - prevTime;
 	}
 	
 	private void bishopAttacks(int pos, boolean remove) {
+		long prevTime = System.currentTimeMillis();
 		final ChessPiece piece = board[pos];
 		for (int i = 0; i < Constants.DIAGONALS.length; i++) {
 			int newPos = pos;
@@ -390,9 +403,11 @@ public class ChessBoard {
 				if (!board[newPos].isEmpty()) break;
 			}
 		}
+		ChessGame.timeBishopAttack += System.currentTimeMillis() - prevTime;
 	}
 	
 	private void rookAttacks(int pos, boolean remove) {
+		long prevTime = System.currentTimeMillis();
 		final ChessPiece piece = board[pos];
 		for (int i = 0; i < Constants.STRAIGHT.length; i++) {
 			int newPos = pos;
@@ -409,6 +424,7 @@ public class ChessBoard {
 				if (!board[newPos].isEmpty()) break;
 			}
 		}
+		ChessGame.timeRookAttack += System.currentTimeMillis() - prevTime;
 	}
 	
 	private void queenAttacks(int pos, boolean remove) {
@@ -417,9 +433,10 @@ public class ChessBoard {
 	}
 	
 	private void kingAttacks(int pos, boolean remove) {
+		long prevTime = System.currentTimeMillis();
 		final ChessPiece piece = board[pos];
 		for (int i = 0; i < Constants.KING_MOVES.length; i++) {
-			int newPos = pos + Constants.KING_MOVES[i];
+			final int newPos = pos + Constants.KING_MOVES[i];
 			if (!onBoard(newPos) || getDistance(pos, newPos) > 2) continue;
 
 			if (remove) {
@@ -428,6 +445,7 @@ public class ChessBoard {
 			}
 			attacks[piece.color][newPos].add(piece);
 		}
+		ChessGame.timeKingAttack += System.currentTimeMillis() - prevTime;
 	}
 	
 	public boolean blocksLine(int attacker, int target, int defender) {

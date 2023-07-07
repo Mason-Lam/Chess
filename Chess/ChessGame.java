@@ -31,6 +31,11 @@ public class ChessGame {
 	public static long timeValidPart = 0;
 	public static long timeMakeMove = 0;
 	public static long timeUndoMove = 0;
+	public static long timePawnAttack = 0;
+	public static long timeKnightAttack = 0;
+	public static long timeBishopAttack = 0;
+	public static long timeRookAttack = 0;
+	public static long timeKingAttack = 0;
 	public static long timeMisc = 0;
 	public static long timeDebug = 0;
 
@@ -56,6 +61,11 @@ public class ChessGame {
 		System.out.println("Valid Part: " + timeValidPart);
 		System.out.println("Make Move: " + timeMakeMove);
 		System.out.println("Undo Move: " + timeUndoMove);
+		System.out.println("Pawn Attack: " + timePawnAttack);
+		System.out.println("Knight Attack: " + timeKnightAttack);
+		System.out.println("Bishop Attack: " + timeBishopAttack);
+		System.out.println("Rook Attack: " + timeRookAttack);
+		System.out.println("King Attack: " + timeKingAttack);
 		System.out.println("Misc: " + timeMisc);
 		System.out.println("Debug: " + timeDebug);
 
