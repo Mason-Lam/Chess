@@ -15,6 +15,115 @@ public class ChessPiece {
 		this.pieceID = pieceID;
 	}
 
+	public void pieceAttacks(boolean remove) {
+		switch(type) {
+			case (Constants.PAWN): pawnAttacks(remove);
+				break;
+			case (Constants.KNIGHT): knightAttacks(remove);
+				break;
+			case (Constants.BISHOP): bishopAttacks(remove);
+				break;
+			case (Constants.ROOK): rookAttacks(remove);
+				break;
+			case (Constants.QUEEN): queenAttacks(remove);
+				break;
+			case (Constants.KING): kingAttacks(remove);
+				break;
+		}
+	}
+	
+	private void pawnAttacks(boolean remove) {
+		long prevTime = System.currentTimeMillis();
+		for (int i = 0; i < 2; i++) {
+			final int newPos = pos + Constants.PAWN_DIAGONALS[color][i];
+			if (!board.onBoard(newPos) || !board.onDiagonal(pos,newPos)) continue;
+
+			if (remove) {
+				board.removeAttacker(this, newPos);
+				continue;
+			}
+			board.addAttacker(this, newPos);
+		}
+		ChessGame.timePawnAttack += System.currentTimeMillis() - prevTime;
+	}
+	
+	private void knightAttacks(boolean remove) {
+		long prevTime = System.currentTimeMillis();
+		for (int i = 0; i < Constants.KNIGHT_MOVES.length; i++) {
+			final int newPos = pos + Constants.KNIGHT_MOVES[i];
+			if (!board.onBoard(newPos) || !board.onL(pos, newPos)) continue;
+
+			if (remove) {
+				board.removeAttacker(this, newPos);
+				continue;
+			}
+			board.addAttacker(this, newPos);
+		}
+		ChessGame.timeKnightAttack += System.currentTimeMillis() - prevTime;
+	}
+	
+	private void bishopAttacks(boolean remove) {
+		long prevTime = System.currentTimeMillis();
+		for (int i = 0; i < Constants.DIAGONALS.length; i++) {
+			int newPos = pos;
+			while (true) {
+				newPos += Constants.DIAGONALS[i];
+				if (!board.onBoard(newPos) || !board.onDiagonal(pos, newPos)) break;
+				
+				if (remove) {
+					board.removeAttacker(this, newPos);
+				}
+				else {
+					board.addAttacker(this, newPos);
+				}
+
+				if (!board.getPiece(newPos).isEmpty()) break;
+			}
+		}
+		ChessGame.timeBishopAttack += System.currentTimeMillis() - prevTime;
+	}
+	
+	private void rookAttacks(boolean remove) {
+		long prevTime = System.currentTimeMillis();
+		for (int i = 0; i < Constants.STRAIGHT.length; i++) {
+			int newPos = pos;
+			while (true) {
+				newPos += Constants.STRAIGHT[i];
+				if (!board.onBoard(newPos) || (!board.onColumn(pos, newPos) && i < 2) || (!board.onRow(pos, newPos) && i >= 2)) break;
+				
+				if (remove) {
+					board.removeAttacker(this, newPos);
+				}
+				else {
+					board.addAttacker(this, newPos);
+				}
+
+				if (!board.getPiece(newPos).isEmpty()) break;
+			}
+		}
+		ChessGame.timeRookAttack += System.currentTimeMillis() - prevTime;
+	}
+	
+	private void queenAttacks(boolean remove) {
+		rookAttacks(remove);
+		bishopAttacks(remove);
+	}
+	
+	private void kingAttacks(boolean remove) {
+		long prevTime = System.currentTimeMillis();
+		for (int i = 0; i < Constants.KING_MOVES.length; i++) {
+			final int newPos = pos + Constants.KING_MOVES[i];
+			if (!board.onBoard(newPos) || board.getDistance(pos, newPos) > 2) continue;
+
+			if (remove) {
+				board.removeAttacker(this, newPos);
+				continue;
+			}
+			board.addAttacker(this, newPos);
+		}
+		ChessGame.timeKingAttack += System.currentTimeMillis() - prevTime;
+	}
+
 	public MoveList piece_moves(boolean[] types) {
 		long prevTime = System.currentTimeMillis();
 		final MoveList moves = new MoveList(type);
