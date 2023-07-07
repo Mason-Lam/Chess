@@ -302,6 +302,17 @@ public class ChessPiece {
 	public boolean isEmpty() {
 		return type == Constants.EMPTY;
 	}
+
+	@Override
+	public boolean equals(Object anObject) {
+		if (this == anObject) return true;
+		if (anObject instanceof ChessPiece) {
+			final ChessPiece piece = (ChessPiece) anObject;
+			//return (aMove.start == start && aMove.finish == finish && aMove.type == type);
+			return ((piece.type == type) && (piece.color == color) && (piece.pos == pos) && (piece.pieceID == pieceID));
+		}
+		return false;
+	}
 	
 	public static ChessPiece empty() {
 		return new ChessPiece(Constants.EMPTY, Constants.EMPTY, Constants.EMPTY, null, Constants.EMPTY);

@@ -1,6 +1,8 @@
 package Chess;
 
-public class MoveList {
+import java.util.Iterator;
+
+public class MoveList implements Iterable<Move> {
 
     private final Move[] moves;
     private int index;
@@ -42,5 +44,32 @@ public class MoveList {
 
     public int size() {
         return index;
+    }
+
+    @Override
+    public MoveIterator iterator() {
+        return new MoveIterator(this);
+    }
+
+    public class MoveIterator implements Iterator<Move> {
+        private MoveList list;
+        private int currentIndex;
+
+        public MoveIterator(MoveList list) {
+            this.list = list;
+            currentIndex = 0;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return currentIndex < list.index;
+        }
+
+        @Override
+        public Move next() {
+            currentIndex ++;
+            return list.moves[currentIndex - 1];
+        }
+
     }
 }
