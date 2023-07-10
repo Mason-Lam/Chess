@@ -17,6 +17,10 @@ public class PieceSet implements Iterable<ChessPiece> {
         }
     }
 
+    public boolean contains(ChessPiece piece) {
+        return map[piece.pieceID] != null;
+    }
+
     public void add(ChessPiece piece) {
         if (map[piece.pieceID] == null) size ++;
         map[piece.pieceID] = piece;

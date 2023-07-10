@@ -35,10 +35,17 @@ public class Computer {
 		final BoardStorage store = new BoardStorage(board.getFenString(), board.getEnPassant(), board.getCastling(board.getTurn()));
 		final PieceSet pieces = board.getPieces(board.getTurn()).clone();
 		ChessGame.timeMisc += System.currentTimeMillis() - prevTime;
-
 		for(final ChessPiece piece : pieces) {
 			final MoveList moves = piece.piece_moves(Constants.ALL_MOVES);
 			if(depth == 1) {
+				// if (board.getFenString().equals("rn1q1k1r/pp1bbppp/2p5/8/2B5/P7/1PP1NnPP/RNBQK2R/ w KQ - -")) {
+				// 	board.displayAttacks();
+				// 	for (Move move : moves) {
+				// 		final String start = Constants.indexToSquare(board.getColumn(move.start), 8 - board.getRow(move.start));
+				// 		final String finish = Constants.indexToSquare(board.getColumn(move.finish), 8 - board.getRow(move.finish));
+				// 		System.out.println(start + finish);
+				// 	}
+				// }
 				if (moves.size() > 0) {
 					final Move move = moves.get(0);
 					if(piece.type == Constants.PAWN && board.getRow(move.getFinish()) == Constants.PROMOTION_LINE[board.getTurn()]) {
@@ -53,6 +60,7 @@ public class Computer {
 			for (int moveIndex = 0; moveIndex < moves.size(); moveIndex ++) {
 				final Move move = moves.get(moveIndex);
 				final ChessPiece capturedPiece = getCapturedPiece(move);
+				//final int prevCount = count;
 				board.make_move(move, false);
 				if (board.is_promote()) {
 					for (final byte type : Constants.PROMOTION_PIECES) {
@@ -64,7 +72,11 @@ public class Computer {
 				else {
 					count += totalMoves(depth - 1);
 				}
-
+				// if (depth == 2) {
+				// 	final String start = Constants.indexToSquare(board.getColumn(move.start), 8 - board.getRow(move.start));
+				// 	final String finish = Constants.indexToSquare(board.getColumn(move.finish), 8 - board.getRow(move.finish));
+				// 	System.out.println(start + finish + ": " + (count - prevCount));
+				// }
 				board.undoMove(move, capturedPiece, store);
 			}
 		}

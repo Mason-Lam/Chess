@@ -155,20 +155,13 @@ public class ChessBoard {
 	public void make_move(Move move, boolean permanent) {
 		long prevTime = System.currentTimeMillis();
 		final ChessPiece piece = board[move.getStart()];
-		final PieceSet[] updatePieces = softAttackUpdate(move);
-		for (final PieceSet pieces : updatePieces) {
-			for (final ChessPiece attacker : pieces) {
-				attacker.pieceAttacks(true);
-			}
-		}
+		int castle = Constants.EMPTY;
 		piece.pieceAttacks(true);
 
 		if (move.getType() == Move.Type.ATTACK) {
 			board[move.getFinish()].pieceAttacks(true);
 			updatePosition(board[move.getFinish()], move.getFinish(), true);
 		}
-		
-		board[move.getStart()] = ChessPiece.empty();
 
 		int passant = -1;
 		if (piece.type == Constants.PAWN) {
@@ -195,23 +188,28 @@ public class ChessBoard {
 			Arrays.fill(castling[piece.color], false);
 			if (move.isSpecial()) {
 				if (move.getFinish() > move.getStart()) {
-					updatePosition(board[Constants.ROOK_POSITIONS[turn][1]], move.getFinish() - 1, false);
+					castle = Constants.ROOK_POSITIONS[turn][1];
+					board[castle].pieceAttacks(true);
+					updatePosition(board[castle], move.getFinish() - 1, false);
+					castle = move.finish - 1;
 					board[Constants.ROOK_POSITIONS[turn][1]] = ChessPiece.empty();
 				}
 				else {
-					updatePosition(board[Constants.ROOK_POSITIONS[turn][0]], move.getFinish() + 1, false);
+					castle = Constants.ROOK_POSITIONS[turn][0];
+					board[castle].pieceAttacks(true);
+					updatePosition(board[castle], move.getFinish() + 1, false);
+					castle = move.finish + 1;
 					board[Constants.ROOK_POSITIONS[turn][0]] = ChessPiece.empty();
 				}
 			}
 		}
+		board[move.getStart()] = ChessPiece.empty();
 		
 		updatePosition(piece, move.getFinish(), false);
 		piece.pieceAttacks(false);
-
-		for (final PieceSet pieces : updatePieces) {
-			for (final ChessPiece attacker : pieces) {
-				attacker.pieceAttacks(false);
-			}
+		softAttackUpdate(move, false);
+		if (castle != -1) {
+			board[castle].pieceAttacks(false);
 		}
 
 		enPassant = passant;
@@ -229,22 +227,23 @@ public class ChessBoard {
 		enPassant = store.enPassant;
 
 		final ChessPiece piece = board[move.getFinish()];
-		final PieceSet[] updatePieces = softAttackUpdate(move);
-		for (final PieceSet pieces : updatePieces) {
-			for (final ChessPiece attacker : pieces) {
-				attacker.pieceAttacks(true);
-			}
-		}
+		int castle = Constants.EMPTY;
 		piece.pieceAttacks(true);
 
 		if (piece.type == Constants.KING) {
 			if (move.isSpecial()) {
 				if (move.getFinish() > move.getStart()) {
-					updatePosition(board[move.getFinish() - 1], Constants.ROOK_POSITIONS[turn][1], false);
+					castle = move.getFinish() - 1;
+					board[castle].pieceAttacks(true);
+					updatePosition(board[castle], Constants.ROOK_POSITIONS[turn][1], false);
+					castle = Constants.ROOK_POSITIONS[turn][1];
 					board[move.getFinish() - 1] = ChessPiece.empty();
 				}
 				else {
-					updatePosition(board[move.getFinish() + 1], Constants.ROOK_POSITIONS[turn][0], false);
+					castle = move.getFinish() + 1;
+					board[castle].pieceAttacks(true);
+					updatePosition(board[castle], Constants.ROOK_POSITIONS[turn][0], false);
+					castle = Constants.ROOK_POSITIONS[turn][0];
 					board[move.getFinish() + 1] = ChessPiece.empty();
 				}
 			}
@@ -263,12 +262,11 @@ public class ChessBoard {
 			capturedPiece.pieceAttacks(false);
 		}
 
-		for (final PieceSet pieces : updatePieces) {
-			for (final ChessPiece attacker : pieces) {
-				attacker.pieceAttacks(false);
-			}
-		}
 		piece.pieceAttacks(false);
+		softAttackUpdate(move, true);
+		if (castle != -1) {
+			board[castle].pieceAttacks(false);
+		}
 		
 		promotingPawn = -1;
 		ChessGame.timeUndoMove += System.currentTimeMillis() - prevTime;
@@ -299,40 +297,12 @@ public class ChessBoard {
 		}
 	}
 	
-	private PieceSet[] softAttackUpdate(Move move) {
-		final boolean passant = move.isSpecial() && (board[move.getStart()].type == Constants.PAWN || board[move.getFinish()].type == Constants.PAWN);
-		final PieceSet[] pieces = new PieceSet[2];
-		pieces[0] = new PieceSet();
-		pieces[1] = new PieceSet();
-		for (int color = 0; color < 2; color ++) {
-			for (final ChessPiece attacker : attacks[color][move.getStart()]) {
-				if (attacker.type == Constants.BISHOP || attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
-					if (attacker.pos != move.getFinish()) {
-						pieces[color].add(attacker);
-					}
-				}
-			}
-
-			for (final ChessPiece attacker : attacks[color][move.getFinish()]) {
-				if (attacker.type == Constants.BISHOP || attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
-					if (attacker.pos != move.getStart()) {
-						pieces[color].add(attacker);
-					}
-				}
-			}
-
-			if (passant) {
-				for (final ChessPiece attacker : attacks[color][enPassant]) {
-					if (attacker.type == Constants.BISHOP || attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
-						if (attacker.pos != move.getFinish() && attacker.pos != move.getStart()) {
-							pieces[color].add(attacker);
-						}
-					}
-				}
+	private void softAttackUpdate(Move move, boolean undoMove) {
+		for (int color = 0; color < 2; color++) {
+			for (final ChessPiece piece : pieces[color]) {
+				piece.softPieceUpdate(move, undoMove);
 			}
 		}
-
-		return pieces;
 	}
 
 	public void addAttacker(ChessPiece piece, int pos) {
@@ -429,8 +399,12 @@ public class ChessBoard {
 		return board[pos];
 	}
 
-	public PieceSet getAttackers(int pos, int color) {
-		return attacks[next(color)][pos];
+	public PieceSet getAttackers(ChessPiece piece) {
+		return attacks[next(piece.color)][piece.pos];
+	}
+
+	public PieceSet getAttacks(int pos, int color)  {
+		return attacks[color][pos];
 	}
 
 	public int getKingPos(int color) {

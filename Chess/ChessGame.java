@@ -69,10 +69,13 @@ public class ChessGame {
 		System.out.println("Misc: " + timeMisc);
 		System.out.println("Debug: " + timeDebug);
 
-		board = new ChessBoard(Tests.test10.fen);	//Creates a new ChessBoard object
-		//board.displayAttacks();
+		//Tests.test8.runTest();
+		board = new ChessBoard("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2BNP1b1/P1NP4/1PP1QPPP/R4RK1/ b - - -");	//Creates a new ChessBoard object
+		// board.displayAttacks();
 		
 		computer = board.getComputer();
+		// System.out.println(computer.totalMoves(2));
+		// board.displayAttacks();
 		// long prevTime = System.currentTimeMillis();
 		// //Current (3, 33), (4, 145), (5, 1203), (6, 17052)
 		// System.out.println(computer.totalMoves(6)); //Goal: (3, 0), (4, 11), (5, 259), (6, 6502)
@@ -233,7 +236,7 @@ public class ChessGame {
 		 * the game*/
 		final int win = board.isWinner();	//Checks if there is a winner
 
-//		//checks for no winner
+		//checks for no winner
 		if(win == Constants.PROGRESS) {
 			return;
 		}
@@ -265,8 +268,10 @@ public class ChessGame {
 		click1 =-1;	//Resets click variable
 		check_Win();		//Checks for a win
 		update_display();	//Updates the display
-		//board.displayAttacks();
-//		count --;
+		// board.displayAttacks();
+		// System.out.println(computer.totalMoves(1));
+		// System.out.println(board.getFenString());
+		// count --;
 	}
 
 	public static ImageIcon resizeImage(ImageIcon imageIcon) {

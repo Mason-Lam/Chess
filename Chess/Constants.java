@@ -3,6 +3,30 @@ package Chess;
 public class Constants {
 	public static final boolean CHECKS = true;
 	
+	public static final int[][] distFromEdge = new int[64][8];
+
+	static {
+		for (int row = 0; row < 8; row++) {
+			for(int column = 0; column < 8; column++) {
+				final int northDist = row;
+				final int southDist = 7 - row;
+				final int westDist = column;
+				final int eastDist = 7 - column;
+				final int[] data = new int[] {
+					northDist,
+					southDist,
+					westDist,
+					eastDist,
+					Math.min(northDist, westDist),
+					Math.min(southDist, eastDist),
+					Math.min(northDist, eastDist),
+					Math.min(southDist, westDist)
+				};
+				distFromEdge[row * 8 + column] = data;
+			}
+		}
+	}
+
 	//Pieces
 	public static final byte EMPTY = -1;
 	public static final byte PAWN = 0;
