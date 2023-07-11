@@ -7,6 +7,9 @@ import java.awt.Image;
 
 import javax.swing.*;
 
+import Chess.Computer.BoardStorage;
+import Chess.Move.Type;
+
 public class ChessGame {
 	/*A Chess Game class*/
 	private final JFrame frame = new JFrame();	//Frame to display the ChessGame
@@ -36,6 +39,8 @@ public class ChessGame {
 	public static long timeBishopAttack = 0;
 	public static long timeRookAttack = 0;
 	public static long timeKingAttack = 0;
+	public static long timeSoftRook = 0;
+	public static long timeSoftBishop = 0;
 	public static long timeMisc = 0;
 	public static long timeDebug = 0;
 
@@ -50,31 +55,55 @@ public class ChessGame {
 		Tests.runTests(); //5800, 8315, 3200
 		System.out.println(System.currentTimeMillis() - prevTime);
 
-		System.out.println("Move Generation: " + timeMoveGen);
+		// System.out.println("Move Generation: " + timeMoveGen);
 		
-		System.out.println("Pawn Move: " + timePawnGen);
-		System.out.println("Knight Move: " + timeKnightGen);
-		System.out.println("Bishop Move: " + timeBishopGen);
-		System.out.println("Rook Move: " + timeRookGen);
-		System.out.println("King Move: " + timeKingGen);
-		System.out.println("Valid Move: " + timeValidMove);
-		System.out.println("Valid Part: " + timeValidPart);
-		System.out.println("Make Move: " + timeMakeMove);
-		System.out.println("Undo Move: " + timeUndoMove);
-		System.out.println("Pawn Attack: " + timePawnAttack);
-		System.out.println("Knight Attack: " + timeKnightAttack);
-		System.out.println("Bishop Attack: " + timeBishopAttack);
-		System.out.println("Rook Attack: " + timeRookAttack);
-		System.out.println("King Attack: " + timeKingAttack);
-		System.out.println("Misc: " + timeMisc);
-		System.out.println("Debug: " + timeDebug);
+		// System.out.println("Pawn Move: " + timePawnGen);
+		// System.out.println("Knight Move: " + timeKnightGen);
+		// System.out.println("Bishop Move: " + timeBishopGen);
+		// System.out.println("Rook Move: " + timeRookGen);
+		// System.out.println("King Move: " + timeKingGen);
+		// System.out.println("Valid Move: " + timeValidMove);
+		// System.out.println("Valid Part: " + timeValidPart);
+		// System.out.println("Make Move: " + timeMakeMove);
+		// System.out.println("Undo Move: " + timeUndoMove);
+		// System.out.println("Pawn Attack: " + timePawnAttack);
+		// System.out.println("Knight Attack: " + timeKnightAttack);
+		// System.out.println("Bishop Attack: " + timeBishopAttack);
+		// System.out.println("Rook Attack: " + timeRookAttack);
+		// System.out.println("King Attack: " + timeKingAttack);
+		// System.out.println("Bishop Soft Attack: " + timeSoftBishop);
+		// System.out.println("Rook Soft Attack: " + timeSoftRook);
+		// System.out.println("Misc: " + timeMisc);
+		// System.out.println("Debug: " + timeDebug);
 
 		//Tests.test8.runTest();
-		board = new ChessBoard("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2BNP1b1/P1NP4/1PP1QPPP/R4RK1/ b - - -");	//Creates a new ChessBoard object
+		// Tests.test15.runTest();
+		// Tests.test15.runTest();
+		board = new ChessBoard("r3k2r/1b4bq/8/8/8/8/7B/R4RK1/ b -kq -");	//Creates a new ChessBoard object
 		// board.displayAttacks();
+		// computer = board.getComputer();
+		// final int[][] x;
+		// final Move move1 = new Move(55, 62, Type.MOVE);
+		// x = computer.copyAttacks();
+		// final Move move2 = new Move(0, 8, Type.MOVE);
+		// final Move move3 = new Move(63, 15, Type.ATTACK);
+		// board.make_move(move1, true);
+		// // board.displayAttacks();
+		// board.make_move(move2, true);
+		// ChessPiece captured = board.getPiece(15);
+		// Computer.BoardStorage store = new BoardStorage(board.getFenString(), board.getEnPassant(), board.getCastling(board.getTurn()));
+		// board.make_move(move3, true);
+		// // for (ChessPiece piece : board.getAttacks(47, Constants.BLACK)) {
+		// // 	System.out.println(piece.type);
+		// // }
+		// board.undoMove(move3, captured, store);
+		// board.undoMove(move2, null, store);
+		// board.undoMove(move1, null, store);
+		// if (!computer.compareAttacks(x, computer.copyAttacks())) System.out.println("X");
+		//board.displayAttacks();
 		
 		computer = board.getComputer();
-		// System.out.println(computer.totalMoves(2));
+		// System.out.println(computer.totalMoves(3));
 		// board.displayAttacks();
 		// long prevTime = System.currentTimeMillis();
 		// //Current (3, 33), (4, 145), (5, 1203), (6, 17052)
@@ -270,7 +299,7 @@ public class ChessGame {
 		update_display();	//Updates the display
 		// board.displayAttacks();
 		// System.out.println(computer.totalMoves(1));
-		// System.out.println(board.getFenString());
+		System.out.println(board.getFenString());
 		// count --;
 	}
 

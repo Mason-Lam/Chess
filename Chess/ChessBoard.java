@@ -157,9 +157,10 @@ public class ChessBoard {
 		final ChessPiece piece = board[move.getStart()];
 		int castle = Constants.EMPTY;
 		piece.pieceAttacks(true);
+		// ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 
 		if (move.getType() == Move.Type.ATTACK) {
-			board[move.getFinish()].pieceAttacks(true);
+			board[move.finish].pieceAttacks(true);
 			updatePosition(board[move.getFinish()], move.getFinish(), true);
 		}
 
@@ -258,7 +259,7 @@ public class ChessBoard {
 		updatePosition(piece, move.getStart(), false);
 
 		if (move.getType() == Move.Type.ATTACK) {
-			updatePosition(capturedPiece, move.getFinish(), false);
+			updatePosition(capturedPiece, move.finish, false);
 			capturedPiece.pieceAttacks(false);
 		}
 
@@ -300,7 +301,9 @@ public class ChessBoard {
 	private void softAttackUpdate(Move move, boolean undoMove) {
 		for (int color = 0; color < 2; color++) {
 			for (final ChessPiece piece : pieces[color]) {
+				long prevTime = System.currentTimeMillis();
 				piece.softPieceUpdate(move, undoMove);
+				//ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 			}
 		}
 	}
