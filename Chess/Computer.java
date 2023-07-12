@@ -1,17 +1,17 @@
 package Chess;
 
-import java.util.HashSet;
-
 public class Computer {
 
 	public static class BoardStorage {
 		public final String fenString;
 		public final int enPassant;
+		public final int halfMove;
 		private final boolean[] castling;
 
-		public BoardStorage(String fenString, int enPassant, boolean[] castling) {
+		public BoardStorage(String fenString, int enPassant, int halfMove, boolean[] castling) {
 			this.fenString = fenString;
 			this.enPassant = enPassant;
+			this.halfMove = halfMove;
 			this.castling = new boolean[2];
 			this.castling[0] = castling[0];
 			this.castling[1] = castling[1];
@@ -25,7 +25,7 @@ public class Computer {
 		}
 	}
 
-	private final ChessBoard board;
+	public final ChessBoard board;
 	
 	public Computer(ChessBoard board) {
 		this.board = board;
@@ -34,43 +34,37 @@ public class Computer {
 	public int totalMoves(int depth) {
 		int count = 0;
 		long prevTime = System.currentTimeMillis();
-		final BoardStorage store = new BoardStorage(board.getFenString(), board.getEnPassant(), board.getCastling(board.getTurn()));
-		final HashSet<ChessPiece> pieces = new HashSet<ChessPiece>();
-		for (final ChessPiece piece : board.getPieces(board.getTurn())) {
-			pieces.add(piece);
-		}
+		final BoardStorage store = (depth != 1) ? new BoardStorage(board.getFenString(), board.getEnPassant(), board.halfMove, board.getCastling(board.getTurn())) : null;
+		final PieceSet pieces = board.getPieces(board.getTurn());
 		ChessGame.timeMisc += System.currentTimeMillis() - prevTime;
-
 		for(final ChessPiece piece : pieces) {
-			final HashSet<Move> moves = new HashSet<Move>();
-			board.piece_moves(piece.pos, Constants.ALL_MOVES, moves);
+			final MoveList moves = piece.pieceMoves();
 			if(depth == 1) {
 				if (moves.size() > 0) {
-					for (final Move move : moves) {
-						if(piece.type == Constants.PAWN && board.getRow(move.getFinish()) == Constants.PROMOTION_LINE[board.getTurn()]) {
-							count += moves.size() * 3;
-						}
-						break;
+					final Move move = moves.get(0);
+					if(piece.type == Constants.PAWN && ChessBoard.getRow(move.finish) == Constants.PROMOTION_LINE[board.getTurn()]) {
+						count += moves.size() * 4;
+						continue;
 					}
 				}
 				count += moves.size();
 				continue;
 			}
 			
-			for (final Move move : moves) {
+			for (int moveIndex = 0; moveIndex < moves.size(); moveIndex ++) {
+				final Move move = moves.get(moveIndex);
 				final ChessPiece capturedPiece = getCapturedPiece(move);
 				board.make_move(move, false);
 				if (board.is_promote()) {
 					for (final byte type : Constants.PROMOTION_PIECES) {
 						board.promote(type);
 						count += totalMoves(depth - 1);
-						board.unPromote(move.getFinish(), store);
+						board.unPromote(move.finish, store);
 					}
 				}
 				else {
 					count += totalMoves(depth - 1);
 				}
-
 				board.undoMove(move, capturedPiece, store);
 			}
 		}
@@ -78,7 +72,7 @@ public class Computer {
 	}
 
 	private ChessPiece getCapturedPiece(Move move) {
-		return (move.isSpecial() && board.getPiece(move.getStart()).type == Constants.PAWN) ? 
-			board.getPiece(board.getEnPassant()) : board.getPiece(move.getFinish());
+		return (move.isSpecial() && board.getPiece(move.start).type == Constants.PAWN) ? 
+			board.getPiece(board.getEnPassant()) : board.getPiece(move.finish);
 	}
 }

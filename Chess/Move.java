@@ -28,27 +28,31 @@ public class Move {
 		moveID = typeAdd + (start << 2) + (finish << 8);
 	}
 
-	public int getFinish() {
-		return finish;
-		//return moveID >> 8;
+	public Move invert() {
+		return new Move(finish, start, type);
 	}
 
-	public int getStart () {
-		return start;
-		//return 63 & (moveID >> 2);
-	}
+	// public int getFinish() {
+	// 	return finish;
+	// 	//return moveID >> 8;
+	// }
 
-	public Type getType() {
-		return type;
-		// final int typeID = 3 & moveID;
-		// if (typeID == 2) {
-		// 	return Type.SPECIAL;
-		// }
-		// if (typeID == 1) {
-		// 	return Type.ATTACK;
-		// }
-		// return Type.MOVE;
-	}
+	// public int getStart () {
+	// 	return start;
+	// 	//return 63 & (moveID >> 2);
+	// }
+
+	// public Type getType() {
+	// 	return type;
+	// 	// final int typeID = 3 & moveID;
+	// 	// if (typeID == 2) {
+	// 	// 	return Type.SPECIAL;
+	// 	// }
+	// 	// if (typeID == 1) {
+	// 	// 	return Type.ATTACK;
+	// 	// }
+	// 	// return Type.MOVE;
+	// }
 
 	public boolean isSpecial() {
 		return type == Type.SPECIAL;

@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.Image;
-import java.util.HashSet;
 
 import javax.swing.*;
 
@@ -17,7 +16,7 @@ public class ChessGame {
 	private final int computerTurn;			//int to store the computer
 	private final Computer computer;
 	private final int difficulty;
-	private final HashSet<Move> legal;	//A list to store the legal moves of a chess piece
+	private MoveList legal;	//A list to store the legal moves of a chess piece
 
 	private boolean winner;
 	private int click1;			//Stores the user first input
@@ -32,12 +31,21 @@ public class ChessGame {
 	public static long timeValidPart = 0;
 	public static long timeMakeMove = 0;
 	public static long timeUndoMove = 0;
+	public static long timePawnAttack = 0;
+	public static long timeKnightAttack = 0;
+	public static long timeBishopAttack = 0;
+	public static long timeRookAttack = 0;
+	public static long timeKingAttack = 0;
+	public static long timeSoftAttack = 0;
+	public static long timeSoftRook = 0;
+	public static long timeSoftBishop = 0;
 	public static long timeMisc = 0;
+	public static long timeDebug = 0;
 
 	public ChessGame(int computerTurn, int difficulty){
 		this.difficulty = difficulty;
 		this.computerTurn = computerTurn;
-		legal = new HashSet<Move>();
+		legal = new MoveList();
 		winner = false;
 		click1 = -1;		//sets var as no clicks
 		//rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
@@ -56,12 +64,22 @@ public class ChessGame {
 		System.out.println("Valid Part: " + timeValidPart);
 		System.out.println("Make Move: " + timeMakeMove);
 		System.out.println("Undo Move: " + timeUndoMove);
+		System.out.println("Pawn Attack: " + timePawnAttack);
+		System.out.println("Knight Attack: " + timeKnightAttack);
+		System.out.println("Bishop Attack: " + timeBishopAttack);
+		System.out.println("Rook Attack: " + timeRookAttack);
+		System.out.println("King Attack: " + timeKingAttack);
+		System.out.println("Soft Attack: " + timeSoftAttack);
+		System.out.println("Bishop Soft Attack: " + timeSoftBishop);
+		System.out.println("Rook Soft Attack: " + timeSoftRook);
 		System.out.println("Misc: " + timeMisc);
+		System.out.println("Debug: " + timeDebug);
 
-		board = new ChessBoard();	//Creates a new ChessBoard object
-		//board.displayAttacks();
+		board = new ChessBoard(Tests.test21.fen);	//Creates a new ChessBoard object
 		
 		computer = board.getComputer();
+		// System.out.println(computer.totalMoves(3));
+		// board.displayAttacks();
 		// long prevTime = System.currentTimeMillis();
 		// //Current (3, 33), (4, 145), (5, 1203), (6, 17052)
 		// System.out.println(computer.totalMoves(6)); //Goal: (3, 0), (4, 11), (5, 259), (6, 6502)
@@ -130,22 +148,23 @@ public class ChessGame {
 			count += 1;
 		}
 		if(click1 != -1) {
-			for(final Move move : legal) {
-				System.out.print(move.getFinish() +" : ");
-				System.out.print(board.getPiece(move.getFinish()).type+ " : ");
-				System.out.print(move.getType().toString() + ", ");
+			for(int j = 0; j < legal.size(); j++) {
+				final Move move = legal.get(j);
+				System.out.print(move.finish +" : ");
+				System.out.print(board.getPiece(move.finish).type+ " : ");
+				System.out.print(move.type.toString() + ", ");
 				//Checks if the square is a legal move
-				if(board.getPiece(move.getFinish()).isEmpty()) {
+				if(board.getPiece(move.finish).isEmpty()) {
                     address = "Chess/Elements/";
 					//address = "C:\\Users\\Mason\\Documents\\Java\\Elements\\";
-					if(move.getFinish() % 2 == (move.getFinish() /8 ) %2){
+					if(move.finish % 2 == (move.finish /8 ) %2){
 						address += "W";
 					}
 					else {
 						address += "G";
 					}
 					address += "D.png";
-					GUI[move.getFinish()].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
+					GUI[move.finish].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
 				}
 			}
 			System.out.println();
@@ -160,7 +179,7 @@ public class ChessGame {
 //		board.make_move(move,true);
 //		if(board.is_promote()) {
 //			move = board.computer_move(difficulty);
-//			board.promote(board.promotingPawn, move.getFinish());
+//			board.promote(board.promotingPawn, move.finish);
 //		}
 //		next_turn();
 	}
@@ -176,8 +195,7 @@ public class ChessGame {
 		//Checks if the click is on the correct Chess pieces.
 		if(board.getPiece(pos).color == board.getTurn() && !board.getPiece(pos).isEmpty()) {
 			click1 = pos;		//Stores the users first click
-			legal.clear();
-			board.piece_moves(click1, Constants.ALL_MOVES, legal);	//Generates all the legal moves for a player
+			legal = board.getPiece(click1).pieceMoves();	//Generates all the legal moves for a player
 			//System.out.println(legal.size());
 			update_display();	//Updates the display
 			return;		//The return on your Bitcoin investment
@@ -187,12 +205,13 @@ public class ChessGame {
 			return;		//Return to sender
 		}	
 		//for loop to cycle through every legal move
-		for(final Move move : legal) {
+		for(int i = 0; i < legal.size(); i ++) {
+			final Move move = legal.get(i);
 			//Checks if the click is a legal move
-			if(move.getFinish() == pos) {
+			if(move.finish == pos) {
 				//makes the move on the board
 				board.make_move(move, true);
-				legal.clear();
+				legal = new MoveList();
 				//Checks if there is a pawn promoting
 				if(board.is_promote()) {
 					update_display();	//Updates the display
@@ -221,7 +240,7 @@ public class ChessGame {
 		 * the game*/
 		final int win = board.isWinner();	//Checks if there is a winner
 
-//		//checks for no winner
+		//checks for no winner
 		if(win == Constants.PROGRESS) {
 			return;
 		}
@@ -253,8 +272,9 @@ public class ChessGame {
 		click1 =-1;	//Resets click variable
 		check_Win();		//Checks for a win
 		update_display();	//Updates the display
-		//board.displayAttacks();
-//		count --;
+		// board.displayAttacks();
+		// System.out.println(computer.totalMoves(1));
+		// count --;
 	}
 
 	public static ImageIcon resizeImage(ImageIcon imageIcon) {
