@@ -21,14 +21,18 @@ public class PieceSet implements Iterable<ChessPiece> {
         return map[piece.pieceID] != null;
     }
 
-    public void add(ChessPiece piece) {
-        if (map[piece.pieceID] == null) size ++;
+    public boolean add(ChessPiece piece) {
+        final boolean isEmpty = map[piece.pieceID] == null;
+        if (isEmpty) size ++;
         map[piece.pieceID] = piece;
+        return isEmpty;
     }
 
-    public void remove(ChessPiece piece) {
-        if (map[piece.pieceID] != null) size --;
+    public boolean remove(ChessPiece piece) {
+        final boolean piecePresent = map[piece.pieceID] != null;
+        if (piecePresent) size --;
         map[piece.pieceID] = null;
+        return piecePresent;
     }
 
     public int size() {
