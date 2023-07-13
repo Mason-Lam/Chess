@@ -1,6 +1,16 @@
 package Chess;
 
 public class Constants {
+	public static final int[] MAX_MOVES = new int[] {
+		4,
+		8,
+		13,
+		14,
+		27,
+		9,
+		512
+	};
+
 	public static final boolean CHECKS = true;
 	
 	public static final int[][] distFromEdge = new int[64][8];

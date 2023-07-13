@@ -1,5 +1,7 @@
 package Chess;
 
+import java.util.ArrayList;
+
 public class Computer {
 
 	public static class BoardStorage {
@@ -38,7 +40,8 @@ public class Computer {
 		final PieceSet pieces = board.getPieces(board.getTurn());
 		ChessGame.timeMisc += System.currentTimeMillis() - prevTime;
 		for(final ChessPiece piece : pieces) {
-			final MoveList moves = piece.pieceMoves();
+			final ArrayList<Move> moves = new ArrayList<Move>(Constants.MAX_MOVES[piece.type]);
+			piece.pieceMoves(moves);
 			if(depth == 1) {
 				if (moves.size() > 0) {
 					final Move move = moves.get(0);

@@ -1,5 +1,6 @@
 package Chess;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import Chess.Computer.BoardStorage;
@@ -393,7 +394,8 @@ public class ChessBoard {
 		if (halfMove >= 50) return Constants.DRAW;
 		if (hasInsufficientMaterial()) return Constants.DRAW;
 		for(ChessPiece piece : pieces[turn]) {
-			final MoveList moves = piece.pieceMoves();
+			final ArrayList<Move> moves = new ArrayList<Move>();
+			piece.pieceMoves(moves);
 			if(moves.size() > 0) {
 				return Constants.PROGRESS;
 			}

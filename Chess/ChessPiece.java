@@ -1,5 +1,7 @@
 package Chess;
 
+import java.util.ArrayList;
+
 public class ChessPiece {
 	public byte type;
 	public int pos;
@@ -252,22 +254,21 @@ public class ChessPiece {
 		}
 	}
 
-	public MoveList pieceMoves() {
-		return pieceMoves(Constants.ALL_MOVES);
+	public void pieceMoves(ArrayList<Move> moves) {
+		pieceMoves(moves, Constants.ALL_MOVES);
 	}
 
-	public MoveList pieceMoves(boolean[] types) {
+	public void pieceMoves(ArrayList<Move> moves, boolean[] types) {
 		long prevTime = System.currentTimeMillis();
-		final MoveList moves = new MoveList(type);
-		if (board.is_promote() || board.getTurn() != color) return moves;
+		if (board.is_promote() || board.getTurn() != color) return;
 
 		if (type == Constants.KING) {
 			king(types, moves);
 			ChessGame.timeMoveGen += System.currentTimeMillis() - prevTime;
-			return moves;
+			return;
 		}
 
-		if (board.doubleCheck(color)) return moves;
+		if (board.doubleCheck(color)) return;
 
 		switch (type) {
 			case Constants.PAWN: pawn(types, moves);
@@ -282,10 +283,9 @@ public class ChessPiece {
 				break;
 		}
 		ChessGame.timeMoveGen += System.currentTimeMillis() - prevTime;
-		return moves;
 	}
 	
-	private void pawn(boolean[] types, MoveList moves) {
+	private void pawn(boolean[] types, ArrayList<Move> moves) {
 		//Moves
 		long prevTime = System.currentTimeMillis();
 		if (types[0]) {
@@ -315,7 +315,7 @@ public class ChessPiece {
 		ChessGame.timePawnGen += System.currentTimeMillis() - prevTime;
 	}
 	
-	private void knight(boolean[] types, MoveList moves) {
+	private void knight(boolean[] types, ArrayList<Move> moves) {
 		long prevTime = System.currentTimeMillis();
 		for (int i = 0; i < Constants.KNIGHT_MOVES.length; i++) {
 			final int newPos = pos + Constants.KNIGHT_MOVES[i];
@@ -331,7 +331,7 @@ public class ChessPiece {
 		ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
 	}
 	
-	private void bishop(boolean[] types, MoveList moves) {
+	private void bishop(boolean[] types, ArrayList<Move> moves) {
 		long prevTime = System.currentTimeMillis();
 		for (int i = 0; i < Constants.DIAGONALS.length; i++) {
 			final int distance = ChessBoard.getEdge(Constants.DIAGONALS[i], pos);
@@ -351,7 +351,7 @@ public class ChessPiece {
 		ChessGame.timeBishopGen += System.currentTimeMillis() - prevTime;
 	}
 	
-	private void rook(boolean[] types, MoveList moves) {
+	private void rook(boolean[] types, ArrayList<Move> moves) {
 		long prevTime = System.currentTimeMillis();
 		for (int i = 0; i < Constants.STRAIGHT.length; i++) {
 			final int distance = ChessBoard.getEdge(Constants.STRAIGHT[i], pos);
@@ -371,12 +371,12 @@ public class ChessPiece {
 		ChessGame.timeRookGen += System.currentTimeMillis() - prevTime;
 	}
 	
-	private void queen(boolean[] types, MoveList moves) {
+	private void queen(boolean[] types, ArrayList<Move> moves) {
 		rook(types, moves);
 		bishop(types, moves);
 	}
 	
-	private void king(boolean[] types, MoveList moves) {
+	private void king(boolean[] types, ArrayList<Move> moves) {
 		long prevTime = System.currentTimeMillis();
 		if (types[0] || types[1]) {
 			for (int i = 0; i < Constants.KING_MOVES.length; i++) {
@@ -421,9 +421,13 @@ public class ChessPiece {
 		ChessGame.timeKingGen += System.currentTimeMillis() - prevTime;
 	}
 
-	private void addMove(MoveList moves, Move move) {
+	private void addMove(ArrayList<Move> moves, Move move) {
 		long prevTime = System.currentTimeMillis();
-		if (validMove(move) || !Constants.CHECKS) {
+		if (!Constants.CHECKS) {
+			moves.add(move);
+			return;
+		}
+		if (validMove(move)) {
 			ChessGame.timeValidMove += System.currentTimeMillis() - prevTime;
 			prevTime = System.currentTimeMillis();
 			moves.add(move);

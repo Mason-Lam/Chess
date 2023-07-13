@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.Image;
+import java.util.ArrayList;
 
 import javax.swing.*;
 
@@ -16,7 +17,7 @@ public class ChessGame {
 	private final int computerTurn;			//int to store the computer
 	private final Computer computer;
 	private final int difficulty;
-	private MoveList legal;	//A list to store the legal moves of a chess piece
+	private final ArrayList<Move> legal;	//A list to store the legal moves of a chess piece
 
 	private boolean winner;
 	private int click1;			//Stores the user first input
@@ -45,7 +46,7 @@ public class ChessGame {
 	public ChessGame(int computerTurn, int difficulty){
 		this.difficulty = difficulty;
 		this.computerTurn = computerTurn;
-		legal = new MoveList();
+		legal = new ArrayList<Move>(Constants.QUEEN);
 		winner = false;
 		click1 = -1;		//sets var as no clicks
 		//rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
@@ -195,7 +196,7 @@ public class ChessGame {
 		//Checks if the click is on the correct Chess pieces.
 		if(board.getPiece(pos).color == board.getTurn() && !board.getPiece(pos).isEmpty()) {
 			click1 = pos;		//Stores the users first click
-			legal = board.getPiece(click1).pieceMoves();	//Generates all the legal moves for a player
+			board.getPiece(click1).pieceMoves(legal); //Generates all the legal moves for a player
 			//System.out.println(legal.size());
 			update_display();	//Updates the display
 			return;		//The return on your Bitcoin investment
@@ -211,7 +212,7 @@ public class ChessGame {
 			if(move.finish == pos) {
 				//makes the move on the board
 				board.make_move(move, true);
-				legal = new MoveList();
+				legal.clear();
 				//Checks if there is a pawn promoting
 				if(board.is_promote()) {
 					update_display();	//Updates the display
