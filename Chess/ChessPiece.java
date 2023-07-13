@@ -5,6 +5,7 @@ import java.util.ArrayList;
 public class ChessPiece {
 	public byte type;
 	public int pos;
+	private ChessPiece pinPiece;
 	
 	public final byte color;
 	public final int pieceID;
@@ -12,10 +13,12 @@ public class ChessPiece {
 	
 	public ChessPiece(byte type, byte color, int pos, ChessBoard board, int pieceID) {
 		this.type = type;
-		this.color = color;
 		this.pos = pos;
+		this.color = color;
 		this.board = board;
 		this.pieceID = pieceID;
+
+		pinPiece = null;
 	}
 
 	public void pieceAttacks(boolean remove) {
@@ -282,6 +285,7 @@ public class ChessPiece {
 			case Constants.QUEEN: queen(types, moves);
 				break;
 		}
+		pinPiece = null;
 		ChessGame.timeMoveGen += System.currentTimeMillis() - prevTime;
 	}
 	
@@ -481,69 +485,96 @@ public class ChessPiece {
 	}
 	
 	private boolean isPinned(Move move) {
+		if (pinPiece == null) pinPiece = getPin();
 		final int king = board.getKingPos(color);
 
-		final boolean pinnedPiece = (ChessBoard.onDiagonal(king, move.start) || ChessBoard.onLine(king, move.start)) && board.isAttacked(this);
-		final boolean passant = (move.isSpecial() && board.getPiece(move.start).type == Constants.PAWN);
-		if (!pinnedPiece && !passant) return false;
-
-		final PieceSet attackers;
-		if (passant) {
+		if (move.isSpecial() && board.getPiece(move.start).type == Constants.PAWN) {
+			final PieceSet attackers = new PieceSet();
 			final int enPassant = board.getEnPassant();
-			final boolean pinnedPassant = (ChessBoard.onDiagonal(king, enPassant) || ChessBoard.onLine(king, enPassant)) && board.isAttacked(enPassant, color);
-			if (pinnedPiece && pinnedPassant) {
-				attackers = board.getAttackers(this).clone();
+			if ((ChessBoard.onDiagonal(king, enPassant) || ChessBoard.onLine(king, enPassant)) && board.isAttacked(enPassant, color)) {
 				attackers.addAll(board.getAttacks(enPassant, board.next(color)));
 			}
-			else if (pinnedPiece) {
-				attackers = board.getAttackers(this);
+			if (!pinPiece.isEmpty()) {
+				attackers.add(pinPiece);
 			}
-			else if (pinnedPassant) {
-				attackers = board.getAttacks(enPassant, board.next(color));
+
+			for (final ChessPiece piece : attackers) {
+				if (piece.type == Constants.PAWN || piece.type == Constants.KNIGHT || piece.type == Constants.KING) continue;
+
+				if (piece.type == Constants.BISHOP || piece.type == Constants.QUEEN) {
+					final int pinnedPos = ChessBoard.onDiagonal(piece.pos, board.getEnPassant()) ? board.getEnPassant() : move.start;
+					if (ChessBoard.blocksDiagonal(piece.pos, king, pinnedPos)) {
+						if (ChessBoard.onSameDiagonal(move.finish, king, piece.pos) && pinnedPos == move.start) return false;
+
+						final int direction = ChessBoard.getDiagonalOffset(piece.pos, pinnedPos);
+
+						for (int j = 1; j < ChessBoard.getDistanceVert(pinnedPos, king); j++) {
+							if (!board.getPiece(pinnedPos + direction * j).isEmpty()) return false;
+						}
+						return true;
+					}
+				}
+
+				if (piece.type == Constants.ROOK || piece.type == Constants.QUEEN) {
+					if (ChessBoard.blocksLine(piece.pos, king, move.start)) {
+						if (ChessBoard.onSameLine(move.finish, king, piece.pos)) return false;
+
+						final int direction = ChessBoard.getHorizontalOffset(piece.pos, move.start);
+						
+						int newPos = move.start;
+						for (int j = 0; j < ChessBoard.getDistance(move.start, king) - 1; j++) {
+							newPos += direction;
+							if (!board.getPiece(newPos).isEmpty() && newPos != board.getEnPassant()) return false;
+						}
+						return true;
+					}
+				}
 			}
-			else {
-				return false;
-			}
+			return false;
 		}
 		else {
-			if (!pinnedPiece) return false;
-			attackers = board.getAttackers(this);
+			if (pinPiece.isEmpty()) return false;
+			if (ChessBoard.onDiagonal(pos, king)) return !ChessBoard.onSameDiagonal(move.finish, king, pinPiece.pos);
+			if (ChessBoard.onLine(pos, king)) return !ChessBoard.onSameLine(move.finish, king, pinPiece.pos);
+			new Exception("Invalid Attacker");
+			return true;
 		}
+	}
 
-		for (final ChessPiece piece : attackers) {
-			if (piece.type == Constants.PAWN || piece.type == Constants.KNIGHT || piece.type == Constants.KING) continue;
+	private ChessPiece getPin() {
+		final int king = board.getKingPos(color);
 
-			if (piece.type == Constants.BISHOP || piece.type == Constants.QUEEN) {
-				final int pinnedPos = (passant && ChessBoard.onDiagonal(piece.pos, board.getEnPassant())) ? board.getEnPassant() : move.start;
-				if (ChessBoard.blocksDiagonal(piece.pos, king, pinnedPos)) {
-					if (ChessBoard.onSameDiagonal(move.finish, king, piece.pos) && pinnedPos == move.start) return false;
+		final boolean pinnedPiece = (ChessBoard.onDiagonal(king, pos) || ChessBoard.onLine(king, pos)) && board.isAttacked(this);
+		if (!pinnedPiece) return empty();
+		final PieceSet attackers = board.getAttackers(this);
+		for (final ChessPiece attacker : attackers) {
+			if (attacker.type == Constants.PAWN || attacker.type == Constants.KNIGHT || attacker.type == Constants.KING) continue;
 
-					final int direction = ChessBoard.getDiagonalOffset(piece.pos, pinnedPos);
+			if (attacker.type == Constants.BISHOP || attacker.type == Constants.QUEEN) {
+				if (ChessBoard.blocksDiagonal(attacker.pos, king, pos)) {
 
-					for (int j = 1; j < ChessBoard.getDistanceVert(pinnedPos, king); j++) {
-						if (!board.getPiece(pinnedPos + direction * j).isEmpty()) return false;
+					final int direction = ChessBoard.getDiagonalOffset(pos, king);
+
+					for (int j = 1; j < ChessBoard.getDistanceVert(pos, king); j++) {
+						if (!board.getPiece(pos + direction * j).isEmpty()) return empty();
 					}
-					return true;
+					return attacker;
 				}
 			}
 
-			if (piece.type == Constants.ROOK || piece.type == Constants.QUEEN) {
-				if (ChessBoard.blocksLine(piece.pos, king, move.start)) {
-					if (ChessBoard.onSameLine(move.finish, king, piece.pos)) return false;
+			if (attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
+				if (ChessBoard.blocksLine(attacker.pos, king, pos)) {
 
-					final int direction = ChessBoard.getHorizontalOffset(piece.pos, move.start);
-					
-					int newPos = move.start;
-					for (int j = 0; j < ChessBoard.getDistance(move.start, king) - 1; j++) {
-						newPos += direction;
-						if (!board.getPiece(newPos).isEmpty() && !(passant && newPos == board.getEnPassant())) return false;
+					final int direction = ChessBoard.getHorizontalOffset(pos, king);
+
+					for (int j = 1; j < ChessBoard.getDistance(pos, king); j++) {
+						if (!board.getPiece(pos + direction * j).isEmpty()) return empty();
 					}
-					return true;
+					return attacker;
 				}
 			}
 		}
-		
-		return false;
+		return empty();
 	}
 
 	public void setPos(int newPos) {
@@ -552,6 +583,14 @@ public class ChessPiece {
 	
 	public boolean isEmpty() {
 		return type == Constants.EMPTY;
+	}
+
+	public boolean isDiagonal() {
+		return (type == Constants.BISHOP || type == Constants.QUEEN);
+	}
+
+	public boolean isLine() {
+		return (type == Constants.ROOK || type == Constants.QUEEN);
 	}
 
 	@Override

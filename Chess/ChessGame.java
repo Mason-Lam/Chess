@@ -76,7 +76,7 @@ public class ChessGame {
 		System.out.println("Misc: " + timeMisc);
 		System.out.println("Debug: " + timeDebug);
 
-		board = new ChessBoard(Tests.test21.fen);	//Creates a new ChessBoard object
+		board = new ChessBoard(Tests.test1.fen);	//Creates a new ChessBoard object
 		
 		computer = board.getComputer();
 		// System.out.println(computer.totalMoves(3));
@@ -196,6 +196,7 @@ public class ChessGame {
 		//Checks if the click is on the correct Chess pieces.
 		if(board.getPiece(pos).color == board.getTurn() && !board.getPiece(pos).isEmpty()) {
 			click1 = pos;		//Stores the users first click
+			legal.clear();
 			board.getPiece(click1).pieceMoves(legal); //Generates all the legal moves for a player
 			//System.out.println(legal.size());
 			update_display();	//Updates the display
