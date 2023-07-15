@@ -5,13 +5,11 @@ import java.util.ArrayList;
 public class Computer {
 
 	public static class BoardStorage {
-		public final String fenString;
 		public final int enPassant;
 		public final int halfMove;
 		private final boolean[] castling;
 
-		public BoardStorage(String fenString, int enPassant, int halfMove, boolean[] castling) {
-			this.fenString = fenString;
+		public BoardStorage(int enPassant, int halfMove, boolean[] castling) {
 			this.enPassant = enPassant;
 			this.halfMove = halfMove;
 			this.castling = new boolean[2];
@@ -36,7 +34,7 @@ public class Computer {
 	public int totalMoves(int depth) {
 		int count = 0;
 		long prevTime = System.currentTimeMillis();
-		final BoardStorage store = (depth != 1) ? new BoardStorage(board.getFenString(), board.getEnPassant(), board.halfMove, board.getCastling(board.getTurn())) : null;
+		final BoardStorage store = (depth != 1) ? new BoardStorage(board.getEnPassant(), board.halfMove, board.getCastling(board.getTurn())) : null;
 		final PieceSet pieces = board.getPieces(board.getTurn());
 		ChessGame.timeMisc += System.currentTimeMillis() - prevTime;
 		for(final ChessPiece piece : pieces) {

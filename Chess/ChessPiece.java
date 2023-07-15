@@ -27,13 +27,9 @@ public class ChessPiece {
 				break;
 			case (Constants.KNIGHT): knightAttacks(remove);
 				break;
-			case (Constants.BISHOP): bishopAttacks(remove);
-				break;
-			case (Constants.ROOK): rookAttacks(remove);
-				break;
-			case (Constants.QUEEN): queenAttacks(remove);
-				break;
 			case (Constants.KING): kingAttacks(remove);
+				break;
+			default: slidingAttacks(remove);
 				break;
 		}
 		//ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
@@ -68,41 +64,26 @@ public class ChessPiece {
 		}
 		ChessGame.timeKnightAttack += System.currentTimeMillis() - prevTime;
 	}
-	
-	private void bishopAttacks(boolean remove) {
+
+	private void slidingAttacks(boolean remove) {
 		long prevTime = System.currentTimeMillis();
-		for (int i = 0; i < Constants.DIAGONALS.length; i++) {
+		final int startingIndex = (type == Constants.BISHOP) ? 4 : 0;
+		final int endIndex = (type == Constants.ROOK) ? 4 : 8;
+		for (int i = startingIndex; i < endIndex; i++) {
 			if (remove) {
-				removeAttacks(Constants.DIAGONALS[i], pos);
+				removeAttacks(Constants.DIRECTIONS[i], pos);
 				continue;
 			}
-			addAttacks(Constants.DIAGONALS[i], pos);
+			addAttacks(Constants.DIRECTIONS[i], pos);
 		}
-		ChessGame.timeBishopAttack += System.currentTimeMillis() - prevTime;
-	}
-	
-	private void rookAttacks(boolean remove) {
-		long prevTime = System.currentTimeMillis();
-		for (int i = 0; i < Constants.STRAIGHT.length; i++) {
-			if (remove) {
-				removeAttacks(Constants.STRAIGHT[i], pos);
-				continue;
-			}
-			addAttacks(Constants.STRAIGHT[i], pos);
-		}
-		ChessGame.timeRookAttack += System.currentTimeMillis() - prevTime;
-	}
-	
-	private void queenAttacks(boolean remove) {
-		rookAttacks(remove);
-		bishopAttacks(remove);
+		ChessGame.timeSlidingAttack += System.currentTimeMillis() - prevTime;
 	}
 	
 	private void kingAttacks(boolean remove) {
 		long prevTime = System.currentTimeMillis();
-		for (int i = 0; i < Constants.KING_MOVES.length; i++) {
-			if (ChessBoard.getEdge(Constants.KING_MOVES[i], pos) < 1) continue;
-			final int newPos = pos + Constants.KING_MOVES[i];
+		for (int i = 0; i < Constants.DIRECTIONS.length; i++) {
+			if (ChessBoard.getEdge(Constants.DIRECTIONS[i], pos) < 1) continue;
+			final int newPos = pos + Constants.DIRECTIONS[i];
 
 			if (remove) {
 				board.removeAttacker(this, newPos);
@@ -258,15 +239,15 @@ public class ChessPiece {
 	}
 
 	public void pieceMoves(ArrayList<Move> moves) {
-		pieceMoves(moves, Constants.ALL_MOVES);
+		pieceMoves(moves, false);
 	}
 
-	public void pieceMoves(ArrayList<Move> moves, boolean[] types) {
+	public void pieceMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		long prevTime = System.currentTimeMillis();
 		if (board.is_promote() || board.getTurn() != color) return;
 
 		if (type == Constants.KING) {
-			king(types, moves);
+			king(moves, attacksOnly);
 			ChessGame.timeMoveGen += System.currentTimeMillis() - prevTime;
 			return;
 		}
@@ -274,128 +255,72 @@ public class ChessPiece {
 		if (board.doubleCheck(color)) return;
 
 		switch (type) {
-			case Constants.PAWN: pawn(types, moves);
+			case Constants.PAWN: pawn(moves, attacksOnly);
 				break;
-			case Constants.KNIGHT: knight(types, moves);
+			case Constants.KNIGHT: knight(moves, attacksOnly);
 				break;
-			case Constants.BISHOP: bishop(types, moves);
-				break;
-			case Constants.ROOK: rook(types, moves);
-				break;
-			case Constants.QUEEN: queen(types, moves);
+			default: slidingMoves(moves, attacksOnly);
 				break;
 		}
 		pinPiece = null;
 		ChessGame.timeMoveGen += System.currentTimeMillis() - prevTime;
 	}
 	
-	private void pawn(boolean[] types, ArrayList<Move> moves) {
+	private void pawn(ArrayList<Move> moves, boolean attacksOnly) {
 		//Moves
 		long prevTime = System.currentTimeMillis();
-		if (types[0]) {
-			final int direction = (color == Constants.WHITE) ? -8 : 8;
-			if (board.getPiece(pos + direction).isEmpty()) {
-				addMove(moves, new Move(pos, pos + direction, Move.Type.MOVE));
-				if (ChessBoard.getRow(pos) == Constants.PAWN_STARTS[color]) {
-					if (board.getPiece(pos + direction * 2).isEmpty()) addMove(moves, new Move(pos, pos + direction * 2, Move.Type.MOVE));
-				}
+		final int direction = (color == Constants.WHITE) ? -8 : 8;
+		if (board.getPiece(pos + direction).isEmpty()) {
+			addMove(moves, new Move(pos, pos + direction, Move.Type.MOVE), attacksOnly);
+			if (ChessBoard.getRow(pos) == Constants.PAWN_STARTS[color]) {
+				if (board.getPiece(pos + direction * 2).isEmpty()) addMove(moves, new Move(pos, pos + direction * 2, Move.Type.MOVE), attacksOnly);
 			}
 		}
 		//Attacks
-		if (types[1]) {
-			for (int i = 0; i < 2; i++) {
-				if (ChessBoard.getEdge(Constants.PAWN_DIAGONALS[color][i], pos) < 1) continue;
-				final int newPos = pos + Constants.PAWN_DIAGONALS[color][i];
-				if (board.getPiece(newPos).color == board.next(color)) addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
-			}
+		for (int i = 0; i < 2; i++) {
+			if (ChessBoard.getEdge(Constants.PAWN_DIAGONALS[color][i], pos) < 1) continue;
+			final int newPos = pos + Constants.PAWN_DIAGONALS[color][i];
+			if (board.getPiece(newPos).color == board.next(color)) addMove(moves, new Move(pos, newPos, Move.Type.ATTACK), attacksOnly);
 		}
+
 		//EnPassant
-		if (types[2]) {
-			if (board.getEnPassant() == Constants.EMPTY) return;
-			if (Math.abs(board.getEnPassant() - pos) != 1 || ChessBoard.getDistance(board.getEnPassant(), pos) != 1) return;
-			final int newPos = (color == Constants.WHITE) ? board.getEnPassant() - 8 : board.getEnPassant() + 8;
-			if (board.getPiece(newPos).isEmpty()) addMove(moves, new Move(pos, newPos, Move.Type.SPECIAL));
-		}
+		if (board.getEnPassant() == Constants.EMPTY) return;
+		if (Math.abs(board.getEnPassant() - pos) != 1 || ChessBoard.getDistance(board.getEnPassant(), pos) != 1) return;
+		final int newPos = (color == Constants.WHITE) ? board.getEnPassant() - 8 : board.getEnPassant() + 8;
+		if (board.getPiece(newPos).isEmpty()) addMove(moves, new Move(pos, newPos, Move.Type.SPECIAL), attacksOnly);
 		ChessGame.timePawnGen += System.currentTimeMillis() - prevTime;
 	}
 	
-	private void knight(boolean[] types, ArrayList<Move> moves) {
+	private void knight(ArrayList<Move> moves, boolean attacksOnly) {
 		long prevTime = System.currentTimeMillis();
 		for (int i = 0; i < Constants.KNIGHT_MOVES.length; i++) {
 			final int newPos = pos + Constants.KNIGHT_MOVES[i];
 			if (!ChessBoard.onBoard(newPos) || !ChessBoard.onL(pos, newPos)) continue;
 			
 			if (board.getPiece(newPos).isEmpty()) { 
-				if (types[0])
-					addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
+				addMove(moves, new Move(pos, newPos, Move.Type.MOVE), attacksOnly);
 			}
-			else if (board.getPiece(newPos).color != color && types[1]) 
-				addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
+			else if (board.getPiece(newPos).color != color) 
+				addMove(moves, new Move(pos, newPos, Move.Type.ATTACK), attacksOnly);
 		}
 		ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
 	}
 	
-	private void bishop(boolean[] types, ArrayList<Move> moves) {
+	private void king(ArrayList<Move> moves, boolean attacksOnly) {
 		long prevTime = System.currentTimeMillis();
-		for (int i = 0; i < Constants.DIAGONALS.length; i++) {
-			final int distance = ChessBoard.getEdge(Constants.DIAGONALS[i], pos);
-			for (int j = 1; j < distance + 1; j++) {
-				final int newPos = pos + Constants.DIAGONALS[i] * j;
-				final ChessPiece piece = board.getPiece(newPos);
-				if (piece.color == color) break;
-				if (!piece.isEmpty()) {
-					if (types[1])
-						addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
-					break;
-				}
-				if (types[0])
-					addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
-			}
-		}
-		ChessGame.timeBishopGen += System.currentTimeMillis() - prevTime;
-	}
-	
-	private void rook(boolean[] types, ArrayList<Move> moves) {
-		long prevTime = System.currentTimeMillis();
-		for (int i = 0; i < Constants.STRAIGHT.length; i++) {
-			final int distance = ChessBoard.getEdge(Constants.STRAIGHT[i], pos);
-			for (int j = 1; j < distance + 1; j++) {
-				final int newPos = pos + Constants.STRAIGHT[i] * j;
-				final ChessPiece piece = board.getPiece(newPos);
-				if (piece.color == color) break;
-				if (!piece.isEmpty()) {
-					if (types[1])
-						addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
-					break;
-				}
-				if (types[0])
-					addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
-			}
-		}
-		ChessGame.timeRookGen += System.currentTimeMillis() - prevTime;
-	}
-	
-	private void queen(boolean[] types, ArrayList<Move> moves) {
-		rook(types, moves);
-		bishop(types, moves);
-	}
-	
-	private void king(boolean[] types, ArrayList<Move> moves) {
-		long prevTime = System.currentTimeMillis();
-		if (types[0] || types[1]) {
-			for (int i = 0; i < Constants.KING_MOVES.length; i++) {
-				if (ChessBoard.getEdge(Constants.KING_MOVES[i], pos) < 1) continue;
-				final int newPos = pos + Constants.KING_MOVES[i];
+		for (int i = 0; i < Constants.DIRECTIONS.length; i++) {
+			if (ChessBoard.getEdge(Constants.DIRECTIONS[i], pos) < 1) continue;
+			final int newPos = pos + Constants.DIRECTIONS[i];
+			final ChessPiece piece = board.getPiece(newPos);
 
-				if (board.getPiece(newPos).isEmpty() && types[0]) {
-					addMove(moves, new Move(pos, newPos, Move.Type.MOVE));
-				}
-				else if (board.getPiece(newPos).color != color && types[1]) 
-					addMove(moves, new Move(pos, newPos, Move.Type.ATTACK));
+			if (piece.isEmpty()) {
+				addMove(moves, new Move(pos, newPos, Move.Type.MOVE), attacksOnly);
 			}
+			else if (piece.color != color) 
+				addMove(moves, new Move(pos, newPos, Move.Type.ATTACK), attacksOnly);
 		}
 		//Castling (complete mess)
-		if (types[2] && !board.isChecked(color)) {
+		if (!board.isChecked(color)) {
 			boolean canCastle = true;
 			//Queenside
 			if (board.getCastling(color)[0]) {
@@ -406,7 +331,7 @@ public class ChessPiece {
 					}	
 				}
 				if (canCastle && board.getPiece(Constants.ROOK_POSITIONS[color][0]).type == Constants.ROOK)
-					addMove(moves, new Move(pos, Constants.ROOK_POSITIONS[color][0] + 2, Move.Type.SPECIAL));
+					addMove(moves, new Move(pos, Constants.ROOK_POSITIONS[color][0] + 2, Move.Type.SPECIAL), attacksOnly);
 			}
 			
 			//Kingside
@@ -419,14 +344,36 @@ public class ChessPiece {
 					}	
 				}
 				if (canCastle && board.getPiece(Constants.ROOK_POSITIONS[color][1]).type == Constants.ROOK)
-					addMove(moves, new Move(pos, Constants.ROOK_POSITIONS[color][1] - 1, Move.Type.SPECIAL));
+					addMove(moves, new Move(pos, Constants.ROOK_POSITIONS[color][1] - 1, Move.Type.SPECIAL), attacksOnly);
 			}
 		}
 		ChessGame.timeKingGen += System.currentTimeMillis() - prevTime;
 	}
 
-	private void addMove(ArrayList<Move> moves, Move move) {
+	private void slidingMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		long prevTime = System.currentTimeMillis();
+		final int startingIndex = (type == Constants.BISHOP) ? 4 : 0;
+		final int endIndex = (type == Constants.ROOK) ? 4 : 8;
+		for (int i = startingIndex; i < endIndex; i++) {
+			for (int j = 1; j < ChessBoard.getEdge(Constants.DIRECTIONS[i], pos) + 1; j++) {
+				final int newPos = pos + Constants.DIRECTIONS[i] * j;
+				final ChessPiece piece = board.getPiece(newPos);
+
+				if (piece.color == color) break;
+				if (!piece.isEmpty()) {
+					addMove(moves, new Move(pos, newPos, Move.Type.ATTACK), attacksOnly);
+					break;
+				}
+				addMove(moves, new Move(pos, newPos, Move.Type.MOVE), attacksOnly);
+			}
+		}
+		ChessGame.timeSlidingGen += System.currentTimeMillis() - prevTime;
+	}
+
+	private void addMove(ArrayList<Move> moves, Move move, boolean attacksOnly) {
+		long prevTime = System.currentTimeMillis();
+		if (attacksOnly && move.type != Move.Type.ATTACK) return;
+		
 		if (!Constants.CHECKS) {
 			moves.add(move);
 			return;
@@ -472,8 +419,7 @@ public class ChessPiece {
 	
 	private boolean stopsCheck(Move move) {
 		final int king = board.getKingPos(color);
-		ChessPiece attacker = ChessPiece.empty();
-		for (final ChessPiece piece : board.getAttackers(board.getPiece(king))) attacker = piece;
+		final ChessPiece attacker = board.getKingAttacker(color);
 		if (attacker.type == Constants.PAWN && move.isSpecial() && board.getEnPassant() == attacker.pos) return true;
 		if (attacker.type == Constants.PAWN || attacker.type == Constants.KNIGHT) return move.finish == attacker.pos;
 		if (move.finish == attacker.pos) return true;
@@ -520,10 +466,9 @@ public class ChessPiece {
 						if (ChessBoard.onSameLine(move.finish, king, piece.pos)) return false;
 
 						final int direction = ChessBoard.getHorizontalOffset(piece.pos, move.start);
-						
-						int newPos = move.start;
-						for (int j = 0; j < ChessBoard.getDistance(move.start, king) - 1; j++) {
-							newPos += direction;
+
+						for (int j = 1; j < ChessBoard.getDistance(move.start, king); j++) {
+							final int newPos = move.start + direction * j;
 							if (!board.getPiece(newPos).isEmpty() && newPos != board.getEnPassant()) return false;
 						}
 						return true;
@@ -550,28 +495,24 @@ public class ChessPiece {
 		for (final ChessPiece attacker : attackers) {
 			if (attacker.type == Constants.PAWN || attacker.type == Constants.KNIGHT || attacker.type == Constants.KING) continue;
 
-			if (attacker.type == Constants.BISHOP || attacker.type == Constants.QUEEN) {
-				if (ChessBoard.blocksDiagonal(attacker.pos, king, pos)) {
+			if (ChessBoard.blocksDiagonal(attacker.pos, king, pos)) {
 
-					final int direction = ChessBoard.getDiagonalOffset(pos, king);
+				final int direction = ChessBoard.getDiagonalOffset(pos, king);
 
-					for (int j = 1; j < ChessBoard.getDistanceVert(pos, king); j++) {
-						if (!board.getPiece(pos + direction * j).isEmpty()) return empty();
-					}
-					return attacker;
+				for (int j = 1; j < ChessBoard.getDistanceVert(pos, king); j++) {
+					if (!board.getPiece(pos + direction * j).isEmpty()) return empty();
 				}
+				return attacker;
 			}
 
-			if (attacker.type == Constants.ROOK || attacker.type == Constants.QUEEN) {
-				if (ChessBoard.blocksLine(attacker.pos, king, pos)) {
+			if (ChessBoard.blocksLine(attacker.pos, king, pos)) {
 
-					final int direction = ChessBoard.getHorizontalOffset(pos, king);
+				final int direction = ChessBoard.getHorizontalOffset(pos, king);
 
-					for (int j = 1; j < ChessBoard.getDistance(pos, king); j++) {
-						if (!board.getPiece(pos + direction * j).isEmpty()) return empty();
-					}
-					return attacker;
+				for (int j = 1; j < ChessBoard.getDistance(pos, king); j++) {
+					if (!board.getPiece(pos + direction * j).isEmpty()) return empty();
 				}
+				return attacker;
 			}
 		}
 		return empty();

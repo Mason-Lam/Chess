@@ -87,19 +87,7 @@ public class Constants {
 		1, 6
 	};
 	
-	public static final boolean[] ALL_MOVES = new boolean[] {
-		true, true, true	//Moves, Attacks, Special
-	};
-	
-	public static final boolean[] ATTACKS_ONLY = new boolean[] {
-		false, true, false
-	};
-	
-	public static final boolean[] MOVES_ONLY = new boolean[] {
-		true, false, false
-	};
-	
-	public static final int[] KING_MOVES = new int[] {
+	public static final int[] DIRECTIONS = new int[] {
 		8, -8, 1, -1, 7, 9, -7, -9
 	};
 	
@@ -107,17 +95,9 @@ public class Constants {
 		-15, -17, 15, 17, 10, -10, 6, -6
 	};
 	
-	public static final int[] STRAIGHT = new int[] {
-		8, -8, 1, -1
-	};
-	
-	public static final int[] DIAGONALS = new int[] {
-		7, 9, -7, -9
-	};
-	
 	public static final int[][] PAWN_DIAGONALS = new int[][] {
-		new int[] {DIAGONALS[0], DIAGONALS[1]},
-		new int[] {DIAGONALS[2], DIAGONALS[3]}
+		new int[] {7, 9},
+		new int[] {-7, -9}
 	};
 	
 	public static final char[][] PIECES = new char[][] {

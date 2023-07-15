@@ -16,8 +16,7 @@ public class ChessBoard {
 	
 	private final ChessPiece[] board;
 	private final boolean[][] castling;
-	
-	private String fenString;
+
 	private int turn;
 	private int enPassant;
 	private int promotingPawn;
@@ -30,7 +29,6 @@ public class ChessBoard {
 
 	public ChessBoard (String fen) {
 		turn = Constants.BLACK;
-		fenString = fen;
 		halfMove = 0;
 		fullMove = 1;
 		
@@ -59,7 +57,7 @@ public class ChessBoard {
 		//System.out.println(board_to_fen());
 	}
 	
-	private String board_to_fen() {
+	public String getFenString() {
 		String fen = "";
 		for (int i = 0; i < 8; i++) {
 			int emptySpaces = 0;
@@ -193,6 +191,7 @@ public class ChessBoard {
 	public void make_move(Move move, boolean permanent) {
 		long prevTime = System.currentTimeMillis();
 		final ChessPiece piece = board[move.start];
+		kingAttacker = null;
 		int castle = Constants.EMPTY;
 		piece.pieceAttacks(true);
 
@@ -258,7 +257,6 @@ public class ChessBoard {
 			if (turn == Constants.BLACK) fullMove ++;
 			next_turn();
 		}
-		if (permanent) fenString = board_to_fen();
 		ChessGame.timeMakeMove += System.currentTimeMillis() - prevTime;
 	}
 
@@ -270,9 +268,9 @@ public class ChessBoard {
 			next_turn();
 		}
 
-		fenString = store.fenString;
 		castling[turn] = store.getCastling();
 		enPassant = store.enPassant;
+		kingAttacker = null;
 
 		final ChessPiece piece = board[move.finish];
 		int castle = Constants.EMPTY;
@@ -330,7 +328,6 @@ public class ChessBoard {
 		if (turn == Constants.BLACK) fullMove ++;
 		next_turn();
 		promotingPawn = -1;
-		fenString = board_to_fen();
 	}
 
 	public void unPromote(int pos, BoardStorage store) {
@@ -346,7 +343,6 @@ public class ChessBoard {
 		piece.type = Constants.PAWN;
 		updatePosition(piece, promotingPawn, false);
 
-		fenString = store.fenString;
 		halfMove = store.halfMove;
 	}
 	
@@ -468,12 +464,16 @@ public class ChessBoard {
 		return turn;
 	}
 
-	public String getFenString() {
-		return fenString;
-	}
-
 	public ChessPiece getPiece(int pos) {
 		return board[pos];
+	}
+
+	private ChessPiece kingAttacker = null;
+	public ChessPiece getKingAttacker(int color) {
+		if (kingAttacker == null) {
+			for (final ChessPiece piece : getAttackers(board[kingPos[color]])) kingAttacker = piece;
+		}
+		return kingAttacker;
 	}
 	
 	public PieceSet getPieces(int color) {
@@ -507,7 +507,7 @@ public class ChessBoard {
 			System.out.println();
 		}
 		System.out.println(isChecked(turn));
-		System.out.println(fenString);
+		System.out.println(getFenString());
 		if (!valid) System.out.println("ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR");
 	}
 

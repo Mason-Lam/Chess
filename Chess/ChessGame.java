@@ -25,8 +25,7 @@ public class ChessGame {
 	public static long timeMoveGen = 0;
 	public static long timePawnGen = 0;
 	public static long timeKnightGen = 0;
-	public static long timeBishopGen = 0;
-	public static long timeRookGen = 0;
+	public static long timeSlidingGen = 0;
 	public static long timeKingGen = 0;
 	public static long timeValidMove = 0;
 	public static long timeValidPart = 0;
@@ -34,8 +33,7 @@ public class ChessGame {
 	public static long timeUndoMove = 0;
 	public static long timePawnAttack = 0;
 	public static long timeKnightAttack = 0;
-	public static long timeBishopAttack = 0;
-	public static long timeRookAttack = 0;
+	public static long timeSlidingAttack = 0;
 	public static long timeKingAttack = 0;
 	public static long timeSoftAttack = 0;
 	public static long timeSoftRook = 0;
@@ -58,8 +56,7 @@ public class ChessGame {
 		
 		System.out.println("Pawn Move: " + timePawnGen);
 		System.out.println("Knight Move: " + timeKnightGen);
-		System.out.println("Bishop Move: " + timeBishopGen);
-		System.out.println("Rook Move: " + timeRookGen);
+		System.out.println("Sliding Move: " + timeSlidingGen);
 		System.out.println("King Move: " + timeKingGen);
 		System.out.println("Valid Move: " + timeValidMove);
 		System.out.println("Valid Part: " + timeValidPart);
@@ -67,8 +64,7 @@ public class ChessGame {
 		System.out.println("Undo Move: " + timeUndoMove);
 		System.out.println("Pawn Attack: " + timePawnAttack);
 		System.out.println("Knight Attack: " + timeKnightAttack);
-		System.out.println("Bishop Attack: " + timeBishopAttack);
-		System.out.println("Rook Attack: " + timeRookAttack);
+		System.out.println("Sliding Attack: " + timeSlidingAttack);
 		System.out.println("King Attack: " + timeKingAttack);
 		System.out.println("Soft Attack: " + timeSoftAttack);
 		System.out.println("Bishop Soft Attack: " + timeSoftBishop);
