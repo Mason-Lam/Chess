@@ -36,8 +36,6 @@ public class ChessGame {
 	public static long timeSlidingAttack = 0;
 	public static long timeKingAttack = 0;
 	public static long timeSoftAttack = 0;
-	public static long timeSoftRook = 0;
-	public static long timeSoftBishop = 0;
 	public static long timeMisc = 0;
 	public static long timeDebug = 0;
 
@@ -67,8 +65,6 @@ public class ChessGame {
 		System.out.println("Sliding Attack: " + timeSlidingAttack);
 		System.out.println("King Attack: " + timeKingAttack);
 		System.out.println("Soft Attack: " + timeSoftAttack);
-		System.out.println("Bishop Soft Attack: " + timeSoftBishop);
-		System.out.println("Rook Soft Attack: " + timeSoftRook);
 		System.out.println("Misc: " + timeMisc);
 		System.out.println("Debug: " + timeDebug);
 

@@ -271,45 +271,46 @@ public class ChessBoard {
 		castling[turn] = store.getCastling();
 		enPassant = store.enPassant;
 		kingAttacker = null;
+		final Move invertedMove = move.invert();
 
-		final ChessPiece piece = board[move.finish];
+		final ChessPiece piece = board[invertedMove.start];
 		int castle = Constants.EMPTY;
 		piece.pieceAttacks(true);
 
 		if (piece.type == Constants.KING) {
-			if (move.isSpecial()) {
-				if (move.finish > move.start) {
-					castle = move.finish - 1;
+			if (invertedMove.isSpecial()) {
+				if (invertedMove.start > invertedMove.finish) {
+					castle = invertedMove.start - 1;
 					board[castle].pieceAttacks(true);
 					updatePosition(board[castle], Constants.ROOK_POSITIONS[turn][1], false);
 					castle = Constants.ROOK_POSITIONS[turn][1];
-					board[move.finish - 1] = ChessPiece.empty();
+					board[invertedMove.start - 1] = ChessPiece.empty();
 				}
 				else {
-					castle = move.finish + 1;
+					castle = invertedMove.start + 1;
 					board[castle].pieceAttacks(true);
 					updatePosition(board[castle], Constants.ROOK_POSITIONS[turn][0], false);
 					castle = Constants.ROOK_POSITIONS[turn][0];
-					board[move.finish + 1] = ChessPiece.empty();
+					board[invertedMove.start + 1] = ChessPiece.empty();
 				}
 			}
 		}
 
-		if (piece.type == Constants.PAWN && move.isSpecial()) {
+		if (piece.type == Constants.PAWN && invertedMove.isSpecial()) {
 			updatePosition(capturedPiece, enPassant, false);
 			capturedPiece.pieceAttacks(false);
 		}
 
-		board[move.finish] = ChessPiece.empty();
-		updatePosition(piece, move.start, false);
+		board[invertedMove.start] = ChessPiece.empty();
+		updatePosition(piece, invertedMove.finish, false);
 
-		if (move.type == Move.Type.ATTACK) {
-			updatePosition(capturedPiece, move.finish, false);
+		if (invertedMove.type == Move.Type.ATTACK) {
+			updatePosition(capturedPiece, invertedMove.start, false);
 			capturedPiece.pieceAttacks(false);
 		}
 
 		piece.pieceAttacks(false);
-		softAttackUpdate(move, true);
+		softAttackUpdate(invertedMove, true);
 		if (castle != -1) {
 			board[castle].pieceAttacks(false);
 		}
@@ -369,7 +370,7 @@ public class ChessBoard {
 		for (int color = 0; color < 2; color++) {
 			for (final ChessPiece piece : pieces[color]) {
 				long prevTime = System.currentTimeMillis();
-				piece.softPieceUpdate(move, undoMove);
+				piece.softAttack(move, undoMove);
 				//ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 			}
 		}

@@ -94,124 +94,38 @@ public class ChessPiece {
 		ChessGame.timeKingAttack += System.currentTimeMillis() - prevTime;
 	}
 
-	public void softPieceUpdate(Move move, boolean undoMove) {
+	public void softAttack(Move move, boolean undoMove) {
+		long prevTime = System.currentTimeMillis();
 		if (pos == move.start || pos == move.finish) return;
-		long prevTime = System.currentTimeMillis();
-		switch (type) {
-			case Constants.QUEEN: 
-				softQueenUpdate(move, undoMove);
-				break;
-			case Constants.ROOK:
-				softRookUpdate(move, undoMove);
-				break;
-			case Constants.BISHOP:
-				softBishopUpdate(move, undoMove);
-				break;
-			default:
-				break;
-		};
-		ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime;
-	}
-
-	private void softQueenUpdate(Move move, boolean undoMove) {
-		softBishopUpdate(move, undoMove);
-		softRookUpdate(move, undoMove);
-	}
-
-	private void softBishopUpdate(Move move, boolean undoMove) {
-		long prevTime = System.currentTimeMillis();
-		move = undoMove ? move.invert() : move;
-		final boolean[] attacks = getSoftAttacks(move, undoMove);
-		if (!attacks[0] && !attacks[1] && !attacks[2]) {
-			ChessGame.timeSoftBishop += System.currentTimeMillis() - prevTime;
-			return;
-		}
-
-		if (ChessBoard.onSameDiagonal(move.start, move.finish, pos)) {
-			if (attacks[0] && attacks[1]) {
-				if (!attacks[4]) removeAttacks(ChessBoard.getDiagonalOffset(move.finish, move.start), move.finish);
-			}
-			else {
-				if (!attacks[3] && !attacks[4]) addAttacks(ChessBoard.getDiagonalOffset(move.start, move.finish), move.start);
-			}
-		}
-
-		else {
-			if (ChessBoard.onDiagonal(move.start, pos) && attacks[0]) {
-				if (!attacks[3]) addAttacks(ChessBoard.getDiagonalOffset(pos, move.start), move.start);
-			}
-			if (ChessBoard.onDiagonal(move.finish, pos) && attacks[1]) {
-				if (!attacks[4]) removeAttacks(ChessBoard.getDiagonalOffset(pos, move.finish), move.finish);
-			}
-		}
-
-		if (attacks[2] && ChessBoard.onDiagonal(board.getEnPassant(), pos)) {
-			final int enPassant = board.getEnPassant();
-			if (undoMove) {
-				removeAttacks(ChessBoard.getDiagonalOffset(pos, enPassant), enPassant);
-			}
-			else {
-				addAttacks(ChessBoard.getDiagonalOffset(pos, enPassant), enPassant);
-			}
-		}
-		ChessGame.timeSoftBishop += System.currentTimeMillis() - prevTime;
-	}
-
-	private void softRookUpdate(Move move, boolean undoMove) {
-		long prevTime = System.currentTimeMillis();
-		move = undoMove ? move.invert() : move;
+		if (type == Constants.PAWN || type == Constants.KNIGHT || type == Constants.KING) return;
 
 		if (move.isSpecial() && board.getPiece(move.finish).type == Constants.KING && (Math.abs(pos - move.finish) == 1 || Math.abs(pos - move.start) == 1)) return;
+		
+		final boolean attackingStart = board.getAttacks(move.start, color).contains(this);
+		final boolean attackingEnd = board.getAttacks(move.finish, color).contains(this);
 
-		final boolean[] attacks = getSoftAttacks(move, undoMove);
-		if (!attacks[0] && !attacks[1] && !attacks[2]) {
-			ChessGame.timeSoftRook += System.currentTimeMillis() - prevTime;
-			return;
+		if (attackingStart) {
+			final int direction = ChessBoard.onDiagonal(pos, move.start) ? ChessBoard.getDiagonalOffset(pos, move.start) : ChessBoard.getHorizontalOffset(pos, move.start);
+			if (!(move.type == Move.Type.ATTACK && undoMove)) addAttacks(direction, move.start);
+		}
+		if (attackingEnd) {
+			final int direction = ChessBoard.onDiagonal(pos, move.finish) ? ChessBoard.getDiagonalOffset(pos, move.finish) : ChessBoard.getHorizontalOffset(pos, move.finish);
+			if (!(move.type == Move.Type.ATTACK && !undoMove)) removeAttacks(direction, move.finish);
 		}
 
-		if (ChessBoard.onSameLine(move.start, move.finish, pos)) {
-			if (attacks[0] && attacks[1]) {
-				if (!attacks[4]) removeAttacks(ChessBoard.getHorizontalOffset(move.finish, move.start), move.finish);
-			}
-			else {
-				if (!attacks[3] && !attacks[4]) addAttacks(ChessBoard.getHorizontalOffset(move.start, move.finish), move.start);
-			}
-		}
-
-		else {
-			if (ChessBoard.onLine(move.start, pos) && attacks[0]) {
-				if (!attacks[3]) addAttacks(ChessBoard.getHorizontalOffset(pos, move.start), move.start);
-			}
-
-			if (ChessBoard.onLine(move.finish, pos) && attacks[1]) {
-				if (!attacks[4]) removeAttacks(ChessBoard.getHorizontalOffset(pos, move.finish), move.finish);
-			}
-		}
-
-		if (attacks[2] && ChessBoard.onLine(board.getEnPassant(), pos)) {
+		if (move.isSpecial() && board.getPiece(move.finish).type == Constants.PAWN) {
 			final int enPassant = board.getEnPassant();
+			if (!board.getAttacks(enPassant, color).contains(this)) return;
+
+			final int direction = ChessBoard.onDiagonal(pos, enPassant) ? ChessBoard.getDiagonalOffset(pos, enPassant) : ChessBoard.getHorizontalOffset(pos, enPassant);
 			if (undoMove) {
-				removeAttacks(ChessBoard.getHorizontalOffset(pos, enPassant), enPassant);
+				removeAttacks(direction, enPassant);
 			}
 			else {
-				addAttacks(ChessBoard.getHorizontalOffset(pos, enPassant), enPassant);
+				addAttacks(direction, enPassant);
 			}
 		}
-		ChessGame.timeSoftRook += System.currentTimeMillis() - prevTime;
-	}
-
-	private boolean[] getSoftAttacks(Move move, boolean undoMove) {
-		boolean attackingPassant = false;
-		if (move.isSpecial() && (board.getPiece(move.finish).type == Constants.PAWN)) {
-			attackingPassant = board.getAttacks(board.getEnPassant(), color).contains(this);
-		}
-		final boolean[] attacks = new boolean[5];
-		attacks[0] = board.getAttacks(move.start, color).contains(this);
-		attacks[1] = board.getAttacks(move.finish, color).contains(this);
-		attacks[2] = attackingPassant;
-		attacks[3] = move.type == Move.Type.ATTACK && undoMove && attacks[0]; //undoAttack
-		attacks[4] = move.type == Move.Type.ATTACK && !undoMove && attacks[1]; //moveAttack
-		return attacks;
+		ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime;
 	}
 	
 	private void addAttacks(int direction, int startingPos) {
