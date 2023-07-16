@@ -4,6 +4,8 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.function.Consumer;
 
+import static Chess.Constants.PieceConstants.*;
+
 public class KeyListener extends KeyAdapter {
 
 	private final Consumer<Byte> promotion;
@@ -24,19 +26,19 @@ public class KeyListener extends KeyAdapter {
 //			ChessGame.update_display();
 //		}
 		if(ch == 'k') {
-			type = Constants.KNIGHT;
+			type = KNIGHT;
 		}
 		//Checks if the key pressed is a q
 		else if(ch == 'q') {
-			type = Constants.QUEEN;
+			type = QUEEN;
 		}
 		//Checks if the key pressed is a r
 		else if(ch == 'r') {
-			type = Constants.ROOK;
+			type = ROOK;
 		}
 		//Checks if the key pressed is a b
 		else if(ch == 'b') {
-			type = Constants.BISHOP;
+			type = BISHOP;
 		}
 		//Invalid Input
 		else {

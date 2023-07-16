@@ -2,6 +2,9 @@ package Chess;
 
 import java.util.ArrayList;
 
+import static Chess.Constants.MoveConstants.*;
+import static Chess.Constants.PieceConstants.*;
+
 public class Computer {
 
 	public static class BoardStorage {
@@ -38,12 +41,12 @@ public class Computer {
 		final PieceSet pieces = board.getPieces(board.getTurn());
 		ChessGame.timeMisc += System.currentTimeMillis() - prevTime;
 		for(final ChessPiece piece : pieces) {
-			final ArrayList<Move> moves = new ArrayList<Move>(Constants.MAX_MOVES[piece.type]);
+			final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.type]);
 			piece.pieceMoves(moves);
 			if(depth == 1) {
 				if (moves.size() > 0) {
 					final Move move = moves.get(0);
-					if(piece.type == Constants.PAWN && ChessBoard.getRow(move.finish) == Constants.PROMOTION_LINE[board.getTurn()]) {
+					if(piece.isPawn() && ChessBoard.getRow(move.finish) == PROMOTION_LINE[board.getTurn()]) {
 						count += moves.size() * 4;
 						continue;
 					}
@@ -57,7 +60,7 @@ public class Computer {
 				final ChessPiece capturedPiece = getCapturedPiece(move);
 				board.make_move(move, false);
 				if (board.is_promote()) {
-					for (final byte type : Constants.PROMOTION_PIECES) {
+					for (final byte type : PROMOTION_PIECES) {
 						board.promote(type);
 						count += totalMoves(depth - 1);
 						board.unPromote(move.finish, store);
@@ -73,7 +76,6 @@ public class Computer {
 	}
 
 	private ChessPiece getCapturedPiece(Move move) {
-		return (move.isSpecial() && board.getPiece(move.start).type == Constants.PAWN) ? 
-			board.getPiece(board.getEnPassant()) : board.getPiece(move.finish);
+		return (board.isPassant(move)) ? board.getPiece(board.getEnPassant()) : board.getPiece(move.finish);
 	}
 }

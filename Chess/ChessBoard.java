@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import Chess.Computer.BoardStorage;
+import static Chess.Constants.MoveConstants.*;
+import static Chess.Constants.PieceConstants.*;
+import static Chess.Constants.EvaluateConstants.*;
 
 public class ChessBoard {
-	
 
 	private final PieceSet[][] attacks;
 	
@@ -28,17 +30,17 @@ public class ChessBoard {
 	}
 
 	public ChessBoard (String fen) {
-		turn = Constants.BLACK;
+		turn = BLACK;
 		halfMove = 0;
 		fullMove = 1;
 		
 		attacks = new PieceSet[2][1];
-		attacks[Constants.BLACK] = new PieceSet[64];
-		attacks[Constants.WHITE] = new PieceSet[64];
+		attacks[BLACK] = new PieceSet[64];
+		attacks[WHITE] = new PieceSet[64];
 
 		pieces = new PieceSet[2];
-		pieces[Constants.BLACK] = new PieceSet();
-		pieces[Constants.WHITE] = new PieceSet();
+		pieces[BLACK] = new PieceSet();
+		pieces[WHITE] = new PieceSet();
 		
 		kingPos = new int[2];
 		pieceCount = new int[2][5];
@@ -48,8 +50,8 @@ public class ChessBoard {
 		Arrays.fill(pieceCount[1], 0);
 		board = new ChessPiece[64];
 		castling = new boolean[2][2]; //Black: Queenside, Kingside, White: Queenside, Kingside
-		Arrays.fill(castling[Constants.BLACK], false);
-		Arrays.fill(castling[Constants.WHITE], false);
+		Arrays.fill(castling[BLACK], false);
+		Arrays.fill(castling[WHITE], false);
 		enPassant = -1;
 		promotingPawn = -1;
 		fen_to_board(fen);
@@ -71,29 +73,29 @@ public class ChessBoard {
 					fen += Integer.valueOf(emptySpaces);
 					emptySpaces = 0;
 				}
-				fen += Constants.pieceToChar(board[pos]);
+				fen += pieceToChar(board[pos]);
 			}
 			if (emptySpaces > 0) fen += Integer.valueOf(emptySpaces);
 			if (i != 8) fen += "/";
 		}
 		
-		fen = (turn == Constants.WHITE) ? fen + " w" : fen + " b";
+		fen = (turn == WHITE) ? fen + " w" : fen + " b";
 		boolean whiteCanCastle = true;
-		if (!castling[Constants.WHITE][0] && !castling[Constants.WHITE][1]) {
+		if (!castling[WHITE][0] && !castling[WHITE][1]) {
 			fen += " -";
 			whiteCanCastle = false;
 		}
-		if (castling[Constants.WHITE][1]) fen += " K";
-		if (castling[Constants.WHITE][0]) fen += "Q";
+		if (castling[WHITE][1]) fen += " K";
+		if (castling[WHITE][0]) fen += "Q";
 		
-		if (!castling[Constants.BLACK][0] && !castling[Constants.BLACK][1] && whiteCanCastle) fen += " -";
-		if (castling[Constants.BLACK][1]) fen += "k";
-		if (castling[Constants.BLACK][0]) fen += "q";
+		if (!castling[BLACK][0] && !castling[BLACK][1] && whiteCanCastle) fen += " -";
+		if (castling[BLACK][1]) fen += "k";
+		if (castling[BLACK][0]) fen += "q";
 		
-		if (enPassant == Constants.EMPTY) fen += " -";
+		if (enPassant == EMPTY) fen += " -";
 		else {
-			final int passant = (turn == Constants.BLACK) ? enPassant + 8 : enPassant - 8;
-			fen += " " + Constants.indexToSquare(getColumn(passant), 8 - getRow(passant));
+			final int passant = (turn == BLACK) ? enPassant + 8 : enPassant - 8;
+			fen += " " + indexToSquare(getColumn(passant), 8 - getRow(passant));
 		}
 
 		fen += " " + halfMove;
@@ -115,26 +117,26 @@ public class ChessBoard {
 				
 				//Turn
 				if (letter == 'w') {
-					turn = Constants.WHITE;
+					turn = WHITE;
 				}
 				
 				//Castling
 				else if (letter == 'K') {
-					castling[Constants.WHITE][1] = true;
+					castling[WHITE][1] = true;
 				}
 				else if (letter == 'Q') {
-					castling[Constants.WHITE][0] = true;
+					castling[WHITE][0] = true;
 				}
 				else if (letter == 'k') {
-					castling[Constants.BLACK][1] = true;
+					castling[BLACK][1] = true;
 				}
 				else if (letter == 'q') {
-					castling[Constants.BLACK][0] = true;
+					castling[BLACK][0] = true;
 				}
 				
 				else if ((int) letter <= 104 && (int) letter >= 97 && Character.isDigit(fen.charAt(i + 1))) {
-					enPassant = Constants.squareToIndex(Character.toString(letter) + fen.charAt(i + 1));
-					enPassant = (turn == Constants.BLACK) ? enPassant - 8 : enPassant + 8;
+					enPassant = squareToIndex(Character.toString(letter) + fen.charAt(i + 1));
+					enPassant = (turn == BLACK) ? enPassant - 8 : enPassant + 8;
 					i++;
 				}
 
@@ -166,22 +168,22 @@ public class ChessBoard {
 				}
 				continue;
 			}
-			final ChessPiece piece = Constants.charToPiece(letter, index, this, pieceIDs);
+			final ChessPiece piece = charToPiece(letter, index, this, pieceIDs);
 			board[index] = piece;
 			pieces[piece.color].add(piece);
 			
 			switch (piece.type) {
-				case Constants.PAWN: pieceCount[piece.color][Constants.PAWN] += 1;
+				case PAWN: pieceCount[piece.color][PAWN] += 1;
 					break;
-				case Constants.KNIGHT: pieceCount[piece.color][Constants.KNIGHT] += 1;
+				case KNIGHT: pieceCount[piece.color][KNIGHT] += 1;
 					break;
-				case Constants.BISHOP: pieceCount[piece.color][Constants.BISHOP] += 1;
+				case BISHOP: pieceCount[piece.color][BISHOP] += 1;
 					break;
-				case Constants.ROOK: pieceCount[piece.color][Constants.ROOK] += 1;
+				case ROOK: pieceCount[piece.color][ROOK] += 1;
 					break;
-				case Constants.QUEEN: pieceCount[piece.color][Constants.QUEEN] += 1;
+				case QUEEN: pieceCount[piece.color][QUEEN] += 1;
 					break;
-				case Constants.KING: kingPos[piece.color] = index;
+				case KING: kingPos[piece.color] = index;
 					break;
 			}
 			index++;
@@ -192,7 +194,7 @@ public class ChessBoard {
 		long prevTime = System.currentTimeMillis();
 		final ChessPiece piece = board[move.start];
 		kingAttacker = null;
-		int castle = Constants.EMPTY;
+		int castle = EMPTY;
 		piece.pieceAttacks(true);
 
 		if (move.type == Move.Type.ATTACK) {
@@ -202,43 +204,43 @@ public class ChessBoard {
 		}
 
 		int passant = -1;
-		if (piece.type == Constants.PAWN) {
+		if (piece.isPawn()) {
 			halfMove = -1;
-			if (move.isSpecial()) {
+			if (move.type == Move.Type.SPECIAL) {
 				board[enPassant].pieceAttacks(true);
 				updatePosition(board[enPassant], enPassant, true);
 			}
 			if (getDistanceVert(move.start, move.finish) == 2) {
 				passant = move.finish;
 			}
-			if (getRow(move.finish) == Constants.PROMOTION_LINE[turn]) {
+			if (getRow(move.finish) == PROMOTION_LINE[turn]) {
 				promotingPawn = move.finish;
 			}
 		}
 		
-		if (piece.type == Constants.ROOK) {
-			if (move.start == Constants.ROOK_POSITIONS[piece.color][0])
+		if (piece.isRook()) {
+			if (move.start == ROOK_POSITIONS[piece.color][0])
 				castling[piece.color][0] = false;
-			if (move.start == Constants.ROOK_POSITIONS[piece.color][1])
+			if (move.start == ROOK_POSITIONS[piece.color][1])
 				castling[piece.color][1] = false;
 		}
 		
-		if (piece.type == Constants.KING) {
+		if (piece.isKing()) {
 			Arrays.fill(castling[piece.color], false);
-			if (move.isSpecial()) {
+			if (move.type == Move.Type.SPECIAL) {
 				if (move.finish > move.start) {
-					castle = Constants.ROOK_POSITIONS[turn][1];
+					castle = ROOK_POSITIONS[turn][1];
 					board[castle].pieceAttacks(true);
 					updatePosition(board[castle], move.finish - 1, false);
 					castle = move.finish - 1;
-					board[Constants.ROOK_POSITIONS[turn][1]] = ChessPiece.empty();
+					board[ROOK_POSITIONS[turn][1]] = ChessPiece.empty();
 				}
 				else {
-					castle = Constants.ROOK_POSITIONS[turn][0];
+					castle = ROOK_POSITIONS[turn][0];
 					board[castle].pieceAttacks(true);
 					updatePosition(board[castle], move.finish + 1, false);
 					castle = move.finish + 1;
-					board[Constants.ROOK_POSITIONS[turn][0]] = ChessPiece.empty();
+					board[ROOK_POSITIONS[turn][0]] = ChessPiece.empty();
 				}
 			}
 		}
@@ -254,7 +256,7 @@ public class ChessBoard {
 		enPassant = passant;
 		if (!is_promote()) {
 			halfMove ++;
-			if (turn == Constants.BLACK) fullMove ++;
+			if (turn == BLACK) fullMove ++;
 			next_turn();
 		}
 		ChessGame.timeMakeMove += System.currentTimeMillis() - prevTime;
@@ -264,7 +266,7 @@ public class ChessBoard {
 		long prevTime = System.currentTimeMillis();
 		if (!is_promote()) {
 			halfMove = store.halfMove;
-			if (turn == Constants.WHITE) fullMove --;
+			if (turn == WHITE) fullMove --;
 			next_turn();
 		}
 
@@ -274,29 +276,27 @@ public class ChessBoard {
 		final Move invertedMove = move.invert();
 
 		final ChessPiece piece = board[invertedMove.start];
-		int castle = Constants.EMPTY;
+		int castle = EMPTY;
 		piece.pieceAttacks(true);
 
-		if (piece.type == Constants.KING) {
-			if (invertedMove.isSpecial()) {
-				if (invertedMove.start > invertedMove.finish) {
-					castle = invertedMove.start - 1;
-					board[castle].pieceAttacks(true);
-					updatePosition(board[castle], Constants.ROOK_POSITIONS[turn][1], false);
-					castle = Constants.ROOK_POSITIONS[turn][1];
-					board[invertedMove.start - 1] = ChessPiece.empty();
-				}
-				else {
-					castle = invertedMove.start + 1;
-					board[castle].pieceAttacks(true);
-					updatePosition(board[castle], Constants.ROOK_POSITIONS[turn][0], false);
-					castle = Constants.ROOK_POSITIONS[turn][0];
-					board[invertedMove.start + 1] = ChessPiece.empty();
-				}
+		if (isCastle(invertedMove)) {
+			if (invertedMove.start > invertedMove.finish) {
+				castle = invertedMove.start - 1;
+				board[castle].pieceAttacks(true);
+				updatePosition(board[castle], ROOK_POSITIONS[turn][1], false);
+				castle = ROOK_POSITIONS[turn][1];
+				board[invertedMove.start - 1] = ChessPiece.empty();
+			}
+			else {
+				castle = invertedMove.start + 1;
+				board[castle].pieceAttacks(true);
+				updatePosition(board[castle], ROOK_POSITIONS[turn][0], false);
+				castle = ROOK_POSITIONS[turn][0];
+				board[invertedMove.start + 1] = ChessPiece.empty();
 			}
 		}
 
-		if (piece.type == Constants.PAWN && invertedMove.isSpecial()) {
+		if (isPassant(invertedMove)) {
 			updatePosition(capturedPiece, enPassant, false);
 			capturedPiece.pieceAttacks(false);
 		}
@@ -323,17 +323,17 @@ public class ChessBoard {
 		board[promotingPawn].type = type;
 		updatePosition(board[promotingPawn], promotingPawn, false);
 		pieceCount[turn][type] += 1;
-		pieceCount[turn][Constants.PAWN] -= 1;
+		pieceCount[turn][PAWN] -= 1;
 		board[promotingPawn].pieceAttacks(false);
 		halfMove ++;
-		if (turn == Constants.BLACK) fullMove ++;
+		if (turn == BLACK) fullMove ++;
 		next_turn();
 		promotingPawn = -1;
 	}
 
 	public void unPromote(int pos, BoardStorage store) {
 		halfMove --;
-		if (turn == Constants.WHITE) fullMove --;
+		if (turn == WHITE) fullMove --;
 		next_turn();
 		promotingPawn = pos;
 
@@ -341,7 +341,7 @@ public class ChessBoard {
 
 		piece.pieceAttacks(true);
 		updatePosition(piece, promotingPawn, true);
-		piece.type = Constants.PAWN;
+		piece.type = PAWN;
 		updatePosition(piece, promotingPawn, false);
 
 		halfMove = store.halfMove;
@@ -362,7 +362,7 @@ public class ChessBoard {
 			pieceCount[piece.color][piece.type] += 1;
 		}
 		
-		if (piece.type == Constants.KING)
+		if (piece.isKing())
 			kingPos[piece.color] = newPos;
 	}
 	
@@ -388,25 +388,33 @@ public class ChessBoard {
 	}
 
 	public int isWinner() {
-		if (halfMove >= 50) return Constants.DRAW;
-		if (hasInsufficientMaterial()) return Constants.DRAW;
+		if (halfMove >= 50) return DRAW;
+		if (hasInsufficientMaterial()) return DRAW;
 		for(ChessPiece piece : pieces[turn]) {
 			final ArrayList<Move> moves = new ArrayList<Move>();
 			piece.pieceMoves(moves);
 			if(moves.size() > 0) {
-				return Constants.PROGRESS;
+				return PROGRESS;
 			}
 		}
-		return isChecked(turn) ? Constants.WIN : Constants.DRAW;
+		return isChecked(turn) ? WIN : DRAW;
 	}
 	
 	private boolean hasInsufficientMaterial() {
 		for (int color = 0; color < 2; color++) {
-			if (pieceCount[color][Constants.PAWN] > 0 || pieceCount[color][Constants.KNIGHT] > 2 
-				|| pieceCount[color][Constants.BISHOP] > 1 || pieceCount[color][Constants.ROOK] > 0 
-				|| pieceCount[color][Constants.QUEEN] > 0) return false;
+			if (pieceCount[color][PAWN] > 0 || pieceCount[color][KNIGHT] > 2 
+				|| pieceCount[color][BISHOP] > 1 || pieceCount[color][ROOK] > 0 
+				|| pieceCount[color][QUEEN] > 0) return false;
 		}
 		return true;
+	}
+
+	public void modifyAttacks(ChessPiece piece, int pos, boolean remove) {
+		if (remove) {
+			removeAttacker(piece, pos);
+			return;
+		}
+		addAttacker(piece, pos);
 	}
 
 	public void addAttacker(ChessPiece piece, int pos) {
@@ -419,6 +427,14 @@ public class ChessBoard {
 
 	public void next_turn() {
 		turn = next(turn);
+	}
+
+	public boolean isCastle(Move move) {
+		return (board[move.start].isKing() || board[move.finish].isKing()) && move.type == Move.Type.SPECIAL;
+	}
+
+	public boolean isPassant(Move move) {
+		return (board[move.start].isPawn() || board[move.finish].isPawn()) && move.type == Move.Type.SPECIAL;
 	}
 	
 	public boolean doubleCheck(int color) {
@@ -514,14 +530,14 @@ public class ChessBoard {
 
 	public static int getEdge(int direction, int pos) {
 		switch (direction) {
-			case(9): return Constants.distFromEdge[pos][5];
-			case(-9): return Constants.distFromEdge[pos][4];
-			case(7): return Constants.distFromEdge[pos][7];
-			case(-7): return Constants.distFromEdge[pos][6];
-			case(8): return Constants.distFromEdge[pos][1];
-			case(-8): return Constants.distFromEdge[pos][0];
-			case(1): return Constants.distFromEdge[pos][3];
-			case(-1): return Constants.distFromEdge[pos][2];
+			case(9): return distFromEdge[pos][5];
+			case(-9): return distFromEdge[pos][4];
+			case(7): return distFromEdge[pos][7];
+			case(-7): return distFromEdge[pos][6];
+			case(8): return distFromEdge[pos][1];
+			case(-8): return distFromEdge[pos][0];
+			case(1): return distFromEdge[pos][3];
+			case(-1): return distFromEdge[pos][2];
 			default:
 				new Exception("Invalid direction");
 				return -1;

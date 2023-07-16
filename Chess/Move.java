@@ -54,10 +54,6 @@ public class Move {
 	// 	// return Type.MOVE;
 	// }
 
-	public boolean isSpecial() {
-		return type == Type.SPECIAL;
-	}
-
 	@Override
 	public boolean equals(Object anObject) {
 		if (this == anObject) return true;

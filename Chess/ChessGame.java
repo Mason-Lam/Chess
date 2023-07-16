@@ -7,6 +7,8 @@ import java.awt.Image;
 import java.util.ArrayList;
 
 import javax.swing.*;
+import static Chess.Constants.PieceConstants.*;
+import static Chess.Constants.EvaluateConstants.*;
 
 public class ChessGame {
 	/*A Chess Game class*/
@@ -42,7 +44,7 @@ public class ChessGame {
 	public ChessGame(int computerTurn, int difficulty){
 		this.difficulty = difficulty;
 		this.computerTurn = computerTurn;
-		legal = new ArrayList<Move>(Constants.QUEEN);
+		legal = new ArrayList<Move>(QUEEN);
 		winner = false;
 		click1 = -1;		//sets var as no clicks
 		//rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
@@ -133,7 +135,7 @@ public class ChessGame {
 			else {
 				address += "G";
 			}
-			if(board.getPiece(count).color == Constants.WHITE) {
+			if(board.getPiece(count).color == WHITE) {
 				address += "W";
 			}
 			address += letter +".png";
@@ -235,7 +237,7 @@ public class ChessGame {
 		final int win = board.isWinner();	//Checks if there is a winner
 
 		//checks for no winner
-		if(win == Constants.PROGRESS) {
+		if(win == PROGRESS) {
 			return;
 		}
 		final JFrame w2 = new JFrame();	//Cool frame
@@ -243,7 +245,7 @@ public class ChessGame {
 		JLabel l2 = new JLabel();	//Cool label
 		final String[] colors = {"White","Black"};	//Colors
 		//Checks for a win
-		if(win == Constants.WIN) {
+		if(win == WIN) {
 			l2 = new JLabel(colors[board.getTurn()] + " is the winner!");	//Displays winner
 		}
 		//Checks for a draw
