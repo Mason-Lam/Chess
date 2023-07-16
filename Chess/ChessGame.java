@@ -48,32 +48,36 @@ public class ChessGame {
 		winner = false;
 		click1 = -1;		//sets var as no clicks
 		//rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
+		reset();
 		long prevTime = System.currentTimeMillis();
 		Tests.runTests(); //5800, 8315, 3200
 		System.out.println(System.currentTimeMillis() - prevTime);
 
-		System.out.println("Move Generation: " + timeMoveGen);
-		
-		System.out.println("Pawn Move: " + timePawnGen);
-		System.out.println("Knight Move: " + timeKnightGen);
-		System.out.println("Sliding Move: " + timeSlidingGen);
-		System.out.println("King Move: " + timeKingGen);
-		System.out.println("Valid Move: " + timeValidMove);
-		System.out.println("Valid Part: " + timeValidPart);
-		System.out.println("Make Move: " + timeMakeMove);
-		System.out.println("Undo Move: " + timeUndoMove);
-		System.out.println("Pawn Attack: " + timePawnAttack);
-		System.out.println("Knight Attack: " + timeKnightAttack);
-		System.out.println("Sliding Attack: " + timeSlidingAttack);
-		System.out.println("King Attack: " + timeKingAttack);
-		System.out.println("Soft Attack: " + timeSoftAttack);
-		System.out.println("Misc: " + timeMisc);
-		System.out.println("Debug: " + timeDebug);
+		display();
 
-		board = new ChessBoard(Tests.test1.fen);	//Creates a new ChessBoard object
+		board = new ChessBoard();	//Creates a new ChessBoard object
 		
+		reset();
 		computer = board.getComputer();
-		// System.out.println(computer.totalMoves(3));
+		prevTime = System.currentTimeMillis();
+		System.out.println(computer.totalMoves(1));
+		System.out.println(System.currentTimeMillis() - prevTime);
+		prevTime = System.currentTimeMillis();
+		System.out.println(computer.totalMoves(2));
+		System.out.println(System.currentTimeMillis() - prevTime);
+		prevTime = System.currentTimeMillis();
+		System.out.println(computer.totalMoves(3));
+		System.out.println(System.currentTimeMillis() - prevTime);
+		prevTime = System.currentTimeMillis();
+		System.out.println(computer.totalMoves(4));
+		System.out.println(System.currentTimeMillis() - prevTime);
+		prevTime = System.currentTimeMillis();
+		System.out.println(computer.totalMoves(5));
+		System.out.println(System.currentTimeMillis() - prevTime);
+		prevTime = System.currentTimeMillis();
+		System.out.println(computer.totalMoves(6));
+		System.out.println(System.currentTimeMillis() - prevTime);
+		display();
 		// board.displayAttacks();
 		// long prevTime = System.currentTimeMillis();
 		// //Current (3, 33), (4, 145), (5, 1203), (6, 17052)
@@ -277,5 +281,44 @@ public class ChessGame {
 		final Image image = imageIcon.getImage();
 		final Image newImg = image.getScaledInstance(90, 90, java.awt.Image.SCALE_SMOOTH);
 		return new ImageIcon(newImg);
+	}
+
+	private static void reset() {
+		timeMoveGen = 0;
+		timePawnGen = 0;
+		timeKnightGen = 0;
+		timeSlidingGen = 0;
+		timeKingGen = 0;
+		timeValidMove = 0;
+		timeValidPart = 0;
+		timeMakeMove = 0;
+		timeUndoMove = 0;
+		timePawnAttack = 0;
+		timeKnightAttack = 0;
+		timeSlidingAttack = 0;
+		timeKingAttack = 0;
+		timeSoftAttack = 0;
+		timeMisc = 0;
+		timeDebug = 0;
+	}
+
+	private static void display() {
+		System.out.println("Move Generation: " + timeMoveGen);
+		
+		System.out.println("Pawn Move: " + timePawnGen);
+		System.out.println("Knight Move: " + timeKnightGen);
+		System.out.println("Sliding Move: " + timeSlidingGen);
+		System.out.println("King Move: " + timeKingGen);
+		System.out.println("Valid Move: " + timeValidMove);
+		System.out.println("Valid Part: " + timeValidPart);
+		System.out.println("Make Move: " + timeMakeMove);
+		System.out.println("Undo Move: " + timeUndoMove);
+		System.out.println("Pawn Attack: " + timePawnAttack);
+		System.out.println("Knight Attack: " + timeKnightAttack);
+		System.out.println("Sliding Attack: " + timeSlidingAttack);
+		System.out.println("King Attack: " + timeKingAttack);
+		System.out.println("Soft Attack: " + timeSoftAttack);
+		System.out.println("Misc: " + timeMisc);
+		System.out.println("Debug: " + timeDebug);
 	}
 }
