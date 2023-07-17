@@ -150,8 +150,7 @@ public class ChessGame {
 			for(int j = 0; j < legal.size(); j++) {
 				final Move move = legal.get(j);
 				System.out.print(move.finish +" : ");
-				System.out.print(board.getPiece(move.finish).type+ " : ");
-				System.out.print(move.type.toString() + ", ");
+				System.out.print(board.getPiece(move.finish).type);
 				//Checks if the square is a legal move
 				if(board.getPiece(move.finish).isEmpty()) {
                     address = "Chess/Elements/";

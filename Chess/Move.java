@@ -1,50 +1,37 @@
 package Chess;
 
 public class Move {
-	
-	public enum Type {
-		ATTACK,
-		MOVE,
-		SPECIAL
-	}
-	
 
 	private final int moveID;
 	public final int start;
 	public final int finish;
-	public final Type type;
+	public final boolean SPECIAL;
 
-	public Move(int start, int finish, Type type) {
+	public Move(int start, int finish, boolean special) {
 		this.start = start;
 		this.finish = finish;
-		this.type = type;
-		int typeAdd = 0;
-		if (type == Type.ATTACK) {
-			typeAdd = 1;
-		}
-		if (type == Type.SPECIAL) {
-			typeAdd = 2;
-		}
-		moveID = typeAdd + (start << 2) + (finish << 8);
+		this.SPECIAL = special;
+		final int typeAdd = SPECIAL ? 1 : 0;
+		moveID = typeAdd + (start << 1) + (finish << 7);
 	}
 
 	public Move invert() {
-		return new Move(finish, start, type);
+		return new Move(finish, start, SPECIAL);
 	}
 
 	// public int getFinish() {
 	// 	return finish;
-	// 	//return moveID >> 8;
+	// 	//return moveID >> 7;
 	// }
 
 	// public int getStart () {
 	// 	return start;
-	// 	//return 63 & (moveID >> 2);
+	// 	//return 63 & (moveID >> 1);
 	// }
 
 	// public Type getType() {
 	// 	return type;
-	// 	// final int typeID = 3 & moveID;
+	// 	// final int typeID = 1 & moveID;
 	// 	// if (typeID == 2) {
 	// 	// 	return Type.SPECIAL;
 	// 	// }

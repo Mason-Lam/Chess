@@ -10,7 +10,7 @@ public class Constants {
 			14,
 			27,
 			9,
-			512
+			256
 		};
 
 		public static final boolean CHECKS = true;

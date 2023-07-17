@@ -37,16 +37,13 @@ public class Computer {
 	public int totalMoves(int depth) {
 		int count = 0;
 		long prevTime = System.currentTimeMillis();
-		final BoardStorage store = (depth != 1) ? new BoardStorage(board.getEnPassant(), board.halfMove, board.getCastling(board.getTurn())) : null;
 		final PieceSet pieces = board.getPieces(board.getTurn());
-		ChessGame.timeMisc += System.currentTimeMillis() - prevTime;
-		for(final ChessPiece piece : pieces) {
-			final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.type]);
-			piece.pieceMoves(moves);
-			if(depth == 1) {
+		if (depth == 1) {
+			for (final ChessPiece piece : pieces) {
+				final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.type]);
+				piece.pieceMoves(moves);
 				if (moves.size() > 0) {
-					final Move move = moves.get(0);
-					if(piece.isPawn() && ChessBoard.getRow(move.finish) == PROMOTION_LINE[board.getTurn()]) {
+					if(piece.isPawn() && ChessBoard.getRow(moves.get(0).finish) == PROMOTION_LINE[board.getTurn()]) {
 						count += moves.size() * 4;
 						continue;
 					}
@@ -54,9 +51,18 @@ public class Computer {
 				count += moves.size();
 				continue;
 			}
-			
-			for (int moveIndex = 0; moveIndex < moves.size(); moveIndex ++) {
-				final Move move = moves.get(moveIndex);
+			return count;
+		}
+
+		final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[6]);
+		final BoardStorage store = new BoardStorage(board.getEnPassant(), board.halfMove, board.getCastling(board.getTurn()));
+		for (final ChessPiece piece : pieces) {
+			piece.pieceMoves(moves);
+		}
+		ChessGame.timeMisc += System.currentTimeMillis() - prevTime;
+
+		for (int i = 0; i < moves.size(); i++) {
+			final Move move = moves.get(i);
 				final ChessPiece capturedPiece = getCapturedPiece(move);
 				board.make_move(move, false);
 				if (board.is_promote()) {
@@ -70,7 +76,6 @@ public class Computer {
 					count += totalMoves(depth - 1);
 				}
 				board.undoMove(move, capturedPiece, store);
-			}
 		}
 		return count;
 	}

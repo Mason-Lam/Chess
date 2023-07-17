@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import Chess.Computer.BoardStorage;
+
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
@@ -193,11 +194,12 @@ public class ChessBoard {
 	public void make_move(Move move, boolean permanent) {
 		long prevTime = System.currentTimeMillis();
 		final ChessPiece piece = board[move.start];
+		final boolean isAttack = !board[move.finish].isEmpty();
 		kingAttacker = null;
 		int castle = EMPTY;
 		piece.pieceAttacks(true);
 
-		if (move.type == Move.Type.ATTACK) {
+		if (isAttack) {
 			halfMove = -1;
 			board[move.finish].pieceAttacks(true);
 			updatePosition(board[move.finish], move.finish, true);
@@ -206,7 +208,7 @@ public class ChessBoard {
 		int passant = -1;
 		if (piece.isPawn()) {
 			halfMove = -1;
-			if (move.type == Move.Type.SPECIAL) {
+			if (move.SPECIAL) {
 				board[enPassant].pieceAttacks(true);
 				updatePosition(board[enPassant], enPassant, true);
 			}
@@ -227,7 +229,7 @@ public class ChessBoard {
 		
 		if (piece.isKing()) {
 			Arrays.fill(castling[piece.color], false);
-			if (move.type == Move.Type.SPECIAL) {
+			if (move.SPECIAL) {
 				if (move.finish > move.start) {
 					castle = ROOK_POSITIONS[turn][1];
 					board[castle].pieceAttacks(true);
@@ -248,7 +250,7 @@ public class ChessBoard {
 		
 		updatePosition(piece, move.finish, false);
 		piece.pieceAttacks(false);
-		softAttackUpdate(move, false);
+		softAttackUpdate(move, isAttack, false);
 		if (castle != -1) {
 			board[castle].pieceAttacks(false);
 		}
@@ -274,6 +276,7 @@ public class ChessBoard {
 		enPassant = store.enPassant;
 		kingAttacker = null;
 		final Move invertedMove = move.invert();
+		final boolean isAttack = !capturedPiece.isEmpty() && !move.SPECIAL;
 
 		final ChessPiece piece = board[invertedMove.start];
 		int castle = EMPTY;
@@ -304,13 +307,13 @@ public class ChessBoard {
 		board[invertedMove.start] = ChessPiece.empty();
 		updatePosition(piece, invertedMove.finish, false);
 
-		if (invertedMove.type == Move.Type.ATTACK) {
+		if (!capturedPiece.isEmpty() && !move.SPECIAL) {
 			updatePosition(capturedPiece, invertedMove.start, false);
 			capturedPiece.pieceAttacks(false);
 		}
 
 		piece.pieceAttacks(false);
-		softAttackUpdate(invertedMove, true);
+		softAttackUpdate(invertedMove, isAttack, true);
 		if (castle != -1) {
 			board[castle].pieceAttacks(false);
 		}
@@ -366,11 +369,11 @@ public class ChessBoard {
 			kingPos[piece.color] = newPos;
 	}
 	
-	private void softAttackUpdate(Move move, boolean undoMove) {
+	private void softAttackUpdate(Move move, boolean isAttack, boolean undoMove) {
 		for (int color = 0; color < 2; color++) {
 			for (final ChessPiece piece : pieces[color]) {
 				long prevTime = System.currentTimeMillis();
-				piece.softAttack(move, undoMove);
+				piece.softAttack(move, isAttack, undoMove);
 				//ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 			}
 		}
@@ -430,11 +433,11 @@ public class ChessBoard {
 	}
 
 	public boolean isCastle(Move move) {
-		return (board[move.start].isKing() || board[move.finish].isKing()) && move.type == Move.Type.SPECIAL;
+		return (board[move.start].isKing() || board[move.finish].isKing()) && move.SPECIAL;
 	}
 
 	public boolean isPassant(Move move) {
-		return (board[move.start].isPawn() || board[move.finish].isPawn()) && move.type == Move.Type.SPECIAL;
+		return (board[move.start].isPawn() || board[move.finish].isPawn()) && move.SPECIAL;
 	}
 	
 	public boolean doubleCheck(int color) {
