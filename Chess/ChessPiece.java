@@ -8,7 +8,9 @@ import static Chess.Constants.PieceConstants.*;
 public class ChessPiece {
 	public byte type;
 	public int pos;
+	private boolean updatingCopy;
 	private ChessPiece pinPiece;
+	private ArrayList<Move> movesCopy;
 	
 	public final byte color;
 	public final int pieceID;
@@ -21,6 +23,8 @@ public class ChessPiece {
 		this.board = board;
 		this.pieceID = pieceID;
 
+		updatingCopy = false;
+		movesCopy = !isEmpty() ? new ArrayList<Move>(MAX_MOVES[type]) : null;
 		pinPiece = null;
 	}
 
@@ -35,6 +39,7 @@ public class ChessPiece {
 			default: slidingAttacks(remove);
 				break;
 		}
+		reset();
 		//ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 	}
 	
@@ -96,10 +101,12 @@ public class ChessPiece {
 		final boolean attackingEnd = board.getAttacks(move.finish, color).contains(this);
 
 		if (attackingStart) {
+			reset();
 			final int direction = ChessBoard.onDiagonal(pos, move.start) ? ChessBoard.getDiagonalOffset(pos, move.start) : ChessBoard.getHorizontalOffset(pos, move.start);
 			if (!(isAttack && undoMove)) addAttacks(direction, move.start);
 		}
 		if (attackingEnd) {
+			reset();
 			final int direction = ChessBoard.onDiagonal(pos, move.finish) ? ChessBoard.getDiagonalOffset(pos, move.finish) : ChessBoard.getHorizontalOffset(pos, move.finish);
 			if (!(isAttack && !undoMove)) removeAttacks(direction, move.finish);
 		}
@@ -107,7 +114,7 @@ public class ChessPiece {
 		if (board.isPassant(move)) {
 			final int enPassant = board.getEnPassant();
 			if (!board.getAttacks(enPassant, color).contains(this)) return;
-
+			reset();
 			final int direction = ChessBoard.onDiagonal(pos, enPassant) ? ChessBoard.getDiagonalOffset(pos, enPassant) : ChessBoard.getHorizontalOffset(pos, enPassant);
 			if (undoMove) {
 				removeAttacks(direction, enPassant);
@@ -149,7 +156,6 @@ public class ChessPiece {
 
 	public void pieceMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		long prevTime = System.currentTimeMillis();
-		if (board.is_promote() || board.getTurn() != color) return;
 
 		if (isKing()) {
 			king(moves, attacksOnly);
@@ -162,9 +168,13 @@ public class ChessPiece {
 		switch (type) {
 			case PAWN: pawn(moves, attacksOnly);
 				break;
-			case KNIGHT: knight(moves, attacksOnly);
+			case KNIGHT: 
+				// updatingCopy = movesCopy.isEmpty();
+				knight(moves, attacksOnly);
 				break;
-			default: slidingMoves(moves, attacksOnly);
+			default: 
+				updatingCopy = movesCopy.isEmpty();
+				slidingMoves(moves, attacksOnly);
 				break;
 		}
 		pinPiece = null;
@@ -198,6 +208,25 @@ public class ChessPiece {
 	
 	private void knight(ArrayList<Move> moves, boolean attacksOnly) {
 		long prevTime = System.currentTimeMillis();
+		// pinPiece = getPin();
+		// if (!pinPiece.isEmpty()) {
+		// 	ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
+		// 	return;
+		// }
+
+		// if (!updatingCopy) {
+		// 	if (!board.isChecked(color)) {
+		// 		copy(moves);
+		// 		ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
+		// 		return;
+		// 	}
+		// 	for (int i = 0; i < movesCopy.size(); i++) {
+		// 		addMove(moves, movesCopy.get(i), attacksOnly);
+		// 	}
+		// 	ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
+		// 	return;
+		// }
+
 		for (int i = 0; i < KNIGHT_MOVES.length; i++) {
 			final int newPos = pos + KNIGHT_MOVES[i];
 			if (!ChessBoard.onBoard(newPos) || !ChessBoard.onL(pos, newPos)) continue;
@@ -250,6 +279,20 @@ public class ChessPiece {
 
 	private void slidingMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		long prevTime = System.currentTimeMillis();
+		if (!updatingCopy) {
+			pinPiece = getPin();
+			if (!board.isChecked(color) && pinPiece.isEmpty()) {
+				copy(moves);
+				ChessGame.timeSlidingGen += System.currentTimeMillis() - prevTime;
+				return;
+			}
+			for (int i = 0; i < movesCopy.size(); i++) {
+				addMove(moves, movesCopy.get(i), attacksOnly);
+			}
+			ChessGame.timeSlidingGen += System.currentTimeMillis() - prevTime;
+			return;
+		}
+
 		final int startingIndex = isBishop() ? 4 : 0;
 		final int endIndex = isRook() ? 4 : 8;
 		for (int i = startingIndex; i < endIndex; i++) {
@@ -260,6 +303,7 @@ public class ChessPiece {
 				if (piece.color == color) break;
 				
 				addMove(moves, new Move(pos, newPos, false), attacksOnly);
+
 				if (!piece.isEmpty()) break;
 			}
 		}
@@ -268,6 +312,9 @@ public class ChessPiece {
 
 	private void addMove(ArrayList<Move> moves, Move move, boolean attacksOnly) {
 		long prevTime = System.currentTimeMillis();
+		if (updatingCopy) {
+			movesCopy.add(move);
+		}
 		if (attacksOnly) {
 			if (board.getPiece(move.finish).isEmpty() && !board.isPassant(move)) return;
 		}
@@ -413,6 +460,16 @@ public class ChessPiece {
 			}
 		}
 		return empty();
+	}
+
+	public void copy(ArrayList<Move> moves) {
+		for (int i = 0; i < movesCopy.size(); i++) {
+			moves.add(movesCopy.get(i));
+		}
+	}
+
+	public void reset() {
+		movesCopy = new ArrayList<Move>(MAX_MOVES[type]);
 	}
 
 	public void setPos(int newPos) {

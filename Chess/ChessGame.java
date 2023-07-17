@@ -55,29 +55,30 @@ public class ChessGame {
 
 		display();
 
+		// Tests.test16.runTest();
 		board = new ChessBoard();	//Creates a new ChessBoard object
 		
 		reset();
 		computer = board.getComputer();
-		prevTime = System.currentTimeMillis();
-		System.out.println(computer.totalMoves(1));
-		System.out.println(System.currentTimeMillis() - prevTime);
-		prevTime = System.currentTimeMillis();
-		System.out.println(computer.totalMoves(2));
-		System.out.println(System.currentTimeMillis() - prevTime);
-		prevTime = System.currentTimeMillis();
-		System.out.println(computer.totalMoves(3));
-		System.out.println(System.currentTimeMillis() - prevTime);
-		prevTime = System.currentTimeMillis();
-		System.out.println(computer.totalMoves(4));
-		System.out.println(System.currentTimeMillis() - prevTime);
-		prevTime = System.currentTimeMillis();
-		System.out.println(computer.totalMoves(5));
-		System.out.println(System.currentTimeMillis() - prevTime);
-		prevTime = System.currentTimeMillis();
-		System.out.println(computer.totalMoves(6));
-		System.out.println(System.currentTimeMillis() - prevTime);
-		display();
+		// prevTime = System.currentTimeMillis();
+		// System.out.println(computer.totalMoves(1));
+		// System.out.println(System.currentTimeMillis() - prevTime);
+		// prevTime = System.currentTimeMillis();
+		// System.out.println(computer.totalMoves(2));
+		// System.out.println(System.currentTimeMillis() - prevTime);
+		// prevTime = System.currentTimeMillis();
+		// System.out.println(computer.totalMoves(3));
+		// System.out.println(System.currentTimeMillis() - prevTime);
+		// prevTime = System.currentTimeMillis();
+		// System.out.println(computer.totalMoves(4));
+		// System.out.println(System.currentTimeMillis() - prevTime);
+		// prevTime = System.currentTimeMillis();
+		// System.out.println(computer.totalMoves(5));
+		// System.out.println(System.currentTimeMillis() - prevTime);
+		// prevTime = System.currentTimeMillis();
+		// System.out.println(computer.totalMoves(6));
+		// System.out.println(System.currentTimeMillis() - prevTime);
+		// display();
 		// board.displayAttacks();
 		// long prevTime = System.currentTimeMillis();
 		// //Current (3, 33), (4, 145), (5, 1203), (6, 17052)
@@ -150,7 +151,7 @@ public class ChessGame {
 			for(int j = 0; j < legal.size(); j++) {
 				final Move move = legal.get(j);
 				System.out.print(move.finish +" : ");
-				System.out.print(board.getPiece(move.finish).type);
+				System.out.println(board.getPiece(move.finish).type);
 				//Checks if the square is a legal move
 				if(board.getPiece(move.finish).isEmpty()) {
                     address = "Chess/Elements/";
@@ -271,6 +272,7 @@ public class ChessGame {
 		click1 =-1;	//Resets click variable
 		check_Win();		//Checks for a win
 		update_display();	//Updates the display
+		System.out.println(board.getFenString());
 		// board.displayAttacks();
 		// System.out.println(computer.totalMoves(1));
 		// count --;

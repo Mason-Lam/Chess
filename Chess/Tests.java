@@ -105,9 +105,9 @@ public class Tests {
 		test13.runTest();
 		System.out.println("Test 14:");
 		test14.runTest();
-		System.out.println("Test 15:"); //Repeat?
+		System.out.println("Test 15:");
 		test15.runTest();
-		System.out.println("Test 16:"); //Repeat?
+		System.out.println("Test 16:");
 		test16.runTest();
 		System.out.println("Test 17:");
 		test17.runTest();

@@ -370,9 +370,27 @@ public class ChessBoard {
 	}
 	
 	private void softAttackUpdate(Move move, boolean isAttack, boolean undoMove) {
+		if (isCastle(move)) {
+			long prevTime = System.currentTimeMillis();
+			final boolean kingSide = (move.finish > move.start && !undoMove) || (move.start > move.finish && undoMove);
+			final PieceSet startingRookPos = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1]] : attacks[turn][ROOK_POSITIONS[turn][0]];
+			final PieceSet castledRookPos = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1] - 2] : attacks[turn][ROOK_POSITIONS[turn][0] + 3];
+			for (final ChessPiece piece : startingRookPos) {
+				piece.reset();
+			}
+			for (final ChessPiece piece : castledRookPos) {
+				piece.reset();
+			}
+			// ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
+		}
 		for (int color = 0; color < 2; color++) {
 			for (final ChessPiece piece : pieces[color]) {
 				long prevTime = System.currentTimeMillis();
+				// if (piece.isKnight() && color == turn) {
+				// 	if (onL(piece.pos, move.start) || onL(piece.pos, move.finish) || (onL(piece.pos, enPassant) && enPassant != -1)) {
+				// 		piece.reset();
+				// 	}
+				// }
 				piece.softAttack(move, isAttack, undoMove);
 				//ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 			}

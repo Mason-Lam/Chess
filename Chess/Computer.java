@@ -64,6 +64,7 @@ public class Computer {
 		for (int i = 0; i < moves.size(); i++) {
 			final Move move = moves.get(i);
 				final ChessPiece capturedPiece = getCapturedPiece(move);
+				// final int prevCount = count;
 				board.make_move(move, false);
 				if (board.is_promote()) {
 					for (final byte type : PROMOTION_PIECES) {
@@ -75,9 +76,16 @@ public class Computer {
 				else {
 					count += totalMoves(depth - 1);
 				}
+				// if (depth == 1) logMove(move, count - prevCount);
 				board.undoMove(move, capturedPiece, store);
 		}
 		return count;
+	}
+
+	private void logMove(Move move, int count) {
+		System.out.print(indexToSquare(ChessBoard.getColumn(move.start), 8 - ChessBoard.getRow(move.start)));
+		System.out.print(indexToSquare(ChessBoard.getColumn(move.finish), 8 - ChessBoard.getRow(move.finish)));
+		System.out.println(" : " + count);
 	}
 
 	private ChessPiece getCapturedPiece(Move move) {
