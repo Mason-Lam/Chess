@@ -165,16 +165,13 @@ public class ChessPiece {
 
 		if (board.doubleCheck(color)) return;
 
+		updatingCopy = movesCopy.isEmpty();
 		switch (type) {
 			case PAWN: pawn(moves, attacksOnly);
 				break;
-			case KNIGHT: 
-				updatingCopy = movesCopy.isEmpty();
-				knight(moves, attacksOnly);
+			case KNIGHT: knight(moves, attacksOnly);
 				break;
-			default: 
-				updatingCopy = movesCopy.isEmpty();
-				slidingMoves(moves, attacksOnly);
+			default: slidingMoves(moves, attacksOnly);
 				break;
 		}
 		pinPiece = null;
@@ -185,30 +182,31 @@ public class ChessPiece {
 		//Moves
 		long prevTime = System.currentTimeMillis();
 		if (!updatingCopy) {
-			if (!board.isChecked(color)) {
+			pinPiece = getPin();
+			if (!board.isChecked(color) && pinPiece.isEmpty()) {
 				copy(moves);
-				ChessGame.timePawnGen += System.currentTimeMillis() - prevTime;
-				return;
 			}
-			for (int i = 0; i < movesCopy.size(); i++) {
-				addMove(moves, movesCopy.get(i), attacksOnly);
-			}
-			ChessGame.timePawnGen += System.currentTimeMillis() - prevTime;
-			return;
-		}
-
-		final int direction = (color == WHITE) ? -8 : 8;
-		if (board.getPiece(pos + direction).isEmpty()) {
-			addMove(moves, new Move(pos, pos + direction, false), attacksOnly);
-			if (ChessBoard.getRow(pos) == PAWN_STARTS[color]) {
-				if (board.getPiece(pos + direction * 2).isEmpty()) addMove(moves, new Move(pos, pos + direction * 2, false), attacksOnly);
+			else {
+				for (int i = 0; i < movesCopy.size(); i++) {
+					addMove(moves, movesCopy.get(i), attacksOnly);
+				}
 			}
 		}
-		//Attacks
-		for (int i = 0; i < 2; i++) {
-			if (ChessBoard.getEdge(PAWN_DIAGONALS[color][i], pos) < 1) continue;
-			final int newPos = pos + PAWN_DIAGONALS[color][i];
-			if (board.getPiece(newPos).color == board.next(color)) addMove(moves, new Move(pos, newPos, false), attacksOnly);
+		
+		else {
+			final int direction = (color == WHITE) ? -8 : 8;
+			if (board.getPiece(pos + direction).isEmpty()) {
+				addMove(moves, new Move(pos, pos + direction, false), attacksOnly);
+				if (ChessBoard.getRow(pos) == PAWN_STARTS[color]) {
+					if (board.getPiece(pos + direction * 2).isEmpty()) addMove(moves, new Move(pos, pos + direction * 2, false), attacksOnly);
+				}
+			}
+			//Attacks
+			for (int i = 0; i < 2; i++) {
+				if (ChessBoard.getEdge(PAWN_DIAGONALS[color][i], pos) < 1) continue;
+				final int newPos = pos + PAWN_DIAGONALS[color][i];
+				if (board.getPiece(newPos).color == board.next(color)) addMove(moves, new Move(pos, newPos, false), attacksOnly);
+			}
 		}
 
 		//EnPassant

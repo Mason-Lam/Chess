@@ -387,10 +387,16 @@ public class ChessBoard {
 			for (final ChessPiece piece : pieces[color]) {
 				long prevTime = System.currentTimeMillis();
 				if (piece.isKnight()) {
-					if (onL(piece.pos, move.start) || onL(piece.pos, move.finish) || (onL(piece.pos, enPassant) && enPassant != -1)) {
+					if (onL(piece.pos, move.start) || onL(piece.pos, move.finish) || (onL(piece.pos, enPassant) && enPassant != EMPTY)) {
 						piece.reset();
 					}
 				}
+				if (piece.isPawn()) {
+					if (onPawn(piece.pos, move.start, color) || onPawn(piece.pos, move.finish, color) || (onPawn(piece.pos, enPassant, color) && enPassant != EMPTY)) {
+						piece.reset();
+					}
+				}
+				ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 				piece.softAttack(move, isAttack, undoMove);
 				//ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 			}
@@ -577,9 +583,13 @@ public class ChessBoard {
 		return direction;
 	}
 
-	public static boolean onPawn(int pos1, int pos2, int color) {
-		new Exception("Method not supported");
-		return true;
+	public static boolean onPawn(int pawn, int moveSquare, int color) {
+		final int offset = moveSquare - pawn;
+		if (Math.abs(offset) != 7 && Math.abs(offset) != 9 && Math.abs(offset) != 8 && Math.abs(offset) != 16) return false;
+		final int direction = (color == WHITE) ? -1 : 1;
+		if (offset == 8 * direction || getRow(pawn) == PAWN_STARTS[color] && offset == 16 * direction) return true;
+		if (!onDiagonal(pawn, moveSquare)) return false;
+		return (offset == 7 * direction || offset == 9 * direction);
 	}
 	
 	public static boolean blocksLine(int attacker, int target, int defender) {
@@ -596,7 +606,9 @@ public class ChessBoard {
 	}
 	
 	public static boolean onL(int pos1, int pos2) {
-		return getDistance(pos1, pos2) == 3;
+		final int distanceVert = getDistanceVert(pos1, pos2);
+		final int distanceHor = getDistanceHor(pos1, pos2);
+		return (distanceVert == 1 && distanceHor == 2) || (distanceVert == 2 && distanceHor == 1);
 	}
 	
 	public static boolean blocksDiagonal(int attacker, int target, int defender) {

@@ -1,5 +1,7 @@
 package Chess;
 
+import java.util.Arrays;
+
 public class Constants {
 
 	public static class MoveConstants {
