@@ -184,6 +184,19 @@ public class ChessPiece {
 	private void pawn(ArrayList<Move> moves, boolean attacksOnly) {
 		//Moves
 		long prevTime = System.currentTimeMillis();
+		if (!updatingCopy) {
+			if (!board.isChecked(color)) {
+				copy(moves);
+				ChessGame.timePawnGen += System.currentTimeMillis() - prevTime;
+				return;
+			}
+			for (int i = 0; i < movesCopy.size(); i++) {
+				addMove(moves, movesCopy.get(i), attacksOnly);
+			}
+			ChessGame.timePawnGen += System.currentTimeMillis() - prevTime;
+			return;
+		}
+
 		final int direction = (color == WHITE) ? -8 : 8;
 		if (board.getPiece(pos + direction).isEmpty()) {
 			addMove(moves, new Move(pos, pos + direction, false), attacksOnly);
@@ -199,8 +212,14 @@ public class ChessPiece {
 		}
 
 		//EnPassant
-		if (board.getEnPassant() == EMPTY) return;
-		if (Math.abs(board.getEnPassant() - pos) != 1 || ChessBoard.getDistance(board.getEnPassant(), pos) != 1) return;
+		if (board.getEnPassant() == EMPTY) {
+			ChessGame.timePawnGen += System.currentTimeMillis() - prevTime;
+			return;
+		}
+		if (Math.abs(board.getEnPassant() - pos) != 1 || ChessBoard.getDistance(board.getEnPassant(), pos) != 1) {
+			ChessGame.timePawnGen += System.currentTimeMillis() - prevTime;
+			return;
+		}
 		final int newPos = (color == WHITE) ? board.getEnPassant() - 8 : board.getEnPassant() + 8;
 		if (board.getPiece(newPos).isEmpty()) addMove(moves, new Move(pos, newPos, true), attacksOnly);
 		ChessGame.timePawnGen += System.currentTimeMillis() - prevTime;
@@ -312,7 +331,7 @@ public class ChessPiece {
 
 	private void addMove(ArrayList<Move> moves, Move move, boolean attacksOnly) {
 		long prevTime = System.currentTimeMillis();
-		if (updatingCopy) {
+		if (updatingCopy && !move.SPECIAL) {
 			movesCopy.add(move);
 		}
 		if (attacksOnly) {

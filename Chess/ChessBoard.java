@@ -576,6 +576,11 @@ public class ChessBoard {
 		if (startingPos - endPos > 0) direction *= -1;
 		return direction;
 	}
+
+	public static boolean onPawn(int pos1, int pos2, int color) {
+		new Exception("Method not supported");
+		return true;
+	}
 	
 	public static boolean blocksLine(int attacker, int target, int defender) {
 		return onSameLine(attacker, target, defender) && getDistance(defender, target) < getDistance(attacker, target) &&

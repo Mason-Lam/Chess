@@ -76,8 +76,8 @@ public class ChessGame {
 		System.out.println(computer.totalMoves(5));
 		System.out.println(System.currentTimeMillis() - prevTime);
 		prevTime = System.currentTimeMillis();
-		// System.out.println(computer.totalMoves(6));
-		// System.out.println(System.currentTimeMillis() - prevTime);
+		System.out.println(computer.totalMoves(6));
+		System.out.println(System.currentTimeMillis() - prevTime);
 		display();
 		// board.displayAttacks();
 		// long prevTime = System.currentTimeMillis();
