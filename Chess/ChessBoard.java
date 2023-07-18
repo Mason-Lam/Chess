@@ -386,11 +386,11 @@ public class ChessBoard {
 		for (int color = 0; color < 2; color++) {
 			for (final ChessPiece piece : pieces[color]) {
 				long prevTime = System.currentTimeMillis();
-				// if (piece.isKnight() && color == turn) {
-				// 	if (onL(piece.pos, move.start) || onL(piece.pos, move.finish) || (onL(piece.pos, enPassant) && enPassant != -1)) {
-				// 		piece.reset();
-				// 	}
-				// }
+				if (piece.isKnight()) {
+					if (onL(piece.pos, move.start) || onL(piece.pos, move.finish) || (onL(piece.pos, enPassant) && enPassant != -1)) {
+						piece.reset();
+					}
+				}
 				piece.softAttack(move, isAttack, undoMove);
 				//ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 			}

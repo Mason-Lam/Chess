@@ -169,7 +169,7 @@ public class ChessPiece {
 			case PAWN: pawn(moves, attacksOnly);
 				break;
 			case KNIGHT: 
-				// updatingCopy = movesCopy.isEmpty();
+				updatingCopy = movesCopy.isEmpty();
 				knight(moves, attacksOnly);
 				break;
 			default: 
@@ -208,24 +208,24 @@ public class ChessPiece {
 	
 	private void knight(ArrayList<Move> moves, boolean attacksOnly) {
 		long prevTime = System.currentTimeMillis();
-		// pinPiece = getPin();
-		// if (!pinPiece.isEmpty()) {
-		// 	ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
-		// 	return;
-		// }
+		pinPiece = getPin();
+		if (!pinPiece.isEmpty()) {
+			ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
+			return;
+		}
 
-		// if (!updatingCopy) {
-		// 	if (!board.isChecked(color)) {
-		// 		copy(moves);
-		// 		ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
-		// 		return;
-		// 	}
-		// 	for (int i = 0; i < movesCopy.size(); i++) {
-		// 		addMove(moves, movesCopy.get(i), attacksOnly);
-		// 	}
-		// 	ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
-		// 	return;
-		// }
+		if (!updatingCopy) {
+			if (!board.isChecked(color)) {
+				copy(moves);
+				ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
+				return;
+			}
+			for (int i = 0; i < movesCopy.size(); i++) {
+				addMove(moves, movesCopy.get(i), attacksOnly);
+			}
+			ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime;
+			return;
+		}
 
 		for (int i = 0; i < KNIGHT_MOVES.length; i++) {
 			final int newPos = pos + KNIGHT_MOVES[i];
