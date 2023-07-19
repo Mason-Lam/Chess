@@ -392,8 +392,15 @@ public class ChessBoard {
 					}
 				}
 				if (piece.isPawn()) {
-					if (onPawn(piece.pos, move.start, color) || onPawn(piece.pos, move.finish, color) || (onPawn(piece.pos, enPassant, color) && enPassant != EMPTY)) {
-						piece.reset();
+					if (enPassant == EMPTY) {
+						if (onPawn(piece, move.start) || onPawn(piece, move.finish)) {
+							piece.reset();
+						}
+					}
+					else {
+						if (onPawn(piece, move.start) || onPawn(piece, move.finish) || onPawn(piece, enPassant)) {
+							piece.reset();
+						}
 					}
 				}
 				ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
@@ -583,12 +590,11 @@ public class ChessBoard {
 		return direction;
 	}
 
-	public static boolean onPawn(int pawn, int moveSquare, int color) {
-		final int offset = moveSquare - pawn;
-		if (Math.abs(offset) != 7 && Math.abs(offset) != 9 && Math.abs(offset) != 8 && Math.abs(offset) != 16) return false;
-		final int direction = (color == WHITE) ? -1 : 1;
-		if (offset == 8 * direction || getRow(pawn) == PAWN_STARTS[color] && offset == 16 * direction) return true;
-		if (!onDiagonal(pawn, moveSquare)) return false;
+	public static boolean onPawn(ChessPiece pawn, int moveSquare) {
+		final int offset = moveSquare - pawn.pos;
+		final int direction = (pawn.color == WHITE) ? -1 : 1;
+		if (offset == 8 * direction || (getRow(pawn.pos) == PAWN_STARTS[pawn.color] && offset == 16 * direction)) return true;
+		if (!onDiagonal(pawn.pos, moveSquare)) return false;
 		return (offset == 7 * direction || offset == 9 * direction);
 	}
 	
