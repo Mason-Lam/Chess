@@ -154,6 +154,7 @@ public class ChessPiece {
 		long prevTime = System.currentTimeMillis();
 
 		if (isKing()) {
+			updatingCopy = movesCopy.isEmpty();
 			king(moves, attacksOnly);
 			ChessGame.timeKingGen += System.currentTimeMillis() - prevTime;
 			ChessGame.timeMoveGen += System.currentTimeMillis() - prevTime;
@@ -194,10 +195,9 @@ public class ChessPiece {
 			pinPiece = getPin();
 			if (!board.isChecked(color) && pinPiece.isEmpty()) {
 				copy(moves, attacksOnly);
+				return;
 			}
-			else {
-				checkMoves(moves, attacksOnly);
-			}
+			checkMoves(moves, attacksOnly);
 			return;
 		}
 		
@@ -239,20 +239,29 @@ public class ChessPiece {
 	}
 	
 	private void king(ArrayList<Move> moves, boolean attacksOnly) {
-		for (int i = 0; i < DIRECTIONS.length; i++) {
-			if (getEdge(DIRECTIONS[i], pos) < 1) continue;
-			final int newPos = pos + DIRECTIONS[i];
-			if(board.getPiece(newPos).color == color) continue;
-
-			addMove(moves, new Move(pos, newPos, false), attacksOnly);
-		}
-		
 		if (castleCheck(true)) {
 			addMove(moves, new Move(pos, ROOK_POSITIONS[color][1] - 1, true), attacksOnly);
 		}
 
 		if (castleCheck(false)) {
 			addMove(moves, new Move(pos, ROOK_POSITIONS[color][0] + 2, true), attacksOnly);
+		}
+
+		if (!updatingCopy) {
+			if (!board.isChecked(color)) {
+				copyKing(moves, attacksOnly);
+				return;
+			}
+			checkMoves(moves, attacksOnly);
+			return;
+		}
+
+		for (int i = 0; i < DIRECTIONS.length; i++) {
+			if (getEdge(DIRECTIONS[i], pos) < 1) continue;
+			final int newPos = pos + DIRECTIONS[i];
+			if(board.getPiece(newPos).color == color) continue;
+
+			addMove(moves, new Move(pos, newPos, false), attacksOnly);
 		}
 	}
 
@@ -466,6 +475,17 @@ public class ChessPiece {
 			if (attacksOnly) {
 				if (board.getPiece(move.finish).isEmpty() && !board.isPassant(move)) continue;
 			}
+			moves.add(move);
+		}
+	}
+
+	public void copyKing(ArrayList<Move> moves, boolean attacksOnly) {
+		for (int i = 0; i < movesCopy.size(); i++) {
+			final Move move = movesCopy.get(i);
+			if (attacksOnly) {
+				if (board.getPiece(move.finish).isEmpty() && !board.isPassant(move)) continue;
+			}
+			if (CHECKS && board.isAttacked(move.finish, color)) continue;
 			moves.add(move);
 		}
 	}

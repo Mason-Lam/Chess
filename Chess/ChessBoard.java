@@ -409,7 +409,6 @@ public class ChessBoard {
 				}
 				long prevTime = System.currentTimeMillis();
 				pawnReset(pos, color);
-				ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 			}
 		}
 	}
