@@ -383,31 +383,57 @@ public class ChessBoard {
 			}
 			// ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 		}
+
+		final int[] squares = getSquares(move);
+		long prevTime = System.currentTimeMillis();
+		pieceReset(squares, isAttack);
+		ChessGame.timePieceUpdate += System.currentTimeMillis() - prevTime;
 		for (int color = 0; color < 2; color++) {
 			for (final ChessPiece piece : pieces[color]) {
-				long prevTime = System.currentTimeMillis();
-				if (piece.isKnight()) {
-					if (onL(piece.pos, move.start) || onL(piece.pos, move.finish) || (onL(piece.pos, enPassant) && enPassant != EMPTY)) {
-						piece.reset();
-					}
-				}
-				if (piece.isPawn()) {
-					if (enPassant == EMPTY) {
-						if (onPawn(piece, move.start) || onPawn(piece, move.finish)) {
-							piece.reset();
-						}
-					}
-					else {
-						if (onPawn(piece, move.start) || onPawn(piece, move.finish) || onPawn(piece, enPassant)) {
-							piece.reset();
-						}
-					}
-				}
-				ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
+				prevTime = System.currentTimeMillis();
 				piece.softAttack(move, isAttack, undoMove);
-				//ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
+				ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime;
 			}
 		}
+	}
+
+	private void pieceReset(int[] squares, boolean isAttack) {
+		for (int color = 0; color < 2; color ++) {
+			final boolean needsUpdate = isAttack || color == turn;
+			for (int index = 0; index < squares.length; index++) {
+				final int pos = squares[index];
+				final PieceSet attacks = getAttacks(pos, color);
+				for (final ChessPiece piece : attacks) {
+					if (!needsUpdate && (piece.isKnight() || piece.isKing())) continue;
+					piece.reset();
+				}
+				long prevTime = System.currentTimeMillis();
+				pawnReset(pos, color);
+				ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
+			}
+		}
+	}
+
+	private void pawnReset(int square, int color) {
+		final int direction = color == WHITE ? 8 : - 8;
+		int newPos = square + direction;
+		if (!onBoard(newPos)) return;
+		ChessPiece piece = board[newPos];
+		if (piece.isPawn()) {
+			piece.reset();
+			return;
+		}
+		if (!piece.isEmpty()) return;
+
+		newPos += direction;
+		if (getRow(newPos) != PAWN_STARTS[color]) return;
+		piece = board[newPos];
+		if (piece.isPawn()) piece.reset();
+	}
+
+	private int[] getSquares(Move move) {
+		if (isPassant(move)) return new int[] {move.start, move.finish, enPassant};
+		return new int[] {move.start, move.finish};
 	}
 
 	private void hardAttackUpdate() {

@@ -92,22 +92,19 @@ public class ChessPiece {
 	}
 
 	public void softAttack(Move move, boolean isAttack, boolean undoMove) {
-		long prevTime = System.currentTimeMillis();
 		if (pos == move.start || pos == move.finish) return;
 		if (isPawn() || isKnight() || isKing()) return;
 
 		if (board.isCastle(move) && (Math.abs(pos - move.finish) == 1 || Math.abs(pos - move.start) == 1)) return;
-		
+
 		final boolean attackingStart = board.getAttacks(move.start, color).contains(this);
 		final boolean attackingEnd = board.getAttacks(move.finish, color).contains(this);
 
 		if (attackingStart) {
-			reset();
 			final int direction = onDiagonal(pos, move.start) ? getDiagonalOffset(pos, move.start) : getHorizontalOffset(pos, move.start);
 			if (!(isAttack && undoMove)) addAttacks(direction, move.start);
 		}
 		if (attackingEnd) {
-			reset();
 			final int direction = onDiagonal(pos, move.finish) ? getDiagonalOffset(pos, move.finish) : getHorizontalOffset(pos, move.finish);
 			if (!(isAttack && !undoMove)) removeAttacks(direction, move.finish);
 		}
@@ -115,7 +112,6 @@ public class ChessPiece {
 		if (board.isPassant(move)) {
 			final int enPassant = board.getEnPassant();
 			if (!board.getAttacks(enPassant, color).contains(this)) return;
-			reset();
 			final int direction = onDiagonal(pos, enPassant) ? getDiagonalOffset(pos, enPassant) : getHorizontalOffset(pos, enPassant);
 			if (undoMove) {
 				removeAttacks(direction, enPassant);
@@ -124,7 +120,6 @@ public class ChessPiece {
 				addAttacks(direction, enPassant);
 			}
 		}
-		ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime;
 	}
 	
 	private void addAttacks(int direction, int startingPos) {

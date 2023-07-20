@@ -38,6 +38,7 @@ public class ChessGame {
 	public static long timeSlidingAttack = 0;
 	public static long timeKingAttack = 0;
 	public static long timeSoftAttack = 0;
+	public static long timePieceUpdate = 0;
 	public static long timeMisc = 0;
 	public static long timeDebug = 0;
 
@@ -299,6 +300,7 @@ public class ChessGame {
 		timeSlidingAttack = 0;
 		timeKingAttack = 0;
 		timeSoftAttack = 0;
+		timePieceUpdate = 0;
 		timeMisc = 0;
 		timeDebug = 0;
 	}
@@ -319,6 +321,7 @@ public class ChessGame {
 		System.out.println("Sliding Attack: " + timeSlidingAttack);
 		System.out.println("King Attack: " + timeKingAttack);
 		System.out.println("Soft Attack: " + timeSoftAttack);
+		System.out.println("Piece Update: " + timePieceUpdate);
 		System.out.println("Misc: " + timeMisc);
 		System.out.println("Debug: " + timeDebug);
 	}
