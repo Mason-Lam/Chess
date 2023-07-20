@@ -30,6 +30,7 @@ public class ChessPiece {
 	}
 
 	public void pieceAttacks(boolean remove) {
+		reset();
 		switch(type) {
 			case (PAWN): pawnAttacks(remove);
 				break;
@@ -40,7 +41,6 @@ public class ChessPiece {
 			default: slidingAttacks(remove);
 				break;
 		}
-		reset();
 		//ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 	}
 	
@@ -193,11 +193,26 @@ public class ChessPiece {
 
 		if (!updatingCopy) {
 			pinPiece = getPin();
-			if (!board.isChecked(color) && pinPiece.isEmpty()) {
+			if (board.isChecked(color)) {
+				checkMoves(moves, attacksOnly);
+				return;
+			}
+
+			if (pinPiece.isEmpty()) {
 				copy(moves, attacksOnly);
 				return;
 			}
-			checkMoves(moves, attacksOnly);
+
+			if (ChessBoard.onColumn(pinPiece.pos, pos)) {
+				copyPawn(moves, attacksOnly);
+				return;
+			}
+
+			if (ChessBoard.onRow(pinPiece.pos, pos)) {
+				return;
+			}
+
+			checkPawn(moves);
 			return;
 		}
 		
@@ -376,7 +391,7 @@ public class ChessPiece {
 	}
 	
 	private boolean isPinned(Move move) {
-		if (pinPiece == null) pinPiece = getPin();
+		pinPiece = getPin();
 		final int king = board.getKingPos(color);
 
 		if (board.isPassant(move)) {
@@ -432,6 +447,7 @@ public class ChessPiece {
 	}
 
 	private ChessPiece getPin() {
+		if (pinPiece != null) return pinPiece;
 		final int king = board.getKingPos(color);
 
 		final boolean pinnedPiece = (onDiagonal(king, pos) || onLine(king, pos)) && board.isAttacked(this);
@@ -463,13 +479,23 @@ public class ChessPiece {
 		return empty();
 	}
 
-	public void checkMoves(ArrayList<Move> moves, boolean attacksOnly) {
+	private void checkMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		for (int i = 0; i < movesCopy.size(); i++) {
 			addMove(moves, movesCopy.get(i), attacksOnly);
 		}
 	}
 
-	public void copy(ArrayList<Move> moves, boolean attacksOnly) {
+	private void checkPawn(ArrayList<Move> moves) {
+		for (int i = 0; i < movesCopy.size(); i++) {
+			final Move move = movesCopy.get(i);
+			if (move.finish == pinPiece.pos) {
+				moves.add(move);
+				return;
+			}
+		}
+	}
+
+	private void copy(ArrayList<Move> moves, boolean attacksOnly) {
 		for (int i = 0; i < movesCopy.size(); i++) {
 			final Move move = movesCopy.get(i);
 			if (attacksOnly) {
@@ -479,7 +505,15 @@ public class ChessPiece {
 		}
 	}
 
-	public void copyKing(ArrayList<Move> moves, boolean attacksOnly) {
+	private void copyPawn(ArrayList<Move> moves, boolean attacksOnly) {
+		if (attacksOnly) return;
+		for (int i = 0; i < movesCopy.size(); i++) {
+			final Move move = movesCopy.get(i);
+			if (ChessBoard.onColumn(move.start, move.finish)) moves.add(move);
+		}
+	}
+
+	private void copyKing(ArrayList<Move> moves, boolean attacksOnly) {
 		for (int i = 0; i < movesCopy.size(); i++) {
 			final Move move = movesCopy.get(i);
 			if (attacksOnly) {
