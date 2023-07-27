@@ -62,6 +62,7 @@ public class ChessPiece {
 			if (!onBoard(newPos) || !onL(pos, newPos)) continue;
 
 			board.modifyAttacks(this, newPos, remove);
+			// if (board.getPiece(newPos).color != color && !remove) movesCopy.add(new Move(pos, newPos, false));
 		}
 		ChessGame.timeKnightAttack += System.currentTimeMillis() - prevTime;
 	}
@@ -481,12 +482,14 @@ public class ChessPiece {
 
 	private void checkMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		for (int i = 0; i < movesCopy.size(); i++) {
+			ChessGame.copyCount ++;
 			addMove(moves, movesCopy.get(i), attacksOnly);
 		}
 	}
 
 	private void checkPawn(ArrayList<Move> moves) {
 		for (int i = 0; i < movesCopy.size(); i++) {
+			ChessGame.copyCount ++;
 			final Move move = movesCopy.get(i);
 			if (move.finish == pinPiece.pos) {
 				moves.add(move);
@@ -497,6 +500,7 @@ public class ChessPiece {
 
 	private void copy(ArrayList<Move> moves, boolean attacksOnly) {
 		for (int i = 0; i < movesCopy.size(); i++) {
+			ChessGame.copyCount ++;
 			final Move move = movesCopy.get(i);
 			if (attacksOnly) {
 				if (board.getPiece(move.finish).isEmpty() && !board.isPassant(move)) continue;
@@ -508,6 +512,7 @@ public class ChessPiece {
 	private void copyPawn(ArrayList<Move> moves, boolean attacksOnly) {
 		if (attacksOnly) return;
 		for (int i = 0; i < movesCopy.size(); i++) {
+			ChessGame.copyCount ++;
 			final Move move = movesCopy.get(i);
 			if (ChessBoard.onColumn(move.start, move.finish)) moves.add(move);
 		}
@@ -515,6 +520,7 @@ public class ChessPiece {
 
 	private void copyKing(ArrayList<Move> moves, boolean attacksOnly) {
 		for (int i = 0; i < movesCopy.size(); i++) {
+			ChessGame.copyCount ++;
 			final Move move = movesCopy.get(i);
 			if (attacksOnly) {
 				if (board.getPiece(move.finish).isEmpty() && !board.isPassant(move)) continue;

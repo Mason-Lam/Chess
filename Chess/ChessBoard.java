@@ -322,7 +322,9 @@ public class ChessBoard {
 		ChessGame.timeUndoMove += System.currentTimeMillis() - prevTime;
 	}
 
+	//Not a big deal
 	public void promote(byte type) {
+		long prevTime = System.currentTimeMillis();
 		board[promotingPawn].type = type;
 		updatePosition(board[promotingPawn], promotingPawn, false);
 		pieceCount[turn][type] += 1;
@@ -334,7 +336,9 @@ public class ChessBoard {
 		promotingPawn = -1;
 	}
 
+	//Not a big deal
 	public void unPromote(int pos, BoardStorage store) {
+		long prevTime = System.currentTimeMillis();
 		halfMove --;
 		if (turn == WHITE) fullMove --;
 		next_turn();
@@ -350,6 +354,7 @@ public class ChessBoard {
 		halfMove = store.halfMove;
 	}
 	
+	//Not big deal
 	private void updatePosition(ChessPiece piece, int newPos, boolean remove) {
 		long prevTime = System.currentTimeMillis();
 		if (remove) {
@@ -365,12 +370,12 @@ public class ChessBoard {
 			pieceCount[piece.color][piece.type] += 1;
 		}
 		
-		if (piece.isKing())
-			kingPos[piece.color] = newPos;
+		if (piece.isKing()) kingPos[piece.color] = newPos;
 	}
 	
 	private void softAttackUpdate(Move move, boolean isAttack, boolean undoMove) {
 		if (isCastle(move)) {
+			//Not big deal
 			long prevTime = System.currentTimeMillis();
 			final boolean kingSide = (move.finish > move.start && !undoMove) || (move.start > move.finish && undoMove);
 			final PieceSet startingRookPos = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1]] : attacks[turn][ROOK_POSITIONS[turn][0]];
@@ -386,7 +391,7 @@ public class ChessBoard {
 
 		final int[] squares = getSquares(move);
 		long prevTime = System.currentTimeMillis();
-		pieceReset(squares, isAttack);
+		resetPieces(squares, isAttack, undoMove);
 		ChessGame.timePieceUpdate += System.currentTimeMillis() - prevTime;
 		for (int color = 0; color < 2; color++) {
 			for (final ChessPiece piece : pieces[color]) {
@@ -397,15 +402,13 @@ public class ChessBoard {
 		}
 	}
 
-	private void pieceReset(int[] squares, boolean isAttack) {
-		for (int color = 0; color < 2; color ++) {
-			final boolean needsUpdate = isAttack || color == turn;
-			for (int index = 0; index < squares.length; index++) {
-				final int pos = squares[index];
+	private void resetPieces(int[] squares, boolean isAttack, boolean undoMove) {
+		for (int index = 0; index < squares.length; index ++) {
+			final int pos = squares[index];
+			for (int color = 0; color < 2; color++) {
 				final PieceSet attacks = getAttacks(pos, color);
 				for (final ChessPiece piece : attacks) {
-					if (!needsUpdate && (piece.isKnight() || piece.isKing())) continue;
-					piece.reset();
+					pieceReset(piece, index, isAttack, undoMove);
 				}
 				long prevTime = System.currentTimeMillis();
 				pawnReset(pos, color);
@@ -413,29 +416,63 @@ public class ChessBoard {
 		}
 	}
 
-	private void pawnReset(int square, int color) {
-		final int direction = color == WHITE ? 8 : - 8;
-		int newPos = square + direction;
-		if (!onBoard(newPos)) return;
-		ChessPiece piece = board[newPos];
-		if (piece.isPawn()) {
-			piece.reset();
-			return;
-		}
-		if (!piece.isEmpty()) return;
+	//Solid
+	private void pieceReset(ChessPiece piece, int index, boolean isAttack, boolean undoMove) {
+		switch (piece.type) {
+			case PAWN:
+				if (index == 2) {
+					if (piece.color == turn) piece.reset();
+					break;
+				}
+				if (isAttack && ((index == 0 && undoMove) || (index == 1 && !undoMove))) {
+					piece.reset();
+					break;
+				}
 
-		newPos += direction;
-		if (getRow(newPos) != PAWN_STARTS[color]) return;
-		piece = board[newPos];
-		if (piece.isPawn()) piece.reset();
+				if (piece.color != turn) piece.reset();
+				break;
+			case KNIGHT:
+			case KING:
+				if (index == 2) {
+					if (piece.color != turn) piece.reset();
+					break;
+				}
+				if (isAttack && ((index == 0 && undoMove) || (index == 1 && !undoMove))) {
+					piece.reset();
+					break;
+				}
+
+				if (piece.color == turn) piece.reset();
+				break;
+			default:
+				piece.reset();
+				break;
+		}
 	}
 
+	//Meh
+	private void pawnReset(int square, int color) {
+		final int direction = color == WHITE ? 8 : - 8;
+		final int size = Math.abs(getRow(square) - PAWN_STARTS[color]) == 2 ? 3 : 2;
+		for (int i = 1; i < size; i++) {
+			final int newPos = square + direction * i;
+			if (!onBoard(newPos)) return;
+			final ChessPiece piece = board[newPos];
+			if (piece.isPawn()) piece.reset();
+			else if (piece.isEmpty()) continue;
+			return;
+		}
+	}
+
+	//Probably good
 	private int[] getSquares(Move move) {
 		if (isPassant(move)) return new int[] {move.start, move.finish, enPassant};
 		return new int[] {move.start, move.finish};
 	}
 
+	//Good
 	private void hardAttackUpdate() {
+		long prevTime = System.currentTimeMillis();
 		for (int color = 0; color < 2; color ++) {
 			for (int j = 0;  j < attacks[color].length; j++) {
 				attacks[color][j] = new PieceSet();

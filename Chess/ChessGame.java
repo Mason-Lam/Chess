@@ -41,6 +41,7 @@ public class ChessGame {
 	public static long timePieceUpdate = 0;
 	public static long timeMisc = 0;
 	public static long timeDebug = 0;
+	public static long copyCount = 0;
 
 	public ChessGame(int computerTurn, int difficulty){
 		this.difficulty = difficulty;
@@ -324,5 +325,6 @@ public class ChessGame {
 		System.out.println("Piece Update: " + timePieceUpdate);
 		System.out.println("Misc: " + timeMisc);
 		System.out.println("Debug: " + timeDebug);
+		System.out.println("Moves Copied: " + copyCount);
 	}
 }
