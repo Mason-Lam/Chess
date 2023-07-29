@@ -373,10 +373,11 @@ public class ChessBoard {
 		if (piece.isKing()) kingPos[piece.color] = newPos;
 	}
 	
+	// 1304/3000 14901/19500
 	private void softAttackUpdate(Move move, boolean isAttack, boolean undoMove) {
+		long prevTime = System.currentTimeMillis();
 		if (isCastle(move)) {
 			//Not big deal
-			long prevTime = System.currentTimeMillis();
 			final boolean kingSide = (move.finish > move.start && !undoMove) || (move.start > move.finish && undoMove);
 			final PieceSet startingRookPos = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1]] : attacks[turn][ROOK_POSITIONS[turn][0]];
 			final PieceSet castledRookPos = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1] - 2] : attacks[turn][ROOK_POSITIONS[turn][0] + 3];
@@ -386,31 +387,26 @@ public class ChessBoard {
 			for (final ChessPiece piece : castledRookPos) {
 				piece.reset();
 			}
-			// ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 		}
 
-		final int[] squares = getSquares(move);
-		long prevTime = System.currentTimeMillis();
-		resetPieces(squares, isAttack, undoMove);
-		ChessGame.timePieceUpdate += System.currentTimeMillis() - prevTime;
-		for (int color = 0; color < 2; color++) {
-			for (final ChessPiece piece : pieces[color]) {
-				prevTime = System.currentTimeMillis();
-				piece.softAttack(move, isAttack, undoMove);
-				ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime;
-			}
-		}
+		long prevTime2 = System.currentTimeMillis();
+		resetPieces(move, isAttack, undoMove);
+		ChessGame.timePieceUpdate += System.currentTimeMillis() - prevTime2;
 	}
 
-	private void resetPieces(int[] squares, boolean isAttack, boolean undoMove) {
+	//265/1548, 3380/19500
+	private void resetPieces(Move move, boolean isAttack, boolean undoMove) {
+		int[] squares = getSquares(move);
 		for (int index = 0; index < squares.length; index ++) {
 			final int pos = squares[index];
 			for (int color = 0; color < 2; color++) {
 				final PieceSet attacks = getAttacks(pos, color);
 				for (final ChessPiece piece : attacks) {
 					pieceReset(piece, index, isAttack, undoMove);
+					long prevTime = System.currentTimeMillis();
+					piece.softAttack(move, index, isAttack, undoMove);
+					ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime;
 				}
-				long prevTime = System.currentTimeMillis();
 				pawnReset(pos, color);
 			}
 		}
@@ -418,6 +414,7 @@ public class ChessBoard {
 
 	//Solid
 	private void pieceReset(ChessPiece piece, int index, boolean isAttack, boolean undoMove) {
+		if (!piece.hasCopy()) return;
 		switch (piece.type) {
 			case PAWN:
 				if (index == 2) {

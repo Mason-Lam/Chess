@@ -62,7 +62,7 @@ public class ChessPiece {
 			if (!onBoard(newPos) || !onL(pos, newPos)) continue;
 
 			board.modifyAttacks(this, newPos, remove);
-			// if (board.getPiece(newPos).color != color && !remove) movesCopy.add(new Move(pos, newPos, false));
+			if (board.getPiece(newPos).color != color && !remove) movesCopy.add(new Move(pos, newPos, false));
 		}
 		ChessGame.timeKnightAttack += System.currentTimeMillis() - prevTime;
 	}
@@ -76,7 +76,7 @@ public class ChessPiece {
 				removeAttacks(DIRECTIONS[i], pos);
 				continue;
 			}
-			addAttacks(DIRECTIONS[i], pos);
+			addAttacksSliding(DIRECTIONS[i]);
 		}
 		ChessGame.timeSlidingAttack += System.currentTimeMillis() - prevTime;
 	}
@@ -88,38 +88,47 @@ public class ChessPiece {
 			final int newPos = pos + DIRECTIONS[i];
 
 			board.modifyAttacks(this, newPos, remove);
+			if (board.getPiece(newPos).color != color && !remove) movesCopy.add(new Move(pos, newPos, false));
 		}
 		ChessGame.timeKingAttack += System.currentTimeMillis() - prevTime;
 	}
 
-	public void softAttack(Move move, boolean isAttack, boolean undoMove) {
+	public void softAttack(Move move, int index, boolean isAttack, boolean undoMove) {
 		if (pos == move.start || pos == move.finish) return;
 		if (isPawn() || isKnight() || isKing()) return;
 
 		if (board.isCastle(move) && (Math.abs(pos - move.finish) == 1 || Math.abs(pos - move.start) == 1)) return;
 
-		final boolean attackingStart = board.getAttacks(move.start, color).contains(this);
-		final boolean attackingEnd = board.getAttacks(move.finish, color).contains(this);
-
-		if (attackingStart) {
+		if (index == 0) {
 			final int direction = onDiagonal(pos, move.start) ? getDiagonalOffset(pos, move.start) : getHorizontalOffset(pos, move.start);
 			if (!(isAttack && undoMove)) addAttacks(direction, move.start);
-		}
-		if (attackingEnd) {
-			final int direction = onDiagonal(pos, move.finish) ? getDiagonalOffset(pos, move.finish) : getHorizontalOffset(pos, move.finish);
-			if (!(isAttack && !undoMove)) removeAttacks(direction, move.finish);
+			return;
 		}
 
-		if (board.isPassant(move)) {
-			final int enPassant = board.getEnPassant();
-			if (!board.getAttacks(enPassant, color).contains(this)) return;
-			final int direction = onDiagonal(pos, enPassant) ? getDiagonalOffset(pos, enPassant) : getHorizontalOffset(pos, enPassant);
-			if (undoMove) {
-				removeAttacks(direction, enPassant);
-			}
-			else {
-				addAttacks(direction, enPassant);
-			}
+		if (index == 1) {
+			final int direction = onDiagonal(pos, move.finish) ? getDiagonalOffset(pos, move.finish) : getHorizontalOffset(pos, move.finish);
+			if (!(isAttack && !undoMove)) removeAttacks(direction, move.finish);
+			return;
+		}
+
+		final int enPassant = board.getEnPassant();
+		final int direction = onDiagonal(pos, enPassant) ? getDiagonalOffset(pos, enPassant) : getHorizontalOffset(pos, enPassant);
+		if (undoMove) {
+			removeAttacks(direction, enPassant);
+		}
+		else {
+			addAttacks(direction, enPassant);
+		}
+	}
+
+	private void addAttacksSliding(int direction) {
+		final int distance = getEdge(direction, pos);
+		for (int i = 1; i < distance + 1; i++) {
+			final int newPos = pos + direction * i;
+			board.addAttacker(this, newPos);
+			if (board.getPiece(newPos).color != color) movesCopy.add(new Move(pos, newPos, false));
+
+			if (!board.getPiece(newPos).isEmpty()) break;
 		}
 	}
 	
@@ -572,6 +581,10 @@ public class ChessPiece {
 
 	public boolean isLine() {
 		return (isRook() || isQueen());
+	}
+
+	public boolean hasCopy() {
+		return movesCopy.size() > 0;
 	}
 
 	@Override
