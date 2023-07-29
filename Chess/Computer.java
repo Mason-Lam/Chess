@@ -43,7 +43,6 @@ public class Computer {
 				final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.type]);
 				prevTime = System.currentTimeMillis();
 				piece.pieceMoves(moves);
-				ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 				if (moves.size() > 0) {
 					if(piece.isPawn() && ChessBoard.getRow(moves.get(0).finish) == PROMOTION_LINE[board.getTurn()]) {
 						count += moves.size() * 4;
