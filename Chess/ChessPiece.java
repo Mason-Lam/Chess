@@ -546,7 +546,6 @@ public class ChessPiece {
 			movesCopy.remove(move);
 			return;
 		}
-		if (movesCopy.contains(move)) return;
 		movesCopy.add(move);
 	}
 

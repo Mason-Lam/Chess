@@ -385,9 +385,11 @@ public class ChessBoard {
 				final PieceSet startingRookAttacks = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1]] : attacks[turn][ROOK_POSITIONS[turn][0]];
 				final PieceSet castledRookAttacks = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1] - 2] : attacks[turn][ROOK_POSITIONS[turn][0] + 3];
 				for (final ChessPiece piece : startingRookAttacks) {
+					if (piece.pos == move.start || piece.pos == move.finish) continue;
 					pieceReset(piece, undoMove ? 1 : 0, startingRookPos, false, undoMove);
 				}
 				for (final ChessPiece piece : castledRookAttacks) {
+					if (piece.pos == move.start || piece.pos == move.finish) continue;
 					pieceReset(piece, undoMove ? 0 : 1, castledRookPos, false, undoMove);
 				}
 			}
