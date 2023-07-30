@@ -249,8 +249,8 @@ public class ChessBoard {
 		board[move.start] = ChessPiece.empty();
 		
 		updatePosition(piece, move.finish, false);
-		piece.pieceAttacks(false);
 		resetPieces(move, isAttack, false);
+		piece.pieceAttacks(false);
 		if (castle != -1) {
 			board[castle].pieceAttacks(false);
 		}
@@ -299,24 +299,17 @@ public class ChessBoard {
 			}
 		}
 
-		if (isPassant(invertedMove)) {
-			updatePosition(capturedPiece, enPassant, false);
-			capturedPiece.pieceAttacks(false);
-		}
-
 		board[invertedMove.start] = ChessPiece.empty();
 		updatePosition(piece, invertedMove.finish, false);
 
-		if (!capturedPiece.isEmpty() && !move.SPECIAL) {
-			updatePosition(capturedPiece, invertedMove.start, false);
-			capturedPiece.pieceAttacks(false);
-		}
+		if (!capturedPiece.isEmpty()) updatePosition(capturedPiece, capturedPiece.pos, false);
 
-		piece.pieceAttacks(false);
 		resetPieces(invertedMove, isAttack, true);
-		if (castle != -1) {
-			board[castle].pieceAttacks(false);
-		}
+		piece.pieceAttacks(false);
+
+		if (!capturedPiece.isEmpty()) capturedPiece.pieceAttacks(false);
+		
+		if (castle != -1) board[castle].pieceAttacks(false);
 		
 		promotingPawn = -1;
 		ChessGame.timeUndoMove += System.currentTimeMillis() - prevTime;
@@ -385,11 +378,11 @@ public class ChessBoard {
 				final PieceSet startingRookAttacks = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1]] : attacks[turn][ROOK_POSITIONS[turn][0]];
 				final PieceSet castledRookAttacks = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1] - 2] : attacks[turn][ROOK_POSITIONS[turn][0] + 3];
 				for (final ChessPiece piece : startingRookAttacks) {
-					if (piece.pos == move.start || piece.pos == move.finish) continue;
+					// if (piece.pos == move.start || piece.pos == move.finish) continue;
 					pieceReset(piece, undoMove ? 1 : 0, startingRookPos, false, undoMove);
 				}
 				for (final ChessPiece piece : castledRookAttacks) {
-					if (piece.pos == move.start || piece.pos == move.finish) continue;
+					// if (piece.pos == move.start || piece.pos == move.finish) continue;
 					pieceReset(piece, undoMove ? 0 : 1, castledRookPos, false, undoMove);
 				}
 			}
@@ -401,7 +394,7 @@ public class ChessBoard {
 			for (int color = 0; color < 2; color++) {
 				final PieceSet attacks = getAttacks(pos, color);
 				for (final ChessPiece piece : attacks) {
-					if (piece.pos == move.start || piece.pos == move.finish) continue;
+					// if (piece.pos == move.start || piece.pos == move.finish) continue;
 					long prevTime2 = System.currentTimeMillis();
 					piece.softAttack(move, index, isAttack, undoMove);
 					ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime2;
