@@ -385,10 +385,10 @@ public class ChessBoard {
 				final PieceSet startingRookAttacks = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1]] : attacks[turn][ROOK_POSITIONS[turn][0]];
 				final PieceSet castledRookAttacks = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1] - 2] : attacks[turn][ROOK_POSITIONS[turn][0] + 3];
 				for (final ChessPiece piece : startingRookAttacks) {
-					pieceReset(piece, undoMove ? 1 : 0, false, undoMove);
+					pieceReset(piece, undoMove ? 1 : 0, startingRookPos, false, undoMove);
 				}
 				for (final ChessPiece piece : castledRookAttacks) {
-					pieceReset(piece, undoMove ? 0 : 1, false, undoMove);
+					pieceReset(piece, undoMove ? 0 : 1, castledRookPos, false, undoMove);
 				}
 			}
 		}
@@ -399,10 +399,11 @@ public class ChessBoard {
 			for (int color = 0; color < 2; color++) {
 				final PieceSet attacks = getAttacks(pos, color);
 				for (final ChessPiece piece : attacks) {
-					pieceReset(piece, index, isAttack, undoMove);
+					if (piece.pos == move.start || piece.pos == move.finish) continue;
 					long prevTime2 = System.currentTimeMillis();
 					piece.softAttack(move, index, isAttack, undoMove);
 					ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime2;
+					pieceReset(piece, index, pos, isAttack, undoMove);
 				}
 				pawnReset(pos, color);
 			}
@@ -411,8 +412,8 @@ public class ChessBoard {
 	}
 
 	//Solid
-	private void pieceReset(ChessPiece piece, int index, boolean isAttack, boolean undoMove) {
-		if (!piece.hasCopy()) return;
+	private void pieceReset(ChessPiece piece, int index, int square, boolean isAttack, boolean undoMove) {
+		// if (!piece.hasCopy()) return;
 		switch (piece.type) {
 			case PAWN:
 				if (index == 2) {
@@ -429,15 +430,26 @@ public class ChessBoard {
 			case KNIGHT:
 			case KING:
 				if (index == 2) {
-					if (piece.color != turn) piece.reset();
+					if (piece.color != turn) piece.updateCopy(undoMove, square);
+					//undoMove: empty to black; black to empty
 					break;
 				}
 				if (isAttack && ((index == 0 && undoMove) || (index == 1 && !undoMove))) {
-					piece.reset();
+					final boolean remove = undoMove ? piece.color != turn : piece.color == turn;
+					//undoMove: white to black; black to white
+					piece.updateCopy(remove, square);
 					break;
 				}
 
-				if (piece.color == turn) piece.reset();
+				/**
+				 * undoMove:
+				 *   index == 0: White to empty
+				 *   index == 1: empty to white
+				 * !undoMove:
+				 * 	 index == 0: White to empty
+				 *   index == 1: empty to white
+				 */
+				if (piece.color == turn) piece.updateCopy(index == 1, square);
 				break;
 			default:
 				piece.reset();

@@ -55,7 +55,7 @@ public class ChessGame {
 		Tests.runTests(); //5800, 8315, 3200
 		System.out.println(System.currentTimeMillis() - prevTime);
 
-		display();
+		display();	//12582851
 
 		// Tests.test16.runTest();
 		board = new ChessBoard();	//Creates a new ChessBoard object
@@ -80,7 +80,7 @@ public class ChessGame {
 		prevTime = System.currentTimeMillis();
 		System.out.println(computer.totalMoves(6));
 		System.out.println(System.currentTimeMillis() - prevTime);
-		display();
+		display();	//129150836
 		// board.displayAttacks();
 		// long prevTime = System.currentTimeMillis();
 		// //Current (3, 33), (4, 145), (5, 1203), (6, 17052)

@@ -94,11 +94,12 @@ public class ChessPiece {
 	}
 
 	public void softAttack(Move move, int index, boolean isAttack, boolean undoMove) {
-		if (pos == move.start || pos == move.finish) return;
+		// if (pos == move.start || pos == move.finish) return;
 		if (isPawn() || isKnight() || isKing()) return;
 
 		if (board.isCastle(move) && (Math.abs(pos - move.finish) == 1 || Math.abs(pos - move.start) == 1)) return;
 
+		reset();
 		if (index == 0) {
 			final int direction = onDiagonal(pos, move.start) ? getDiagonalOffset(pos, move.start) : getHorizontalOffset(pos, move.start);
 			if (!(isAttack && undoMove)) addAttacks(direction, move.start);
@@ -537,6 +538,16 @@ public class ChessPiece {
 			if (CHECKS && board.isAttacked(move.finish, color)) continue;
 			moves.add(move);
 		}
+	}
+
+	public void updateCopy(boolean remove, int square) {
+		final Move move = new Move(pos, square, false);
+		if (remove) {
+			movesCopy.remove(move);
+			return;
+		}
+		if (movesCopy.contains(move)) return;
+		movesCopy.add(move);
 	}
 
 	public void reset() {
