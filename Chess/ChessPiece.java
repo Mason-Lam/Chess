@@ -93,32 +93,30 @@ public class ChessPiece {
 		ChessGame.timeKingAttack += System.currentTimeMillis() - prevTime;
 	}
 
-	public void softAttack(Move move, int index, boolean isAttack, boolean undoMove) {
+	public void softAttack(int square, int index, boolean isAttack, boolean undoMove) {
 		// if (pos == move.start || pos == move.finish) return;
 		if (isPawn() || isKnight() || isKing()) return;
 
-		if (board.isCastle(move) && (Math.abs(pos - move.finish) == 1 || Math.abs(pos - move.start) == 1)) return;
+		// if (board.isCastle(move) && (Math.abs(pos - move.finish) == 1 || Math.abs(pos - move.start) == 1)) return;
 
-		reset();
 		if (index == 0) {
-			final int direction = onDiagonal(pos, move.start) ? getDiagonalOffset(pos, move.start) : getHorizontalOffset(pos, move.start);
-			if (!(isAttack && undoMove)) addAttacks(direction, move.start);
+			final int direction = onDiagonal(pos, square) ? getDiagonalOffset(pos, square) : getHorizontalOffset(pos, square);
+			if (!(isAttack && undoMove)) addAttacks(direction, square);
 			return;
 		}
 
 		if (index == 1) {
-			final int direction = onDiagonal(pos, move.finish) ? getDiagonalOffset(pos, move.finish) : getHorizontalOffset(pos, move.finish);
-			if (!(isAttack && !undoMove)) removeAttacks(direction, move.finish);
+			final int direction = onDiagonal(pos, square) ? getDiagonalOffset(pos, square) : getHorizontalOffset(pos, square);
+			if (!(isAttack && !undoMove)) removeAttacks(direction, square);
 			return;
 		}
 
-		final int enPassant = board.getEnPassant();
-		final int direction = onDiagonal(pos, enPassant) ? getDiagonalOffset(pos, enPassant) : getHorizontalOffset(pos, enPassant);
+		final int direction = onDiagonal(pos, square) ? getDiagonalOffset(pos, square) : getHorizontalOffset(pos, square);
 		if (undoMove) {
-			removeAttacks(direction, enPassant);
+			removeAttacks(direction, square);
 		}
 		else {
-			addAttacks(direction, enPassant);
+			addAttacks(direction, square);
 		}
 	}
 

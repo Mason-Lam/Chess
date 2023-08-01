@@ -396,7 +396,7 @@ public class ChessBoard {
 				for (final ChessPiece piece : attacks) {
 					// if (piece.pos == move.start || piece.pos == move.finish) continue;
 					long prevTime2 = System.currentTimeMillis();
-					piece.softAttack(move, index, isAttack, undoMove);
+					piece.softAttack(pos, index, isAttack, undoMove);
 					ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime2;
 					pieceReset(piece, index, pos, isAttack, undoMove);
 				}
