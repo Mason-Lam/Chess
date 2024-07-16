@@ -200,14 +200,14 @@ public class ChessBoard {
 		piece.pieceAttacks(true);
 
 		if (isAttack) {
-			halfMove = -1;
+			halfMove = EMPTY;
 			board[move.finish].pieceAttacks(true);
 			updatePosition(board[move.finish], move.finish, true);
 		}
 
-		int passant = -1;
+		int passant = EMPTY;
 		if (piece.isPawn()) {
-			halfMove = -1;
+			halfMove = EMPTY;
 			if (move.SPECIAL) {
 				board[enPassant].pieceAttacks(true);
 				updatePosition(board[enPassant], enPassant, true);
@@ -250,8 +250,8 @@ public class ChessBoard {
 		
 		updatePosition(piece, move.finish, false);
 		resetPieces(move, isAttack, false);
-		piece.pieceAttacks(false);
-		if (castle != -1) {
+		if (promotingPawn == EMPTY) piece.pieceAttacks(false);
+		if (castle != EMPTY) {
 			board[castle].pieceAttacks(false);
 		}
 
@@ -386,6 +386,12 @@ public class ChessBoard {
 					pieceReset(piece, undoMove ? 0 : 1, castledRookPos, false, undoMove);
 				}
 			}
+			// for (int color = 0; color < 2; color ++) {
+			// 	final PieceSet coloredPieces = pieces[color];
+			// 	for (final ChessPiece piece : coloredPieces) {
+			// 		piece.reset();
+			// 	}
+			// }
 		}
 
 		int[] squares = getSquares(move);
@@ -567,7 +573,7 @@ public class ChessBoard {
 		return kingPos[color];
 	}
 	
-	public int next(int currTurn) {
+	public static int next(int currTurn) {
 		return (currTurn + 1) % 2;
 	}
 
@@ -626,7 +632,7 @@ public class ChessBoard {
 		if (!valid) System.out.println("ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR");
 	}
 
-	public static int getEdge(int direction, int pos) {
+	public static int getDistFromEdge(int direction, int pos) {
 		switch (direction) {
 			case(9): return distFromEdge[pos][5];
 			case(-9): return distFromEdge[pos][4];
@@ -642,13 +648,21 @@ public class ChessBoard {
 		} 
 	}
 
-	public static int getDiagonalOffset(int startingPos, int endPos) {
+	public static int getPawnDirection(int color) {
+		return color == WHITE ? -8 : 8;
+	}
+
+	public static int getDirection(int startingPos, int endPos) {
+		return onDiagonal(startingPos, endPos) ? getDiagonalDirection(startingPos, endPos) : getHorizontalDirection(startingPos, endPos);
+	}
+
+	public static int getDiagonalDirection(int startingPos, int endPos) {
 		int direction = Math.abs(startingPos - endPos) % 7 == 0 ? 7 : 9;
 		if (startingPos - endPos > 0) direction *= -1;
 		return direction;
 	}
 
-	public static int getHorizontalOffset(int startingPos, int endPos) {
+	public static int getHorizontalDirection(int startingPos, int endPos) {
 		int direction = onColumn(startingPos, endPos) ? 8 : 1;
 		if (startingPos - endPos > 0) direction *= -1;
 		return direction;

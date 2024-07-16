@@ -1,11 +1,13 @@
 package Chess;
 
 import java.util.ArrayList;
-
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PieceConstants.*;
 import static Chess.ChessBoard.*;
 
+/**
+ * Class representing an individual chess piece
+ */
 public class ChessPiece {
 	public byte type;
 	public int pos;
@@ -17,6 +19,23 @@ public class ChessPiece {
 	public final int pieceID;
 	private final ChessBoard board;
 	
+	/**
+	 * Constructs a new Chess Piece
+	 * @param type Represents the type of piece, 
+	 * <ul>
+	 * 	<li>EMPTY : -1</li>
+	 * 	<li>PAWN : 0</li>
+	 * 	<li>KNIGHT : 1</li>
+	 * 	<li>BISHOP : 2</li>
+	 * 	<li>ROOK : 3</li>
+	 * 	<li>QUEEN : 4</li>
+	 * 	<li>KING : 5</li>
+	 * </ul>
+	 * @param color Color of the piece; BLACK : 0, WHITE : 1
+	 * @param pos Position of the piece, 0-63
+	 * @param board ChessBoard object the piece occupies
+	 * @param pieceID Unique identifier for the chess piece
+	 */
 	public ChessPiece(byte type, byte color, int pos, ChessBoard board, int pieceID) {
 		this.type = type;
 		this.pos = pos;
@@ -29,8 +48,12 @@ public class ChessPiece {
 		pinPiece = null;
 	}
 
+	/**
+	 * Updates the squares on the board that the piece is attacking
+	 * @param remove Boolean determining if the piece is attacking more or less squares
+	 */
 	public void pieceAttacks(boolean remove) {
-		reset();
+		reset();									//Piece has moved or been captured, thus reset the stored copy of moves
 		switch(type) {
 			case (PAWN): pawnAttacks(remove);
 				break;
@@ -41,87 +64,81 @@ public class ChessPiece {
 			default: slidingAttacks(remove);
 				break;
 		}
-		//ChessGame.timeDebug += System.currentTimeMillis() - prevTime;
 	}
 	
+	/**
+	 * Updates the squares on the board that the pawn is attacking 
+	 * @param remove Boolean determining if the pawn is attacking more or less squares
+	 */
 	private void pawnAttacks(boolean remove) {
 		long prevTime = System.currentTimeMillis();
+
+		// Checks the two diagonals next to the pawn
 		for (int i = 0; i < 2; i++) {
-			if (getEdge(PAWN_DIAGONALS[color][i], pos) < 1) continue;
+			if (getDistFromEdge(PAWN_DIAGONALS[color][i], pos) < 1) continue;
 			final int newPos = pos + PAWN_DIAGONALS[color][i];
 
 			board.modifyAttacks(this, newPos, remove);
+			if (!remove && board.getPiece(newPos).color == ChessBoard.next(color)) movesCopy.add(new Move(pos, newPos, false));
 		}
+
+		//Update the pawns move copy with the squares in front of it
+		final int direction = ChessBoard.getPawnDirection(color);
+		if (!remove && board.getPiece(pos + direction).isEmpty()) {
+			movesCopy.add(new Move(pos, pos + direction, false));
+			if (getRow(pos) == PAWN_STARTS[color]) {
+				if (board.getPiece(pos + direction * 2).isEmpty()) movesCopy.add(new Move(pos, pos + direction * 2, false));
+			}
+		}
+
 		ChessGame.timePawnAttack += System.currentTimeMillis() - prevTime;
 	}
 	
+	/**
+	 * Updates the squares on the board that the knight is attacking 
+	 * @param remove Boolean determining if the knight is attacking more or less squares
+	 */
 	private void knightAttacks(boolean remove) {
 		long prevTime = System.currentTimeMillis();
+
+		//Checks all squares a knight can attack
 		for (int i = 0; i < KNIGHT_MOVES.length; i++) {
 			final int newPos = pos + KNIGHT_MOVES[i];
-			if (!onBoard(newPos) || !onL(pos, newPos)) continue;
+			if (!onBoard(newPos) || !onL(pos, newPos)) continue;		//Makes sure the knight doesn't skip rows or columns
 
 			board.modifyAttacks(this, newPos, remove);
 			if (board.getPiece(newPos).color != color && !remove) movesCopy.add(new Move(pos, newPos, false));
 		}
+
 		ChessGame.timeKnightAttack += System.currentTimeMillis() - prevTime;
 	}
 
+	/**
+	 * Updates the squares on the board that the bishop, rook, or queen is attacking 
+	 * @param remove Boolean determining if the bishop, rook, or queen is attacking more or less squares
+	 */
 	private void slidingAttacks(boolean remove) {
 		long prevTime = System.currentTimeMillis();
-		final int startingIndex = isBishop() ? 4 : 0;
-		final int endIndex = isRook() ? 4 : 8;
-		for (int i = startingIndex; i < endIndex; i++) {
+
+		final int[] directions = isQueen() ? DIRECTIONS : (isBishop() ? DIAGONAL_DIRECTIONS : STRAIGHT_DIRECTIONS);	//Directions the piece can attack in
+		// Adds or removes attacks in each direction
+		for (final int direction : directions) {
 			if (remove) {
-				removeAttacks(DIRECTIONS[i], pos);
+				removeAttacks(direction, pos);
 				continue;
 			}
-			addAttacksSliding(DIRECTIONS[i]);
+			addAttacksSliding(direction);
 		}
+
 		ChessGame.timeSlidingAttack += System.currentTimeMillis() - prevTime;
 	}
-	
-	private void kingAttacks(boolean remove) {
-		long prevTime = System.currentTimeMillis();
-		for (int i = 0; i < DIRECTIONS.length; i++) {
-			if (getEdge(DIRECTIONS[i], pos) < 1) continue;
-			final int newPos = pos + DIRECTIONS[i];
 
-			board.modifyAttacks(this, newPos, remove);
-			if (board.getPiece(newPos).color != color && !remove) movesCopy.add(new Move(pos, newPos, false));
-		}
-		ChessGame.timeKingAttack += System.currentTimeMillis() - prevTime;
-	}
-
-	public void softAttack(int square, int index, boolean isAttack, boolean undoMove) {
-		// if (pos == move.start || pos == move.finish) return;
-		if (isPawn() || isKnight() || isKing()) return;
-
-		// if (board.isCastle(move) && (Math.abs(pos - move.finish) == 1 || Math.abs(pos - move.start) == 1)) return;
-
-		if (index == 0) {
-			final int direction = onDiagonal(pos, square) ? getDiagonalOffset(pos, square) : getHorizontalOffset(pos, square);
-			if (!(isAttack && undoMove)) addAttacks(direction, square);
-			return;
-		}
-
-		if (index == 1) {
-			final int direction = onDiagonal(pos, square) ? getDiagonalOffset(pos, square) : getHorizontalOffset(pos, square);
-			if (!(isAttack && !undoMove)) removeAttacks(direction, square);
-			return;
-		}
-
-		final int direction = onDiagonal(pos, square) ? getDiagonalOffset(pos, square) : getHorizontalOffset(pos, square);
-		if (undoMove) {
-			removeAttacks(direction, square);
-		}
-		else {
-			addAttacks(direction, square);
-		}
-	}
-
+	/**
+	 * Same as {@link ChessPiece#addAttacks(int, int, int)} except it stores the moves in the copy.
+	 * @param direction Direction to move towards
+	 */
 	private void addAttacksSliding(int direction) {
-		final int distance = getEdge(direction, pos);
+		final int distance = getDistFromEdge(direction, pos);
 		for (int i = 1; i < distance + 1; i++) {
 			final int newPos = pos + direction * i;
 			board.addAttacker(this, newPos);
@@ -131,14 +148,97 @@ public class ChessPiece {
 		}
 	}
 	
+	/**
+	 * Updates the squares on the board that the king is attacking 
+	 * @param remove Boolean determining if the king is attacking more or less squares
+	 */
+	private void kingAttacks(boolean remove) {
+		long prevTime = System.currentTimeMillis();
+
+		//Adds or removes attacks one square in each direction
+		for (final int direction : DIRECTIONS) {
+			if (getDistFromEdge(direction, pos) < 1) continue;
+			final int newPos = pos + direction;
+
+			board.modifyAttacks(this, newPos, remove);
+			if (board.getPiece(newPos).color != color && !remove) movesCopy.add(new Move(pos, newPos, false));
+		}
+
+		ChessGame.timeKingAttack += System.currentTimeMillis() - prevTime;
+	}
+
+	/**
+	 * Updates the attacks of a bishop, rook, or queen aloong a diagonal or line
+	 * @param square Position of the modified square; starting position or end position of a move
+	 * @param index Integer representing if the square paramater is the starting position or end position of the move
+	 * @param isAttack If the move resulted in a capture of another piece
+	 * @param undoMove Whether or not the move is being undone
+	 */
+	public void softAttack(int square, int index, boolean isAttack, boolean undoMove) {
+		//Need to combine this so its called only once and takes a Move as a paramater
+
+		// if (pos == move.start || pos == move.finish) return;
+		if (isPawn() || isKnight() || isKing()) return;
+
+		// if (board.isCastle(move) && (Math.abs(pos - move.finish) == 1 || Math.abs(pos - move.start) == 1)) return;
+
+		if (index == START) {
+			final int direction = getDirection(pos, square);
+			/** 
+			 * If the move is a capture and we're undoing it, then the square will be replaced by the captured piece
+			 * and thus no attacks are added.
+			 * If the move is normal then the starting square will always be empty and attacks must be added. 
+			*/
+			if (!(isAttack && undoMove)) addAttacks(direction, square);
+			return;
+		}
+
+		if (index == END) {
+			final int direction = getDirection(pos, square);
+			/**
+			 * If the move is a capture and normal, then the square would've already been occupied and thus no attacks
+			 * need to be removed.
+			 * If the move is an undo or not a capture, then the square was empty and thus attacks will be removed.
+			 */
+			if (!(isAttack && !undoMove)) removeAttacks(direction, square);
+			return;
+		}
+
+		//Runs for the enPassant square
+		final int direction = getDirection(pos, square);
+		//If undoing the move, the En Passant square is now occupied 
+		if (undoMove) {
+			removeAttacks(direction, square);
+		}
+		else {
+			addAttacks(direction, square);
+		}
+	}
+	
+	/**
+	 * Adds attacks along a direction until the edge of the board is reached or a piece blocks
+	 * @param direction Represents the direction to add attacks along
+	 * @param startingPos Position to start adding attacks, non inclusive
+	 */
 	private void addAttacks(int direction, int startingPos) {
-		addAttacks(direction, startingPos, getEdge(direction, startingPos));
+		addAttacks(direction, startingPos, getDistFromEdge(direction, startingPos));
 	}
 
+	/**
+	 * Removes attacks along a direction until the edge of the board is reached or a piece blocks
+	 * @param direction Represents the direction to remove attacks along
+	 * @param startingPos Position to start removing attacks, non inclusive
+	 */
 	private void removeAttacks(int direction, int startingPos) {
-		removeAttacks(direction, startingPos, getEdge(direction, startingPos));
+		removeAttacks(direction, startingPos, getDistFromEdge(direction, startingPos));
 	}
 
+	/**
+	 * Adds attacks along a direction across a certain distance, interrupted by a piece block
+	 * @param direction Represents the direction to add attacks along
+	 * @param startingPos Position to start adding attacks, non inclusive
+	 * @param distance Distance to add attacks along
+	 */
 	private void addAttacks(int direction, int startingPos, int distance) {
 		for (int i = 1; i < distance + 1; i++) {
 			final int newPos = startingPos + direction * i;
@@ -147,6 +247,12 @@ public class ChessPiece {
 		}
 	}
 
+	/**
+	 * Remove attacks along a direction across a certain distance, interrupted by a piece block
+	 * @param direction Represents the direction to remove attacks along
+	 * @param startingPos Position to start removing attacks, non inclusive
+	 * @param distance Distance to remove attacks along
+	 */
 	private void removeAttacks(int direction, int startingPos, int distance) {
 		for (int i = 1; i < distance + 1; i++) {
 			final int newPos = startingPos + direction * i;
@@ -155,44 +261,59 @@ public class ChessPiece {
 		}
 	}
 
+	/**
+	 * Adds all possible moves a piece has to an ArrayList
+	 * @param moves ArrayList to be modified
+	 */
 	public void pieceMoves(ArrayList<Move> moves) {
 		pieceMoves(moves, false);
 	}
 
+	/**
+	 * Adds all specified moves a piece has to an ArrayList
+	 * @param moves ArrayList to be modified
+	 * @param attacksOnly Whether or not captures only should be returned
+	 */
 	public void pieceMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		long prevTime = System.currentTimeMillis();
 
-		if (isKing()) {
-			updatingCopy = movesCopy.isEmpty();
-			king(moves, attacksOnly);
-			ChessGame.timeKingGen += System.currentTimeMillis() - prevTime;
-			ChessGame.timeMoveGen += System.currentTimeMillis() - prevTime;
-			return;
-		}
+		updatingCopy = movesCopy.isEmpty() || !shouldCopyOptimize;	//If the copy of moves is empty need to regenerate moves.
 
-		if (board.doubleCheck(color)) return;
+		if (!isKing() && board.doubleCheck(color)) return; //If the king is double checked, then the king is the only piece that can move.
 
-		updatingCopy = movesCopy.isEmpty();
 		long prevTime2 = System.currentTimeMillis();
 		switch (type) {
 			case PAWN: 
-				pawn(moves, attacksOnly);
+				pawnMoves(moves, attacksOnly);
+
 				ChessGame.timePawnGen += System.currentTimeMillis() - prevTime2;
+
 				break;
 			case KNIGHT: 
-				knight(moves, attacksOnly);
+				knightMoves(moves, attacksOnly);
+
 				ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime2;
+
+				break;
+			case KING:
+				kingMoves(moves, attacksOnly);
+
+				ChessGame.timeKingGen += System.currentTimeMillis() - prevTime;
+
 				break;
 			default: 
 				slidingMoves(moves, attacksOnly);
+
 				ChessGame.timeSlidingGen += System.currentTimeMillis() - prevTime2;
+
 				break;
 		}
 		pinPiece = null;
+
 		ChessGame.timeMoveGen += System.currentTimeMillis() - prevTime;
 	}
 	
-	private void pawn(ArrayList<Move> moves, boolean attacksOnly) {
+	private void pawnMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		if (board.getEnPassant() != EMPTY) {
 			if (Math.abs(board.getEnPassant() - pos) == 1 && getDistance(board.getEnPassant(), pos) == 1) {
 				final int newPos = (color == WHITE) ? board.getEnPassant() - 8 : board.getEnPassant() + 8;
@@ -234,13 +355,13 @@ public class ChessPiece {
 		}
 		//Attacks
 		for (int i = 0; i < 2; i++) {
-			if (getEdge(PAWN_DIAGONALS[color][i], pos) < 1) continue;
+			if (getDistFromEdge(PAWN_DIAGONALS[color][i], pos) < 1) continue;
 			final int newPos = pos + PAWN_DIAGONALS[color][i];
-			if (board.getPiece(newPos).color == board.next(color)) addMove(moves, new Move(pos, newPos, false), attacksOnly);
+			if (board.getPiece(newPos).color == ChessBoard.next(color)) addMove(moves, new Move(pos, newPos, false), attacksOnly);
 		}
 	}
 	
-	private void knight(ArrayList<Move> moves, boolean attacksOnly) {
+	private void knightMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		pinPiece = getPin();
 		if (!pinPiece.isEmpty()) return;
 
@@ -262,7 +383,7 @@ public class ChessPiece {
 		}
 	}
 	
-	private void king(ArrayList<Move> moves, boolean attacksOnly) {
+	private void kingMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		if (castleCheck(true)) {
 			addMove(moves, new Move(pos, ROOK_POSITIONS[color][1] - 1, true), attacksOnly);
 		}
@@ -281,7 +402,7 @@ public class ChessPiece {
 		}
 
 		for (int i = 0; i < DIRECTIONS.length; i++) {
-			if (getEdge(DIRECTIONS[i], pos) < 1) continue;
+			if (getDistFromEdge(DIRECTIONS[i], pos) < 1) continue;
 			final int newPos = pos + DIRECTIONS[i];
 			if(board.getPiece(newPos).color == color) continue;
 
@@ -322,7 +443,7 @@ public class ChessPiece {
 		final int startingIndex = isBishop() ? 4 : 0;
 		final int endIndex = isRook() ? 4 : 8;
 		for (int i = startingIndex; i < endIndex; i++) {
-			for (int j = 1; j < getEdge(DIRECTIONS[i], pos) + 1; j++) {
+			for (int j = 1; j < getDistFromEdge(DIRECTIONS[i], pos) + 1; j++) {
 				final int newPos = pos + DIRECTIONS[i] * j;
 				final ChessPiece piece = board.getPiece(newPos);
 
@@ -407,7 +528,7 @@ public class ChessPiece {
 			final PieceSet attackers = new PieceSet();
 			final int enPassant = board.getEnPassant();
 			if ((onDiagonal(king, enPassant) || onLine(king, enPassant)) && board.isAttacked(enPassant, color)) {
-				attackers.addAll(board.getAttacks(enPassant, board.next(color)));
+				attackers.addAll(board.getAttacks(enPassant, ChessBoard.next(color)));
 			}
 			if (!pinPiece.isEmpty()) {
 				attackers.add(pinPiece);
@@ -421,7 +542,7 @@ public class ChessPiece {
 					if (blocksDiagonal(piece.pos, king, pinnedPos)) {
 						if (onSameDiagonal(move.finish, king, piece.pos) && pinnedPos == move.start) return false;
 
-						final int direction = getDiagonalOffset(piece.pos, pinnedPos);
+						final int direction = getDiagonalDirection(piece.pos, pinnedPos);
 
 						for (int j = 1; j < getDistanceVert(pinnedPos, king); j++) {
 							if (!board.getPiece(pinnedPos + direction * j).isEmpty()) return false;
@@ -434,7 +555,7 @@ public class ChessPiece {
 					if (blocksLine(piece.pos, king, move.start)) {
 						if (onSameLine(move.finish, king, piece.pos)) return false;
 
-						final int direction = getHorizontalOffset(piece.pos, move.start);
+						final int direction = getHorizontalDirection(piece.pos, move.start);
 
 						for (int j = 1; j < getDistance(move.start, king); j++) {
 							final int newPos = move.start + direction * j;
@@ -467,7 +588,7 @@ public class ChessPiece {
 
 			if (blocksDiagonal(attacker.pos, king, pos)) {
 
-				final int direction = getDiagonalOffset(pos, king);
+				final int direction = getDiagonalDirection(pos, king);
 
 				for (int j = 1; j < getDistanceVert(pos, king); j++) {
 					if (!board.getPiece(pos + direction * j).isEmpty()) return empty();
@@ -477,7 +598,7 @@ public class ChessPiece {
 
 			if (blocksLine(attacker.pos, king, pos)) {
 
-				final int direction = getHorizontalOffset(pos, king);
+				final int direction = getHorizontalDirection(pos, king);
 
 				for (int j = 1; j < getDistance(pos, king); j++) {
 					if (!board.getPiece(pos + direction * j).isEmpty()) return empty();
@@ -489,16 +610,15 @@ public class ChessPiece {
 	}
 
 	private void checkMoves(ArrayList<Move> moves, boolean attacksOnly) {
-		for (int i = 0; i < movesCopy.size(); i++) {
+		for (final Move move : movesCopy) {
 			ChessGame.copyCount ++;
-			addMove(moves, movesCopy.get(i), attacksOnly);
+			addMove(moves, move, attacksOnly);
 		}
 	}
 
 	private void checkPawn(ArrayList<Move> moves) {
-		for (int i = 0; i < movesCopy.size(); i++) {
+		for (final Move move : movesCopy) {
 			ChessGame.copyCount ++;
-			final Move move = movesCopy.get(i);
 			if (move.finish == pinPiece.pos) {
 				moves.add(move);
 				return;
@@ -507,9 +627,8 @@ public class ChessPiece {
 	}
 
 	private void copy(ArrayList<Move> moves, boolean attacksOnly) {
-		for (int i = 0; i < movesCopy.size(); i++) {
+		for (final Move move : movesCopy) {
 			ChessGame.copyCount ++;
-			final Move move = movesCopy.get(i);
 			if (attacksOnly) {
 				if (board.getPiece(move.finish).isEmpty() && !board.isPassant(move)) continue;
 			}
@@ -519,17 +638,15 @@ public class ChessPiece {
 
 	private void copyPawn(ArrayList<Move> moves, boolean attacksOnly) {
 		if (attacksOnly) return;
-		for (int i = 0; i < movesCopy.size(); i++) {
+		for (final Move move : movesCopy) {
 			ChessGame.copyCount ++;
-			final Move move = movesCopy.get(i);
 			if (ChessBoard.onColumn(move.start, move.finish)) moves.add(move);
 		}
 	}
 
 	private void copyKing(ArrayList<Move> moves, boolean attacksOnly) {
-		for (int i = 0; i < movesCopy.size(); i++) {
+		for (final Move move : movesCopy) {
 			ChessGame.copyCount ++;
-			final Move move = movesCopy.get(i);
 			if (attacksOnly) {
 				if (board.getPiece(move.finish).isEmpty() && !board.isPassant(move)) continue;
 			}

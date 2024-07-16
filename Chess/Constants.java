@@ -1,10 +1,16 @@
 package Chess;
 
-import java.util.Arrays;
-
 public class Constants {
 
 	public static class MoveConstants {
+		public static final boolean shouldCopyOptimize = true;
+
+		public static final int START = 0;
+
+		public static final int END = 1;
+
+		public static final int EN_PASSANT = 2;
+
 		public static final int[] MAX_MOVES = new int[] {
 			4,
 			8,
@@ -35,6 +41,14 @@ public class Constants {
 		
 		public static final int[] DIRECTIONS = new int[] {
 			8, -8, 1, -1, 7, 9, -7, -9
+		};
+
+		public static final int[] STRAIGHT_DIRECTIONS = new int[] {
+			8, -8, 1, -1
+		};
+
+		public static final int[] DIAGONAL_DIRECTIONS = new int[] {
+			7, 9, -7, -9
 		};
 		
 		public static final int[] KNIGHT_MOVES = new int[] {

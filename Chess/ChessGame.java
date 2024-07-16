@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import javax.swing.*;
 import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
+import static Chess.Constants.MoveConstants.distFromEdge;
 
 public class ChessGame {
 	/*A Chess Game class*/
@@ -81,6 +82,7 @@ public class ChessGame {
 		System.out.println(computer.totalMoves(6));
 		System.out.println(System.currentTimeMillis() - prevTime);
 		display();	//129150836
+
 		// board.displayAttacks();
 		// long prevTime = System.currentTimeMillis();
 		// //Current (3, 33), (4, 145), (5, 1203), (6, 17052)
