@@ -7,6 +7,9 @@ import java.awt.Image;
 import java.util.ArrayList;
 
 import javax.swing.*;
+
+import Chess.Computer.BoardStorage;
+
 import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
 import static Chess.Constants.MoveConstants.distFromEdge;
@@ -54,6 +57,7 @@ public class ChessGame {
 		reset();
 		long prevTime = System.currentTimeMillis();
 		Tests.runTests(); //5800, 8315, 3200
+		// Tests.test24.runTest();
 		System.out.println(System.currentTimeMillis() - prevTime);
 
 		display();	//12582851
@@ -155,7 +159,7 @@ public class ChessGame {
 			for(int j = 0; j < legal.size(); j++) {
 				final Move move = legal.get(j);
 				System.out.print(move.finish +" : ");
-				System.out.println(board.getPiece(move.finish).type);
+				System.out.println(board.getPiece(move.finish).getType());
 				//Checks if the square is a legal move
 				if(board.getPiece(move.finish).isEmpty()) {
                     address = "Chess/Elements/";

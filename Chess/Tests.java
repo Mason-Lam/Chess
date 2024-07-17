@@ -1,6 +1,10 @@
 package Chess;
 
+import java.util.ArrayList;
+
 public class Tests {
+	private static final ArrayList<Test> tests = new ArrayList<Test>();
+	
 	public static class Test {
 		private final Computer computer;
 		public final String fen;
@@ -12,6 +16,7 @@ public class Tests {
 			this.depth = depth;
 			this.nodes = nodes;
 			this.fen = fen;
+			tests.add(this);
 		}
 		
 		public void runTest() {
@@ -74,54 +79,17 @@ public class Tests {
 	public static final Test test22 = new Test(7, 567584, "8/k1P5/8/1K6/8/8/8/8 w - - 0 1");
 	
 	public static final Test test23 = new Test(4, 23527, "8/8/2k5/5q2/5n2/8/5K2/8 b - - 0 1");
-	
+
+	public static final Test test24 = new Test(6, 936530, "3k4/1p6/8/K1P4r/8/8/8/8 b - - 0 1");
+
+	public static final Test test25 = new Test(7, 625511, "8/8/P6k/8/8/7K/8/8 w - - 0 1");
+
+	public static final Test test26 = new Test(4, 232252, "3Q4/8/8/8/6q1/8/P4K2/k7 w - - 0 1");
 	
 	public static void runTests() {
-		System.out.println("Test 1:");
-		test1.runTest();
-		System.out.println("Test 2:");
-		test2.runTest();
-		System.out.println("Test 3:");
-		test3.runTest();
-		System.out.println("Test 4:");
-		test4.runTest();
-		System.out.println("Test 5:");
-		test5.runTest();
-		System.out.println("Test 6:");
-		test6.runTest();
-		System.out.println("Test 7:");
-		test7.runTest();
-		System.out.println("Test 8:");
-		test8.runTest();
-		System.out.println("Test 9:");
-		test9.runTest();
-		System.out.println("Test 10:");
-		test10.runTest();
-		System.out.println("Test 11:");
-		test11.runTest();
-		System.out.println("Test 12:");
-		test12.runTest();
-		System.out.println("Test 13:");
-		test13.runTest();
-		System.out.println("Test 14:");
-		test14.runTest();
-		System.out.println("Test 15:");
-		test15.runTest();
-		System.out.println("Test 16:");
-		test16.runTest();
-		System.out.println("Test 17:");
-		test17.runTest();
-		System.out.println("Test 18:");
-		test18.runTest();
-		System.out.println("Test 19:");
-		test19.runTest();
-		System.out.println("Test 20:");
-		test20.runTest();
-		System.out.println("Test 21:");
-		test21.runTest();
-		System.out.println("Test 22:");
-		test22.runTest();
-		System.out.println("Test 23:");
-		test23.runTest();
+		for (int i = 0; i < tests.size(); i++) {
+			System.out.println("Test " + (i + 1) + ":");
+			tests.get(i).runTest();
+		}
 	}
 }

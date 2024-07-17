@@ -30,6 +30,10 @@ public class Constants {
 			new int[] {0, 7},
 			new int[] {56, 63}
 		};
+
+		public static final int[] KING_POSITIONS = new int[] {
+			4, 60
+		};
 		
 		public static final int[] PROMOTION_LINE = new int[] {
 			7, 0
@@ -142,7 +146,7 @@ public class Constants {
 		}
 		
 		public static char pieceToChar(ChessPiece piece) {
-			return PIECES[piece.color][piece.type];
+			return PIECES[piece.color][piece.getType()];
 		}
 	}
 

@@ -7,6 +7,10 @@ public class Move {
 	public final int finish;
 	public final boolean SPECIAL;
 
+	public Move(int start, int finish) {
+		this(start, finish, false);
+	}
+
 	public Move(int start, int finish, boolean special) {
 		this.start = start;
 		this.finish = finish;

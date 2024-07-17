@@ -40,7 +40,7 @@ public class Computer {
 		final PieceSet pieces = board.getPieces(board.getTurn());
 		if (depth == 1) {
 			for (final ChessPiece piece : pieces) {
-				final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.type]);
+				final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.getType()]);
 				prevTime = System.currentTimeMillis();
 				piece.pieceMoves(moves);
 				if (moves.size() > 0) {
@@ -56,7 +56,7 @@ public class Computer {
 		}
 
 		final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[6]);
-		final BoardStorage store = new BoardStorage(board.getEnPassant(), board.halfMove, board.getCastling(board.getTurn()));
+		final BoardStorage store = new BoardStorage(board.getEnPassant(), board.halfMove, board.getCastlingPotential(board.getTurn()));
 		for (final ChessPiece piece : pieces) {
 			piece.pieceMoves(moves);
 		}
@@ -66,7 +66,14 @@ public class Computer {
 			final Move move = moves.get(i);
 				final ChessPiece capturedPiece = getCapturedPiece(move);
 				// final int prevCount = count;
-				board.make_move(move, false);
+				// try {
+					board.make_move(move, false);
+				// }
+				// catch (Exception e) {
+				// 	board.displayAttacks();
+				// 	// System.out.println(board.getFenString());
+				// 	return 0;
+				// }
 				if (board.is_promote()) {
 					for (final byte type : PROMOTION_PIECES) {
 						board.promote(type);
@@ -77,7 +84,7 @@ public class Computer {
 				else {
 					count += totalMoves(depth - 1);
 				}
-				// if (depth == 1) logMove(move, count - prevCount);
+				// if (depth == 3) logMove(move, count - prevCount);
 				board.undoMove(move, capturedPiece, store);
 		}
 		return count;

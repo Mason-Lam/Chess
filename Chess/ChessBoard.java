@@ -173,7 +173,7 @@ public class ChessBoard {
 			board[index] = piece;
 			pieces[piece.color].add(piece);
 			
-			switch (piece.type) {
+			switch (piece.getType()) {
 				case PAWN: pieceCount[piece.color][PAWN] += 1;
 					break;
 				case KNIGHT: pieceCount[piece.color][KNIGHT] += 1;
@@ -302,9 +302,12 @@ public class ChessBoard {
 		board[invertedMove.start] = ChessPiece.empty();
 		updatePosition(piece, invertedMove.finish, false);
 
-		if (!capturedPiece.isEmpty()) updatePosition(capturedPiece, capturedPiece.pos, false);
+		if (!capturedPiece.isEmpty() && !move.SPECIAL) updatePosition(capturedPiece, capturedPiece.getPos(), false);
 
 		resetPieces(invertedMove, isAttack, true);
+
+		if (!capturedPiece.isEmpty() && move.SPECIAL) updatePosition(capturedPiece, capturedPiece.getPos(), false);
+		
 		piece.pieceAttacks(false);
 
 		if (!capturedPiece.isEmpty()) capturedPiece.pieceAttacks(false);
@@ -318,7 +321,7 @@ public class ChessBoard {
 	//Not a big deal
 	public void promote(byte type) {
 		long prevTime = System.currentTimeMillis();
-		board[promotingPawn].type = type;
+		board[promotingPawn].setType(type);
 		updatePosition(board[promotingPawn], promotingPawn, false);
 		pieceCount[turn][type] += 1;
 		pieceCount[turn][PAWN] -= 1;
@@ -341,7 +344,7 @@ public class ChessBoard {
 
 		piece.pieceAttacks(true);
 		updatePosition(piece, promotingPawn, true);
-		piece.type = PAWN;
+		piece.setType(PAWN);;
 		updatePosition(piece, promotingPawn, false);
 
 		halfMove = store.halfMove;
@@ -352,7 +355,7 @@ public class ChessBoard {
 		long prevTime = System.currentTimeMillis();
 		if (remove) {
 			if (pieces[piece.color].remove(piece)) {
-				pieceCount[piece.color][piece.type] -= 1;
+				pieceCount[piece.color][piece.getType()] -= 1;
 			}
 			board[newPos] = ChessPiece.empty();
 			return;
@@ -360,7 +363,7 @@ public class ChessBoard {
 		board[newPos] = piece;
 		piece.setPos(newPos);
 		if (pieces[piece.color].add(piece)) {
-			pieceCount[piece.color][piece.type] += 1;
+			pieceCount[piece.color][piece.getType()] += 1;
 		}
 		
 		if (piece.isKing()) kingPos[piece.color] = newPos;
@@ -415,7 +418,7 @@ public class ChessBoard {
 	//Solid
 	private void pieceReset(ChessPiece piece, int index, int square, boolean isAttack, boolean undoMove) {
 		// if (!piece.hasCopy()) return;
-		switch (piece.type) {
+		switch (piece.getType()) {
 			case PAWN:
 				if (index == 2) {
 					if (piece.color == turn) piece.reset();
@@ -554,14 +557,43 @@ public class ChessBoard {
 	}
 
 	public boolean isAttacked(ChessPiece piece) {
-		return numAttacks(piece.pos, piece.color) >= 1;
+		return numAttacks(piece.getPos(), piece.color) >= 1;
 	}
 
 	public boolean is_promote() {
 		return promotingPawn != -1;
 	}
 
-	public boolean[] getCastling(int turn) {
+	public boolean clearPath(int startPos, int endPos) {
+		final int direction = getDirection(startPos, endPos);
+		int pos = startPos + direction;
+		while (pos != endPos) {
+			if (!getPiece(pos).isEmpty()) return false;
+			pos += direction;
+		}
+		return true;
+	}
+
+	public boolean canCastle(boolean kingSide, int color) {
+		if (isChecked(color)) return false;
+		if (!castling[turn][kingSide ? 1 : 0]) return false;
+
+		final int rookPos = ROOK_POSITIONS[color][kingSide ? 1 : 0];
+		if (!getPiece(rookPos).isRook()) return false;
+
+		final int distance = Math.abs(rookPos - KING_POSITIONS[color]);
+		for (int i = 1; i < distance; i++) {
+			if (!getPiece(kingSide ? KING_POSITIONS[color] + i : KING_POSITIONS[color] - i).isEmpty()) return false;
+		}
+
+		for (int i = 1; i < 3; i++) {
+			if (isAttacked(kingSide ? KING_POSITIONS[color] + i : KING_POSITIONS[color] - i, color)) return false;
+		}
+
+		return true;
+	}
+
+	public boolean[] getCastlingPotential(int turn) {
 		return castling[turn];
 	}
 	
@@ -602,7 +634,7 @@ public class ChessBoard {
 	}
 
 	public PieceSet getAttackers(ChessPiece piece) {
-		return attacks[next(piece.color)][piece.pos];
+		return attacks[next(piece.color)][piece.getPos()];
 	}
 
 	public PieceSet getAttacks(int pos, int color)  {
@@ -669,10 +701,10 @@ public class ChessBoard {
 	}
 
 	public static boolean onPawn(ChessPiece pawn, int moveSquare) {
-		final int offset = moveSquare - pawn.pos;
+		final int offset = moveSquare - pawn.getPos();
 		final int direction = (pawn.color == WHITE) ? -1 : 1;
-		if (offset == 8 * direction || (getRow(pawn.pos) == PAWN_STARTS[pawn.color] && offset == 16 * direction)) return true;
-		if (!onDiagonal(pawn.pos, moveSquare)) return false;
+		if (offset == 8 * direction || (getRow(pawn.getPos()) == PAWN_STARTS[pawn.color] && offset == 16 * direction)) return true;
+		if (!onDiagonal(pawn.getPos(), moveSquare)) return false;
 		return (offset == 7 * direction || offset == 9 * direction);
 	}
 	
@@ -683,6 +715,10 @@ public class ChessBoard {
 	
 	public static boolean onSameLine(int pos1, int pos2, int pos3) {
 		return (onColumn(pos1, pos2) && onColumn(pos1, pos3)) || (onRow(pos1, pos2) && onRow(pos1, pos3));
+	}
+
+	public static boolean hasPawnMoved(int pos, int color) {
+		return getRow(pos) != PAWN_STARTS[color];
 	}
 	
 	public static boolean onLine(int pos1, int pos2) {
