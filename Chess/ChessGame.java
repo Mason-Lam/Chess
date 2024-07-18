@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 import javax.swing.*;
 
-import Chess.Computer.BoardStorage;
+import Chess.ChessBoard.BoardStorage;
 
 import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
@@ -64,10 +64,10 @@ public class ChessGame {
 
 		// Tests.test16.runTest();
 		board = new ChessBoard();	//Creates a new ChessBoard object
-		
+
 		reset();
 		computer = board.getComputer();
-		prevTime = System.currentTimeMillis();
+		// prevTime = System.currentTimeMillis();
 		System.out.println(computer.totalMoves(1));
 		System.out.println(System.currentTimeMillis() - prevTime);
 		prevTime = System.currentTimeMillis();
@@ -218,7 +218,7 @@ public class ChessGame {
 			//Checks if the click is a legal move
 			if(move.finish == pos) {
 				//makes the move on the board
-				board.make_move(move, true);
+				board.makeMove(move);
 				legal.clear();
 				//Checks if there is a pawn promoting
 				if(board.is_promote()) {

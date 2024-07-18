@@ -19,7 +19,7 @@ public class Tests {
 			tests.add(this);
 		}
 		
-		public void runTest() {
+		public boolean runTest() {
 			final long prevTime = System.currentTimeMillis();
 			final int totalMoves = computer.totalMoves(depth);
 			System.out.println(fen);
@@ -31,6 +31,7 @@ public class Tests {
 				System.out.println("TEST FAILED, Expected: " + nodes);
 			}
 			System.out.println(System.currentTimeMillis() - prevTime + "\n");
+			return totalMoves == nodes;
 		}
 	}
 	
@@ -87,9 +88,11 @@ public class Tests {
 	public static final Test test26 = new Test(4, 232252, "3Q4/8/8/8/6q1/8/P4K2/k7 w - - 0 1");
 	
 	public static void runTests() {
+		boolean passed = true;
 		for (int i = 0; i < tests.size(); i++) {
 			System.out.println("Test " + (i + 1) + ":");
-			tests.get(i).runTest();
+			if(!tests.get(i).runTest()) passed = false;
 		}
+		if (!passed) System.out.println("ENGINE FAULT: Test has failed");
 	}
 }

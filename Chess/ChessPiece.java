@@ -53,7 +53,7 @@ public class ChessPiece {
 	 * @param remove Boolean determining if the piece is attacking more or less squares.
 	 */
 	public void pieceAttacks(boolean remove) {
-		reset();									//Piece has moved or been captured, thus reset the stored copy of moves.
+		resetMoveCopy();									//Piece has moved or been captured, thus reset the stored copy of moves.
 		switch(type) {
 			case (PAWN): pawnAttacks(remove);
 				break;
@@ -170,15 +170,15 @@ public class ChessPiece {
 	/**
 	 * Updates the attacks of a bishop, rook, or queen aloong a diagonal or line.
 	 * @param square Position of the modified square; starting position or end position of a move.
-	 * @param index Integer representing if the square paramater is the starting position or end position of the move.
+	 * @param movePart Integer representing if the square paramater is the starting position or end position of the move.
 	 * @param isAttack If the move resulted in a capture of another piece.
 	 * @param undoMove Whether or not the move is being undone.
 	 */
-	public void softAttack(int square, int index, boolean isAttack, boolean undoMove) {
+	public void softAttack(int square, int movePart, boolean isAttack, boolean undoMove) {
 
 		if (isPawn() || isKnight() || isKing()) return;
 
-		if (index == START) {
+		if (movePart == START) {
 			final int direction = getDirection(pos, square);
 			/** 
 			 * If the move is a capture and we're undoing it, then the square will be replaced by the captured piece
@@ -189,7 +189,7 @@ public class ChessPiece {
 			return;
 		}
 
-		if (index == END) {
+		if (movePart == END) {
 			final int direction = getDirection(pos, square);
 			/**
 			 * If the move is a capture and normal, then the square would've already been occupied and thus no attacks
@@ -723,7 +723,7 @@ public class ChessPiece {
 	/**
 	 * Reset the move copy list, use when a piece moves or one of its moves becomes illegal.
 	 */
-	public void reset() {
+	public void resetMoveCopy() {
 		movesCopy = new ArrayList<Integer>(MAX_MOVES[type]);
 	}
 
@@ -842,7 +842,7 @@ public class ChessPiece {
 	}
 	
 	/**
-	 * Creates a new Empty Chess Piece
+	 * Creates a new Empty Chess Piece.
 	 * @return Empty square.
 	 */
 	public static ChessPiece empty() {

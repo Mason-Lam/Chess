@@ -3,21 +3,52 @@ package Chess;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import Chess.Computer.BoardStorage;
-
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
 
+/**
+ * Class representing a ChessBoard.
+ */
 public class ChessBoard {
 
-	private final PieceSet[][] attacks;
+	public static class BoardStorage {
+		public final int enPassant;
+		public final int halfMove;
+		private final boolean[] castling;
+
+		public BoardStorage(int enPassant, int halfMove, boolean[] castling) {
+			this.enPassant = enPassant;
+			this.halfMove = halfMove;
+			this.castling = new boolean[2];
+			this.castling[0] = castling[0];
+			this.castling[1] = castling[1];
+		}
+
+		public boolean[] getCastling() {
+			final boolean[] castle = new boolean[2];
+			castle[0] = castling[0];
+			castle[1] = castling[1];
+			return castle;
+		}
+	}
+
+	/** 2d PieceSet array storing all pieces attacking a square, 0 refers to BLACK attackers, 1 for WHITE ATTACKERS.*/
+	private final PieceSet[][] attacks;		
 	
+	/** int array storing the position of the kings, 0 refers to BLACK, 1 for WHITE.*/
 	private final int[] kingPos;
+	
+	/** 2d int array storing a count of all types pieces, 0 refers to BLACK, 1 for WHITE.*/
 	private final int[][] pieceCount;
+
+	/** PieceSet array storing all pieces, 0 refers to BLACK, 1 for WHITE.*/
 	private final PieceSet[] pieces;
 	
+	/** ChessPiece array representing the board.*/
 	private final ChessPiece[] board;
+
+	/** 2d boolean array storing castling ability of both sides, 0 refers to BLACK, 1 for WHITE; 0 refers to Queenside, 1 to Kingside*/
 	private final boolean[][] castling;
 
 	private int turn;
@@ -26,16 +57,23 @@ public class ChessBoard {
 	public int halfMove;
 	public int fullMove;
 	
+	/**
+	 * Creates a new Chessboard object with the default starting position.
+	 */
 	public ChessBoard () {
 		this("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	}
 
+	/**
+	 * Creates a new Chessboard object with a specified starting position.
+	 * @param fen String that specifies the starting position using FEN {@link https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation}
+	 */
 	public ChessBoard (String fen) {
 		turn = BLACK;
 		halfMove = 0;
 		fullMove = 1;
 		
-		attacks = new PieceSet[2][1];
+		attacks = new PieceSet[2][];
 		attacks[BLACK] = new PieceSet[64];
 		attacks[WHITE] = new PieceSet[64];
 
@@ -57,71 +95,95 @@ public class ChessBoard {
 		promotingPawn = -1;
 		fen_to_board(fen);
 		hardAttackUpdate();
-		//System.out.println(board_to_fen());
 	}
 	
+	/**
+	 * Convert the current board position to a FEN String.
+	 * @return A FEN String representing the board position.
+	 */
 	public String getFenString() {
 		String fen = "";
-		for (int i = 0; i < 8; i++) {
-			int emptySpaces = 0;
-			for (int j = 0; j < 8; j++) {
-				int pos = i * 8 + j;
+		//Handle each pieces position and the empty spaces.
+		for (int row = 0; row < 8; row++) {
+			int emptySpaces = 0;		//Number of empty spaces in between pieces.
+			for (int column = 0; column < 8; column++) {
+				final int pos = row * 8 + column;		//Convert row, column to position.
+
 				if (board[pos].isEmpty()) {
 					emptySpaces++;
 					continue;
 				}
+
 				else if (emptySpaces > 0) {
-					fen += Integer.valueOf(emptySpaces);
+					fen += emptySpaces;
 					emptySpaces = 0;
 				}
+				
 				fen += pieceToChar(board[pos]);
 			}
-			if (emptySpaces > 0) fen += Integer.valueOf(emptySpaces);
-			if (i != 8) fen += "/";
+
+			if (emptySpaces > 0) fen += emptySpaces;
+
+			if (row != 7) fen += "/";
 		}
 		
-		fen = (turn == WHITE) ? fen + " w" : fen + " b";
+		fen = (turn == WHITE) ? fen + " w" : fen + " b";	//Store whose turn it is.
+
 		boolean whiteCanCastle = true;
+
+		//If white can't castle at all, add a "-".
 		if (!castling[WHITE][0] && !castling[WHITE][1]) {
 			fen += " -";
 			whiteCanCastle = false;
 		}
+
+		//Add capital letters based on white's castling ability.
 		if (castling[WHITE][1]) fen += " K";
 		if (castling[WHITE][0]) fen += "Q";
 		
+		//If Black can't castle at all but white can, add a "-".
 		if (!castling[BLACK][0] && !castling[BLACK][1] && whiteCanCastle) fen += " -";
+
+		//Add lowercase letter based on black's castling ability.
 		if (castling[BLACK][1]) fen += "k";
 		if (castling[BLACK][0]) fen += "q";
 		
+		//Handle enPassant
 		if (enPassant == EMPTY) fen += " -";
 		else {
-			final int passant = (turn == BLACK) ? enPassant + 8 : enPassant - 8;
+			final int passant = enPassant + getPawnDirection(turn);
 			fen += " " + indexToSquare(getColumn(passant), 8 - getRow(passant));
 		}
 
+		//Add halfMove and fullMove
 		fen += " " + halfMove;
 		fen += " " + fullMove;
 		
 		return fen;
 	}
 
+	/**
+	 * Sets the board position using a FEN String.
+	 * @param fen The FEN String for the board position to be based on.
+	 */
 	private void fen_to_board(String fen) {
-		final int[] pieceIDs = new int[] {0, 0};
-		int index = 0;
+		final int[] pieceIDs = new int[] {0, 0};	//Piece IDs to be used for discount Hash map.
+		int pos = 0;
 		boolean reachedHalfMove = false;
-		for (int i = 0; i < fen.length(); i++) {
-			char letter = fen.charAt(i);
+		//Iterate over each character in the FEN String.
+		for (int index = 0; index < fen.length(); index++) {
+			final char letter = fen.charAt(index);
 			if (letter == ' ') continue;
 			
-			//Turn, Castling, en Passant
-			if (index > 63) {
+			//Turn, Castling, enPassant.
+			if (pos > 63) {
 				
-				//Turn
+				//Turn.
 				if (letter == 'w') {
 					turn = WHITE;
 				}
 				
-				//Castling
+				//Castling.
 				else if (letter == 'K') {
 					castling[WHITE][1] = true;
 				}
@@ -135,15 +197,17 @@ public class ChessBoard {
 					castling[BLACK][0] = true;
 				}
 				
-				else if ((int) letter <= 104 && (int) letter >= 97 && Character.isDigit(fen.charAt(i + 1))) {
-					enPassant = squareToIndex(Character.toString(letter) + fen.charAt(i + 1));
+				//enPassant; it's garbage but I can't be bothered to clean it up.
+				else if ((int) letter <= 104 && (int) letter >= 97 && Character.isDigit(fen.charAt(index + 1))) {
+					enPassant = squareToIndex(Character.toString(letter) + fen.charAt(index + 1));
 					enPassant = (turn == BLACK) ? enPassant - 8 : enPassant + 8;
-					i++;
+					index++;
 				}
 
+				//Handle move counts, also garbage.
 				else if (Character.isDigit(letter)) {
 					int number = Character.getNumericValue(letter);
-					int digit = i + 1;
+					int digit = index + 1;
 					while (digit < fen.length()) {
 						if (!Character.isDigit(fen.charAt(digit))) break;
 						number = number * 10 + Character.getNumericValue(fen.charAt(digit));
@@ -159,286 +223,352 @@ public class ChessBoard {
 				continue;
 			}
 			
-			//Filling board with pieces
 			if (letter == '/') continue;
+
+			//Filling board with pieces.
 			final int pieceValue = Character.getNumericValue(letter);
-			if (pieceValue < 10 && pieceValue > 0) {
+			//Empty squares.
+			if (pieceValue <= 8 && pieceValue > 0) {
 				for (int j = 0; j < pieceValue; j++) {
-					board[index] = ChessPiece.empty();
-					index ++;
+					board[pos] = ChessPiece.empty();
+					pos ++;
 				}
 				continue;
 			}
-			final ChessPiece piece = charToPiece(letter, index, this, pieceIDs);
-			board[index] = piece;
+
+			//Create and store the piece.
+			final ChessPiece piece = charToPiece(letter, pos, this, pieceIDs);
+			board[pos] = piece;
 			pieces[piece.color].add(piece);
 			
-			switch (piece.getType()) {
-				case PAWN: pieceCount[piece.color][PAWN] += 1;
-					break;
-				case KNIGHT: pieceCount[piece.color][KNIGHT] += 1;
-					break;
-				case BISHOP: pieceCount[piece.color][BISHOP] += 1;
-					break;
-				case ROOK: pieceCount[piece.color][ROOK] += 1;
-					break;
-				case QUEEN: pieceCount[piece.color][QUEEN] += 1;
-					break;
-				case KING: kingPos[piece.color] = index;
-					break;
-			}
-			index++;
+			//Keep track of the piece.
+			if (piece.isKing()) kingPos[piece.color] = pos;
+			else pieceCount[piece.color][piece.getType()] ++;
+
+			pos++;
 		}
 	}
 	
-	public void make_move(Move move, boolean permanent) {
+	/**
+	 * Make a move on the board.
+	 * @param move The move to be made.
+	 */
+	public void makeMove(Move move) {
 		long prevTime = System.currentTimeMillis();
-		final ChessPiece piece = board[move.start];
+
+		final ChessPiece movingPiece = board[move.start];		
 		final boolean isAttack = !board[move.finish].isEmpty();
 		kingAttacker = null;
 		int castle = EMPTY;
-		piece.pieceAttacks(true);
+		movingPiece.pieceAttacks(true);		//Update the squares the moving piece currently attacks.
 
+		//Handle the captured piece.
 		if (isAttack) {
 			halfMove = EMPTY;
-			board[move.finish].pieceAttacks(true);
-			updatePosition(board[move.finish], move.finish, true);
+			board[move.finish].pieceAttacks(true);		//Update the squares the capture piece used to attack.
+			updatePosition(board[move.finish], move.finish, true);	//Remove the captured piece from the board.
 		}
 
-		int passant = EMPTY;
-		if (piece.isPawn()) {
+		int newEnPassant = EMPTY;
+		//Handles pawn moves.
+		if (movingPiece.isPawn()) {
 			halfMove = EMPTY;
+			//Captures enPassant.
 			if (move.SPECIAL) {
-				board[enPassant].pieceAttacks(true);
-				updatePosition(board[enPassant], enPassant, true);
+				board[enPassant].pieceAttacks(true);		//Update the squares the enPassant pawn used to attack.
+				updatePosition(board[enPassant], enPassant, true);	//Remove the enPassant pawn from the board.
 			}
+			//Pawn moves two squares forward.
 			if (getDistanceVert(move.start, move.finish) == 2) {
-				passant = move.finish;
+				newEnPassant = move.finish;
 			}
+			//Pawn is promoting.
 			if (getRow(move.finish) == PROMOTION_LINE[turn]) {
 				promotingPawn = move.finish;
 			}
 		}
 		
-		if (piece.isRook()) {
-			if (move.start == ROOK_POSITIONS[piece.color][0])
-				castling[piece.color][0] = false;
-			if (move.start == ROOK_POSITIONS[piece.color][1])
-				castling[piece.color][1] = false;
+		//Removes castling rights when a rook moves.
+		if (movingPiece.isRook()) {
+			//Queenside
+			if (move.start == ROOK_POSITIONS[movingPiece.color][0])
+				castling[movingPiece.color][0] = false;
+			//Kingside
+			if (move.start == ROOK_POSITIONS[movingPiece.color][1])
+				castling[movingPiece.color][1] = false;
 		}
 		
-		if (piece.isKing()) {
-			Arrays.fill(castling[piece.color], false);
+		//Handles king moves.
+		if (movingPiece.isKing()) {
+			Arrays.fill(castling[movingPiece.color], false);		//King can no longer castle.
+			//Handle castling.
 			if (move.SPECIAL) {
+				//Kingside.
 				if (move.finish > move.start) {
-					castle = ROOK_POSITIONS[turn][1];
-					board[castle].pieceAttacks(true);
-					updatePosition(board[castle], move.finish - 1, false);
-					castle = move.finish - 1;
-					board[ROOK_POSITIONS[turn][1]] = ChessPiece.empty();
+					castle = ROOK_POSITIONS[turn][1];			//Store the rook.
+					board[castle].pieceAttacks(true);	//Update the squares the rook currently attacks.
+					updatePosition(board[castle], move.finish - 1, false);	//Move the rook to the new position.
+					board[castle] = ChessPiece.empty();		//Empty the square the rook used to occupy.
+					castle = move.finish - 1;		//Set the new rook position.
 				}
+				//Queenside.
 				else {
-					castle = ROOK_POSITIONS[turn][0];
-					board[castle].pieceAttacks(true);
-					updatePosition(board[castle], move.finish + 1, false);
-					castle = move.finish + 1;
-					board[ROOK_POSITIONS[turn][0]] = ChessPiece.empty();
+					castle = ROOK_POSITIONS[turn][0];			//Store the rook.
+					board[castle].pieceAttacks(true);	//Update the squares the rook currently attacks.
+					updatePosition(board[castle], move.finish + 1, false);	//Move the rook to the new position.
+					board[castle] = ChessPiece.empty();	//Empty the square the rook used to occupy.
+					castle = move.finish + 1;	//Set the new rook position.
 				}
 			}
 		}
-		board[move.start] = ChessPiece.empty();
+		board[move.start] = ChessPiece.empty();	//Empty the square the moving piece used to occupy.
 		
-		updatePosition(piece, move.finish, false);
-		resetPieces(move, isAttack, false);
-		if (promotingPawn == EMPTY) piece.pieceAttacks(false);
-		if (castle != EMPTY) {
-			board[castle].pieceAttacks(false);
-		}
+		updatePosition(movingPiece, move.finish, false);		//Move the moving piece to the new position.
+		resetPieces(move, isAttack, false);		//Reset the move copies of pieces affected by this new position.
 
-		enPassant = passant;
+		if (promotingPawn == EMPTY) movingPiece.pieceAttacks(false);		//Update the squares the moving piece attacks in its new position.
+		if (castle != EMPTY) board[castle].pieceAttacks(false);	//Update the squares the castled rook attacks in its new position.
+
+		enPassant = newEnPassant;			//Store the pawn that moved two squares.
+
+		//Move on to the next turn if a promotion isn't happenning.
 		if (!is_promote()) {
 			halfMove ++;
 			if (turn == BLACK) fullMove ++;
 			next_turn();
 		}
+		
 		ChessGame.timeMakeMove += System.currentTimeMillis() - prevTime;
 	}
 
-	public void undoMove(Move move, ChessPiece capturedPiece, Computer.BoardStorage store) {
+	/**
+	 * Undo a move on the board.
+	 * @param move The original move that was made, uninverted.
+	 * @param capturedPiece The piece that was captured, empty if no piece was captured.
+	 * @param store Data that's lost when a move is made: halfmove, enPassant, and castling.
+	 */
+	public void undoMove(Move move, ChessPiece capturedPiece, BoardStorage store) {
 		long prevTime = System.currentTimeMillis();
+
+		//Back up a turn if a promotion isn't happenning.
 		if (!is_promote()) {
 			halfMove = store.halfMove;
 			if (turn == WHITE) fullMove --;
 			next_turn();
 		}
 
+		//Reset castling data and enPassant data.
 		castling[turn] = store.getCastling();
 		enPassant = store.enPassant;
+
 		kingAttacker = null;
 		final Move invertedMove = move.invert();
 		final boolean isAttack = !capturedPiece.isEmpty() && !move.SPECIAL;
 
-		final ChessPiece piece = board[invertedMove.start];
+		final ChessPiece movingPiece = board[invertedMove.start];
 		int castle = EMPTY;
-		piece.pieceAttacks(true);
+		movingPiece.pieceAttacks(true);		//Update the squares the moving piece currently attacks.
 
+		//Check for castling
 		if (isCastle(invertedMove)) {
+			//Kingside
 			if (invertedMove.start > invertedMove.finish) {
-				castle = invertedMove.start - 1;
-				board[castle].pieceAttacks(true);
-				updatePosition(board[castle], ROOK_POSITIONS[turn][1], false);
-				castle = ROOK_POSITIONS[turn][1];
-				board[invertedMove.start - 1] = ChessPiece.empty();
+				castle = invertedMove.start - 1;			//Store the rook position.
+				board[castle].pieceAttacks(true);		//Update the squares the rook currently attacks.
+				updatePosition(board[castle], ROOK_POSITIONS[turn][1], false);		//Move the rook to the new position.
+				board[castle] = ChessPiece.empty();			//Empty the square the rook used to occupy.
+				castle = ROOK_POSITIONS[turn][1];			//Set the new rook position.
 			}
+			//Queenside
 			else {
-				castle = invertedMove.start + 1;
-				board[castle].pieceAttacks(true);
-				updatePosition(board[castle], ROOK_POSITIONS[turn][0], false);
-				castle = ROOK_POSITIONS[turn][0];
-				board[invertedMove.start + 1] = ChessPiece.empty();
+				castle = invertedMove.start + 1;			//Store the rook position.
+				board[castle].pieceAttacks(true);		//Update the squares the rook currently attacks.
+				updatePosition(board[castle], ROOK_POSITIONS[turn][0], false);		//Move the rook to the new position.
+				castle = ROOK_POSITIONS[turn][0];				//Empty the square the rook used to occupy.
+				board[invertedMove.start + 1] = ChessPiece.empty();		//Set the new rook position.
 			}
 		}
 
-		board[invertedMove.start] = ChessPiece.empty();
-		updatePosition(piece, invertedMove.finish, false);
+		board[invertedMove.start] = ChessPiece.empty();		//Empty the square the piece used to occupy.
+		updatePosition(movingPiece, invertedMove.finish, false);			//Move the moving piece to the new position.
 
+		//Add the captured piece back onto the board.
 		if (!capturedPiece.isEmpty() && !move.SPECIAL) updatePosition(capturedPiece, capturedPiece.getPos(), false);
 
 		resetPieces(invertedMove, isAttack, true);
 
+		//Finnicky thing happens when you undo enPassant before calling softAttack on pieces.
 		if (!capturedPiece.isEmpty() && move.SPECIAL) updatePosition(capturedPiece, capturedPiece.getPos(), false);
 		
-		piece.pieceAttacks(false);
+		movingPiece.pieceAttacks(false);		//Update the squares the moving piece attacks in its new position.
 
-		if (!capturedPiece.isEmpty()) capturedPiece.pieceAttacks(false);
+		if (!capturedPiece.isEmpty()) capturedPiece.pieceAttacks(false);		//Update the squares the captured piece now attacks.
 		
-		if (castle != -1) board[castle].pieceAttacks(false);
+		if (castle != EMPTY) board[castle].pieceAttacks(false);			//Update the squares the castled rook now attacks.
 		
-		promotingPawn = -1;
+		promotingPawn = EMPTY;
+
 		ChessGame.timeUndoMove += System.currentTimeMillis() - prevTime;
 	}
 
-	//Not a big deal
+	/**
+	 * Updates the board and tracking variables with a piece removal or movement.
+	 * @param piece The piece either being removed or added to the board.
+	 * @param pos The position of the piece being added or removed from.
+	 * @param remove Whether or not the piece is getting removed or added.
+	 */
+	private void updatePosition(ChessPiece piece, int pos, boolean remove) {
+		//Remove the piece from the board and updates the tracking variables.
+		if (remove) {
+			pieces[piece.color].remove(piece);
+			pieceCount[piece.color][piece.getType()] -= 1;
+			board[pos] = ChessPiece.empty();
+			return;
+		}
+
+		//Add the piece to the board and update the tracking variables.
+		board[pos] = piece;
+		piece.setPos(pos);
+		if (pieces[piece.color].add(piece)) pieceCount[piece.color][piece.getType()] += 1;
+		
+		//Update the king position variable if the king moves.
+		if (piece.isKing()) kingPos[piece.color] = pos;
+	}
+
+	/**
+	 * Promotes the pawn.
+	 * @param type The new type of the promoted piece.
+	 */
 	public void promote(byte type) {
-		long prevTime = System.currentTimeMillis();
-		board[promotingPawn].setType(type);
-		updatePosition(board[promotingPawn], promotingPawn, false);
+		final ChessPiece promotingPiece = board[promotingPawn];
+		
+		//Add the promoted piece to the board.
+		promotingPiece.setType(type);
+		updatePosition(promotingPiece, promotingPawn, false);
+
+		//Update tracking variables.
 		pieceCount[turn][type] += 1;
 		pieceCount[turn][PAWN] -= 1;
-		board[promotingPawn].pieceAttacks(false);
+
+		promotingPiece.pieceAttacks(false);	//Update the squares the promoted piece now attacks.
+
+		//Next turn.
 		halfMove ++;
 		if (turn == BLACK) fullMove ++;
 		next_turn();
-		promotingPawn = -1;
+
+		promotingPawn = EMPTY;
 	}
 
-	//Not a big deal
-	public void unPromote(int pos, BoardStorage store) {
-		long prevTime = System.currentTimeMillis();
+	/**
+	 * Unpromotes a piece.
+	 * @param pos The position of the promoted piece.
+	 */
+	public void unPromote(int pos) {
+		final ChessPiece unpromotingPiece = board[pos];
+
+		//Backup a turn.
 		halfMove --;
 		if (turn == WHITE) fullMove --;
 		next_turn();
+
+		//Update tracking variables.
+		pieceCount[turn][unpromotingPiece.getType()] --;
+		pieceCount[turn][PAWN] ++;
+
+		//Update the squares the unpromoting piece used to attack.
+		unpromotingPiece.pieceAttacks(true);
+
+		//Reset the piece to a pawn.
+		unpromotingPiece.setType(PAWN);
+		updatePosition(board[pos], pos, false);
+
 		promotingPawn = pos;
-
-		final ChessPiece piece = board[pos];
-
-		piece.pieceAttacks(true);
-		updatePosition(piece, promotingPawn, true);
-		piece.setType(PAWN);;
-		updatePosition(piece, promotingPawn, false);
-
-		halfMove = store.halfMove;
-	}
-	
-	//Not big deal
-	private void updatePosition(ChessPiece piece, int newPos, boolean remove) {
-		long prevTime = System.currentTimeMillis();
-		if (remove) {
-			if (pieces[piece.color].remove(piece)) {
-				pieceCount[piece.color][piece.getType()] -= 1;
-			}
-			board[newPos] = ChessPiece.empty();
-			return;
-		}
-		board[newPos] = piece;
-		piece.setPos(newPos);
-		if (pieces[piece.color].add(piece)) {
-			pieceCount[piece.color][piece.getType()] += 1;
-		}
-		
-		if (piece.isKing()) kingPos[piece.color] = newPos;
 	}
 
+	/**
+	 * Reset the moves copy and updates squares attacked by pieces affected by a move.
+	 * @param move The Move being made.
+	 * @param isAttack	Whether or not the move is a capture.
+	 * @param undoMove	Whether or not the move is being undone.
+	 */
 	private void resetPieces(Move move, boolean isAttack, boolean undoMove) {
 		final long prevTime = System.currentTimeMillis();
-		if (isCastle(move)) {
-			final boolean kingSide = (move.finish > move.start && !undoMove) || (move.start > move.finish && undoMove);
-			final int startingRookPos = kingSide ? ROOK_POSITIONS[turn][1] : ROOK_POSITIONS[turn][0];
-			final int castledRookPos = kingSide ? ROOK_POSITIONS[turn][1] - 2 : ROOK_POSITIONS[turn][0] + 3;
-			pawnReset(startingRookPos, next(turn));
-			pawnReset(castledRookPos, next(turn));
+		final boolean isCastle = isCastle(move);
+
+		if (isCastle) {
+			//Can't be bothered to handle castling because it happens at max twice in a game.
 			for (int color = 0; color < 2; color ++) {
-				final PieceSet startingRookAttacks = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1]] : attacks[turn][ROOK_POSITIONS[turn][0]];
-				final PieceSet castledRookAttacks = kingSide ? attacks[turn][ROOK_POSITIONS[turn][1] - 2] : attacks[turn][ROOK_POSITIONS[turn][0] + 3];
-				for (final ChessPiece piece : startingRookAttacks) {
-					// if (piece.pos == move.start || piece.pos == move.finish) continue;
-					pieceReset(piece, undoMove ? 1 : 0, startingRookPos, false, undoMove);
-				}
-				for (final ChessPiece piece : castledRookAttacks) {
-					// if (piece.pos == move.start || piece.pos == move.finish) continue;
-					pieceReset(piece, undoMove ? 0 : 1, castledRookPos, false, undoMove);
+				final PieceSet coloredPieces = pieces[color];
+				for (final ChessPiece piece : coloredPieces) {
+					piece.resetMoveCopy();
 				}
 			}
-			// for (int color = 0; color < 2; color ++) {
-			// 	final PieceSet coloredPieces = pieces[color];
-			// 	for (final ChessPiece piece : coloredPieces) {
-			// 		piece.reset();
-			// 	}
-			// }
 		}
 
-		int[] squares = getSquares(move);
-		for (int index = 0; index < squares.length; index ++) {
-			final int pos = squares[index];
+		int[] modifiedSquares = isPassant(move) ? new int[] {move.start, move.finish, enPassant} : new int[] {move.start, move.finish};
+		//Check each square that the move affects.
+		for (int index = 0; index < modifiedSquares.length; index ++) {
+
+			//Go through black and white pieces potentially affected.
+			final int pos = modifiedSquares[index];
 			for (int color = 0; color < 2; color++) {
+
+				//Check each piece attacking the square.
 				final PieceSet attacks = getAttacks(pos, color);
 				for (final ChessPiece piece : attacks) {
-					// if (piece.pos == move.start || piece.pos == move.finish) continue;
 					long prevTime2 = System.currentTimeMillis();
+
+					//Update straight line and diagonal attackers.
 					piece.softAttack(pos, index, isAttack, undoMove);
+
 					ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime2;
-					pieceReset(piece, index, pos, isAttack, undoMove);
+
+					//Reset the moves copy in pieces affected by the move.
+					if (!isCastle) pieceReset(piece, index, pos, isAttack, undoMove);
 				}
-				pawnReset(pos, color);
+
+				//Remove pawn moves affected by the piece moving.
+				if (!isCastle) pawnReset(pos, color);
 			}
 		}
 		ChessGame.timePieceUpdate += System.currentTimeMillis() - prevTime;
 	}
 
-	//Solid
-	private void pieceReset(ChessPiece piece, int index, int square, boolean isAttack, boolean undoMove) {
-		// if (!piece.hasCopy()) return;
+	/**
+	 * 
+	 * @param piece
+	 * @param movePart
+	 * @param square
+	 * @param isAttack
+	 * @param undoMove
+	 */
+	private void pieceReset(ChessPiece piece, int movePart, int square, boolean isAttack, boolean undoMove) {
 		switch (piece.getType()) {
 			case PAWN:
-				if (index == 2) {
-					if (piece.color == turn) piece.reset();
+				if (movePart == EN_PASSANT) {
+					if (piece.color == turn) {
+						piece.resetMoveCopy();
+					}
 					break;
 				}
-				if (isAttack && ((index == 0 && undoMove) || (index == 1 && !undoMove))) {
-					piece.reset();
+				if (isAttack && ((movePart == START && undoMove) || (movePart == END && !undoMove))) {
+					piece.resetMoveCopy();
 					break;
 				}
 
-				if (piece.color != turn) piece.reset();
+				if (piece.color != turn) {
+					piece.resetMoveCopy();
+				}
 				break;
 			case KNIGHT:
 			case KING:
-				if (index == 2) {
+				if (movePart == 2) {
 					if (piece.color != turn) piece.updateCopy(undoMove, square);
 					//undoMove: empty to black; black to empty
 					break;
 				}
-				if (isAttack && ((index == 0 && undoMove) || (index == 1 && !undoMove))) {
+				if (isAttack && ((movePart == 0 && undoMove) || (movePart == 1 && !undoMove))) {
 					final boolean remove = undoMove ? piece.color != turn : piece.color == turn;
 					//undoMove: white to black; black to white
 					piece.updateCopy(remove, square);
@@ -453,10 +583,10 @@ public class ChessBoard {
 				 * 	 index == 0: White to empty
 				 *   index == 1: empty to white
 				 */
-				if (piece.color == turn) piece.updateCopy(index == 1, square);
+				if (piece.color == turn) piece.updateCopy(movePart == 1, square);
 				break;
 			default:
-				piece.reset();
+				piece.resetMoveCopy();
 				break;
 		}
 	}
@@ -469,16 +599,12 @@ public class ChessBoard {
 			final int newPos = square + direction * i;
 			if (!onBoard(newPos)) return;
 			final ChessPiece piece = board[newPos];
-			if (piece.isPawn()) piece.reset();
+			if (piece.isPawn()) {
+				piece.resetMoveCopy();
+			}
 			else if (piece.isEmpty()) continue;
 			return;
 		}
-	}
-
-	//Probably good
-	private int[] getSquares(Move move) {
-		if (isPassant(move)) return new int[] {move.start, move.finish, enPassant};
-		return new int[] {move.start, move.finish};
 	}
 
 	//Good
@@ -643,6 +769,10 @@ public class ChessBoard {
 
 	public Computer getComputer() {
 		return new Computer(this);
+	}
+
+	public BoardStorage copyData() {
+		return new BoardStorage(getEnPassant(), halfMove, getCastlingPotential(getTurn()));
 	}
 	
 	public void displayAttacks() {
