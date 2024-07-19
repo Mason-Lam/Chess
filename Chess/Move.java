@@ -19,6 +19,10 @@ public class Move {
 		moveID = typeAdd + (start << 1) + (finish << 7);
 	}
 
+	public boolean contains(int square) {
+		return start == square || finish == square;
+	}
+
 	public Move invert() {
 		return new Move(finish, start, SPECIAL);
 	}
@@ -44,6 +48,11 @@ public class Move {
 	// 	// }
 	// 	// return Type.MOVE;
 	// }
+
+	@Override
+	public String toString() {
+		return start + ":" + finish + ":" + SPECIAL;
+	}
 
 	@Override
 	public boolean equals(Object anObject) {

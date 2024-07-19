@@ -56,8 +56,14 @@ public class ChessGame {
 		//rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
 		reset();
 		long prevTime = System.currentTimeMillis();
-		// Tests.runTests(); //5800, 8315, 3200
-		// Tests.test8.runTest();
+		Tests.runTests(); //5800, 8315, 3200
+		System.out.println(System.currentTimeMillis() - prevTime);
+
+		display();	//12582851
+
+		reset();
+		prevTime = System.currentTimeMillis();
+		Tests.runTests(); //5800, 8315, 3200
 		System.out.println(System.currentTimeMillis() - prevTime);
 
 		display();	//12582851
@@ -72,7 +78,7 @@ public class ChessGame {
 
 		reset();
 		computer = board.getComputer();
-		// prevTime = System.currentTimeMillis();
+		prevTime = System.currentTimeMillis();
 		System.out.println(computer.totalMoves(1));
 		System.out.println(System.currentTimeMillis() - prevTime);
 		prevTime = System.currentTimeMillis();
@@ -254,7 +260,7 @@ public class ChessGame {
 		final int win = board.isWinner();	//Checks if there is a winner
 
 		//checks for no winner
-		if(win == PROGRESS) {
+		if(win == CONTINUE) {
 			return;
 		}
 		final JFrame w2 = new JFrame();	//Cool frame

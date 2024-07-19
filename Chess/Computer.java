@@ -6,6 +6,7 @@ import Chess.ChessBoard.BoardStorage;
 
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PieceConstants.*;
+import static Chess.BoardUtil.*;
 
 public class Computer {
 
@@ -25,7 +26,7 @@ public class Computer {
 				prevTime = System.currentTimeMillis();
 				piece.pieceMoves(moves);
 				if (moves.size() > 0) {
-					if(piece.isPawn() && ChessBoard.getRow(moves.get(0).finish) == PROMOTION_LINE[board.getTurn()]) {
+					if(piece.isPawn() && getRow(moves.get(0).finish) == PROMOTION_LINE[board.getTurn()]) {
 						count += moves.size() * 4;
 						continue;
 					}
@@ -72,12 +73,12 @@ public class Computer {
 	}
 
 	private void logMove(Move move, int count) {
-		System.out.print(indexToSquare(ChessBoard.getColumn(move.start), 8 - ChessBoard.getRow(move.start)));
-		System.out.print(indexToSquare(ChessBoard.getColumn(move.finish), 8 - ChessBoard.getRow(move.finish)));
+		System.out.print(indexToSquare(getColumn(move.start), 8 - getRow(move.start)));
+		System.out.print(indexToSquare(getColumn(move.finish), 8 - getRow(move.finish)));
 		System.out.println(" : " + count);
 	}
 
 	private ChessPiece getCapturedPiece(Move move) {
-		return (board.isPassant(move)) ? board.getPiece(board.getEnPassant()) : board.getPiece(move.finish);
+		return (board.isEnPassant(move)) ? board.getPiece(board.getEnPassant()) : board.getPiece(move.finish);
 	}
 }

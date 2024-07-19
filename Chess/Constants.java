@@ -3,6 +3,8 @@ package Chess;
 public class Constants {
 
 	public static class MoveConstants {
+		public static final int HALF_MOVE_TIMER = 50;
+
 		public static final boolean shouldCopyOptimize = true;
 
 		public static final int START = 0;
@@ -123,37 +125,12 @@ public class Constants {
 			new char[] {'p','n','b','r','q','k'}, //Black
 			new char[] {'P','N','B','R','Q','K'} // White
 		};
-
-		public static int squareToIndex(String square) {
-			final int ascii = (int) square.charAt(0);
-			return (ascii - 97) +  (8 - Character.getNumericValue(square.charAt(1))) * 8;
-		}
-
-		public static String indexToSquare(int column, int row) {
-			return Character.toString(COLUMNS[column]) + row;
-		}
-		
-		public static ChessPiece charToPiece(char letter, int pos, ChessBoard board, int[] pieceIDs) {
-			final byte color = Character.isLowerCase(letter) ? BLACK : WHITE;
-			final char[] pieces = PIECES[color];
-			for (byte i = 0; i < pieces.length; i++) {
-				if (letter == pieces[i]) {
-					pieceIDs[color] ++;
-					return new ChessPiece(i, color, pos, board, pieceIDs[color] - 1);
-				}
-			}
-			return null;
-		}
-		
-		public static char pieceToChar(ChessPiece piece) {
-			return PIECES[piece.color][piece.getType()];
-		}
 	}
 
 	public static class EvaluateConstants {
 		//OutcomeConstants
 		public static final int DRAW = 0;
 		public static final int WIN = 1;
-		public static final int PROGRESS = 2;
+		public static final int CONTINUE = 2;
 	}
 }

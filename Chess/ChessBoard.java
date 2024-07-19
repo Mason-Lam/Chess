@@ -6,6 +6,7 @@ import java.util.Arrays;
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
+import static Chess.BoardUtil.*;
 
 /**
  * Class representing a ChessBoard.
@@ -50,6 +51,9 @@ public class ChessBoard {
 
 	/** 2d boolean array storing castling ability of both sides, 0 refers to BLACK, 1 for WHITE; 0 refers to Queenside, 1 to Kingside*/
 	private final boolean[][] castling;
+
+	/** Variable used to store the piece that is currently attacking the king. */
+	private ChessPiece kingAttacker = ChessPiece.empty();
 
 	private int turn;
 	private int enPassant;
@@ -229,7 +233,7 @@ public class ChessBoard {
 			final int pieceValue = Character.getNumericValue(letter);
 			//Empty squares.
 			if (pieceValue <= 8 && pieceValue > 0) {
-				for (int j = 0; j < pieceValue; j++) {
+				for (int square = 0; square < pieceValue; square++) {
 					board[pos] = ChessPiece.empty();
 					pos ++;
 				}
@@ -258,7 +262,7 @@ public class ChessBoard {
 
 		final ChessPiece movingPiece = board[move.start];		
 		final boolean isAttack = !board[move.finish].isEmpty();
-		kingAttacker = null;
+		kingAttacker = ChessPiece.empty();
 		int castle = EMPTY;
 		movingPiece.pieceAttacks(true);		//Update the squares the moving piece currently attacks.
 
@@ -326,7 +330,7 @@ public class ChessBoard {
 		updatePosition(movingPiece, move.finish, false);		//Move the moving piece to the new position.
 		resetPieces(move, isAttack, false);		//Reset the move copies of pieces affected by this new position.
 
-		pawnReset(move);
+		pawnReset(move, isAttack);
 
 		if (promotingPawn == EMPTY) movingPiece.pieceAttacks(false);		//Update the squares the moving piece attacks in its new position.
 		if (castle != EMPTY) board[castle].pieceAttacks(false);	//Update the squares the castled rook attacks in its new position.
@@ -363,7 +367,7 @@ public class ChessBoard {
 		castling[turn] = store.getCastling();
 		enPassant = store.enPassant;
 
-		kingAttacker = null;
+		kingAttacker = ChessPiece.empty();
 		final Move invertedMove = move.invert();
 		final boolean isAttack = !capturedPiece.isEmpty() && !move.SPECIAL;
 
@@ -402,7 +406,7 @@ public class ChessBoard {
 		//Finnicky thing happens when you undo enPassant before calling softAttack on pieces.
 		if (!capturedPiece.isEmpty() && move.SPECIAL) updatePosition(capturedPiece, capturedPiece.getPos(), false);
 
-		pawnReset(move.invert());
+		pawnReset(move, isAttack);
 		
 		movingPiece.pieceAttacks(false);		//Update the squares the moving piece attacks in its new position.
 
@@ -510,7 +514,7 @@ public class ChessBoard {
 			}
 		}
 
-		int[] modifiedSquares = isPassant(move) ? new int[] {move.start, move.finish, enPassant} : new int[] {move.start, move.finish};
+		int[] modifiedSquares = isEnPassant(move) ? new int[] {move.start, move.finish, enPassant} : new int[] {move.start, move.finish};
 		//Check each square that the move affects.
 		for (int movePart = 0; movePart < modifiedSquares.length; movePart ++) {
 
@@ -519,7 +523,7 @@ public class ChessBoard {
 			for (int color = 0; color < 2; color++) {
 
 				//Check each piece attacking the square.
-				final PieceSet attacks = getAttacks(pos, color);
+				final PieceSet attacks = getAttackers(pos, color);
 				for (final ChessPiece piece : attacks) {
 					long prevTime2 = System.currentTimeMillis();
 
@@ -632,8 +636,14 @@ public class ChessBoard {
 	 * Removes or adds straight line moves to a pawn's move copy based on a move made.
 	 * @param move The move being made, make sure it is uninverted when undoing a move.
 	 */
-	private void pawnReset(Move move) {
-		final int[] squares = isPassant(move) ? new int[] {move.start, move.finish, enPassant} : new int[] {move.start, move.finish};
+	private void pawnReset(Move move, boolean isAttack) {
+		final int[] squares;
+		if (isAttack) {
+			squares = isEnPassant(move) ? new int[] {move.start, enPassant} : new int[] {move.start};
+		}
+		else {
+			squares = isEnPassant(move) ? new int[] {move.start, move.finish, enPassant} : new int[] {move.start, move.finish};
+		}
 
 		//Update both black and white pawns.
 		for (int color = 0; color < 2; color++) {
@@ -645,7 +655,7 @@ public class ChessBoard {
 				
 				//Go one square ahead of the involved square.
 				final int oneSquareAhead = pos - direction;
-				if (!onBoard(oneSquareAhead)) continue;
+				if (!onBoard(oneSquareAhead) || move.contains(oneSquareAhead)) continue;
 				final ChessPiece pieceOneSquareAhead = board[oneSquareAhead];
 
 				//Check if it's a pawn that would be influneced by the move.
@@ -655,7 +665,7 @@ public class ChessBoard {
 					if (getRow(oneSquareAhead) == PAWN_STARTS[color]) {
 						//Check the square behind the involved square.
 						final int oneSquareBehind = pos + direction;
-						if (board[oneSquareBehind].isEmpty()) pieceOneSquareAhead.updateCopy(!isEmpty, oneSquareBehind);
+						if (board[oneSquareBehind].isEmpty() && !move.contains(oneSquareBehind)) pieceOneSquareAhead.updateCopy(!isEmpty, oneSquareBehind);
 					}
 					continue;
 				}
@@ -663,7 +673,7 @@ public class ChessBoard {
 
 				//Go two squares ahead if the first is empty.
 				final int twoSquaresAhead = oneSquareAhead - direction;
-				if (!onBoard(twoSquaresAhead)) continue;
+				if (!onBoard(twoSquaresAhead) || move.contains(twoSquaresAhead)) continue;
 				final ChessPiece pieceTwoSquaresAhead = board[twoSquaresAhead];
 
 				//Check if it's a pawn that would be influenced by the move.
@@ -674,33 +684,53 @@ public class ChessBoard {
 		}
 	}
 
-	//Good
+	/**
+	 * Initialize and store attacks each piece has, use when first loading a position.
+	 */
 	private void hardAttackUpdate() {
-		long prevTime = System.currentTimeMillis();
+		//Iterate over each color.
 		for (int color = 0; color < 2; color ++) {
-			for (int j = 0;  j < attacks[color].length; j++) {
-				attacks[color][j] = new PieceSet();
+			//Reset the attacks currently stored.
+			for (int square = 0;  square < attacks[color].length; square++) {
+				attacks[color][square] = new PieceSet();
 			}
+
+			//Generate attacks for each of the pieces.
 			for (final ChessPiece piece : pieces[color]) {
 				piece.pieceAttacks(false);
 			}
 		}
 	}
 
+	/**
+	 * Check if the game is over.
+	 * @return The current state of the game, CONTINUE: 2, WIN: 1, DRAW: 0.
+	 */
 	public int isWinner() {
-		if (halfMove >= 50) return DRAW;
+		//Half move timer, look it up.
+		if (halfMove >= HALF_MOVE_TIMER) return DRAW;
+
+		//If neither side has enough pieces to secure checkmate, game ends in a draw.
 		if (hasInsufficientMaterial()) return DRAW;
-		for(ChessPiece piece : pieces[turn]) {
+
+		//Check to see if any piece has a legal move.
+		for(final ChessPiece piece : pieces[turn]) {
 			final ArrayList<Move> moves = new ArrayList<Move>();
 			piece.pieceMoves(moves);
 			if(moves.size() > 0) {
-				return PROGRESS;
+				return CONTINUE;
 			}
 		}
+		//If the king is in check, it's checkmate, if not draw. 
 		return isChecked(turn) ? WIN : DRAW;
 	}
 	
+	/**
+	 * Check if the game is over by insufficient material resulting in a draw.
+	 * @return Whether or not the game is a draw.
+	 */
 	private boolean hasInsufficientMaterial() {
+		//Check each side to see if there's enough pieces.
 		for (int color = 0; color < 2; color++) {
 			if (pieceCount[color][PAWN] > 0 || pieceCount[color][KNIGHT] > 2 
 				|| pieceCount[color][BISHOP] > 1 || pieceCount[color][ROOK] > 0 
@@ -709,6 +739,12 @@ public class ChessBoard {
 		return true;
 	}
 
+	/**
+	 * Modify the attack storage by adding or removing an attacker of a square.
+	 * @param piece The piece being added or removed as an attacker.
+	 * @param pos The square being attacked.
+	 * @param remove Whether or not to remove or add an attacker. 
+	 */
 	public void modifyAttacks(ChessPiece piece, int pos, boolean remove) {
 		if (remove) {
 			removeAttacker(piece, pos);
@@ -717,131 +753,249 @@ public class ChessBoard {
 		addAttacker(piece, pos);
 	}
 
+	/**
+	 * Add an attacker to the attack storage of a square.
+	 * @param piece The piece being added as an attacker.
+	 * @param pos The square being attacked.
+	 */
 	public void addAttacker(ChessPiece piece, int pos) {
 		attacks[piece.color][pos].add(piece);
 	}
 
+	/**
+	 * Remove an attacker from the attack storage of a square.
+	 * @param piece The piece being removed as an attacker.
+	 * @param pos The square being attacked.
+	 */
 	public void removeAttacker(ChessPiece piece, int pos) {
 		attacks[piece.color][pos].remove(piece);
 	}
 
+	/**
+	 * Moves on to the next turn.
+	 */
 	public void next_turn() {
 		turn = next(turn);
 	}
 
-	public boolean isCastle(Move move) {
-		return (board[move.start].isKing() || board[move.finish].isKing()) && move.SPECIAL;
+	/**
+	 * Returns whether or not a king can castle.
+	 * @param color The color of the king.
+	 * @return Whether or not a king can castle, covers queenside and kingside.
+	 */
+	public boolean[] getCastlingPotential(int color) {
+		return castling[color];
 	}
 
-	public boolean isPassant(Move move) {
+	/**
+	 * Returns the king's position on the board.
+	 * @param color The color of the king.
+	 * @return The king's position from 0 to 63.
+	 */
+	public int getKingPos(int color) {
+		return kingPos[color];
+	}
+
+	/**
+	 * Checks if a move castles the king.
+	 * @param move The move being played.
+	 * @return Whether or not the move is a castle.
+	 */
+	public boolean isCastle(Move move) {
+		return move.SPECIAL && (move.contains(getKingPos(turn)));
+	}
+
+	/**
+	 * Checks if a move is a capture through enPassant.
+	 * @param move The move being played.
+	 * @return Whether or not the move is a capture through enPassant.
+	 */
+	public boolean isEnPassant(Move move) {
 		return (board[move.start].isPawn() || board[move.finish].isPawn()) && move.SPECIAL;
 	}
 	
+	/**
+	 * Checks if a king is in double check; two pieces attacking.
+	 * @param color The color of the king being attacked.
+	 * @return Whether or not the king is in double check.
+	 */
 	public boolean doubleCheck(int color) {
 		return numAttacks(kingPos[color], color) >= 2;
 	}
 	
+	/**
+	 * Checks if a king is in check; at least one piece attacking.
+	 * @param color The color of the king being attacked.
+	 * @return Whether or not the king is check.
+	 */
 	public boolean isChecked(int color) {
 		return isAttacked(board[kingPos[color]]);
 	}
 	
+	/**
+	 * Checks if a square is attacked; at least one piece attacking.
+	 * @param pos The position of the square being attacked.
+	 * @param color The color of pieces that are attacking the square.
+	 * @return Whether or not the square is attacked.
+	 */
 	public boolean isAttacked(int pos, int color) {
 		return numAttacks(pos,color) >= 1;
 	}
 
+	/**
+	 * Checks if a piece is attacked; at least one piece attacking.
+	 * @param piece The ChessPiece that is being attacked.
+	 * @return Whether or not the piece is attacked.
+	 */
 	public boolean isAttacked(ChessPiece piece) {
 		return numAttacks(piece.getPos(), piece.color) >= 1;
 	}
 
-	public boolean is_promote() {
-		return promotingPawn != -1;
+	/**
+	 * Returns the number of pieces attacking a specific square.
+	 * @param pos The position of the square.
+	 * @param color The color of the square (If white is inputted, the method returns the number of black attackers).
+	 * @return The number of attackers.
+	 */
+	private int numAttacks(int pos, int color) {
+		return getAttackers(pos, color).size();
 	}
 
-	public boolean clearPath(int startPos, int endPos) {
-		final int direction = getDirection(startPos, endPos);
-		int pos = startPos + direction;
-		while (pos != endPos) {
-			if (!getPiece(pos).isEmpty()) return false;
+	/**
+	 * Returns the pieces attacking another piece.
+	 * @param piece The ChessPiece being attacked.
+	 * @return The Chess pieces attacking.
+	 */
+	public PieceSet getAttackers(ChessPiece piece) {
+		return getAttackers(piece.getPos(), piece.color);
+	}
+
+	/**
+	 * Returns the pieces attacking a specific square.
+	 * @param pos The position of the square.
+	 * @param color The color of the square (If white is inputted, the method returns the number of black attackers).
+	 * @return The Chess pieces attacking.
+	 */
+	public PieceSet getAttackers(int pos, int color)  {
+		return attacks[next(color)][pos];
+	}
+
+	/**
+	 * Checks if a promotion is ongoing.
+	 * @return Whether or not a promotion is happenning.
+	 */
+	public boolean is_promote() {
+		return promotingPawn != EMPTY;
+	}
+
+	/**
+	 * Returns the square the enPassant pawn occupies.
+	 * @return The enPassant pawn, returns EMPTY:-1 if there is none.
+	 */
+	public int getEnPassant() {
+		return enPassant;
+	}
+
+	/**
+	 * Returns whose turn it is on the board.
+	 * @return BLACK: 0, WHITE: 1.
+	 */
+	public int getTurn() {
+		return turn;
+	}
+
+	/**
+	 * Returns a ChessPiece on the board.
+	 * @param pos A position on the board.
+	 * @return The ChessPiece, includes empty squares.
+	 */
+	public ChessPiece getPiece(int pos) {
+		return board[pos];
+	}
+
+	/**
+	 * Returns all pieces of a specific color.
+	 * @param color The color of the pieces.
+	 * @return A piece set object, use enhanced for loop.
+	 */
+	public PieceSet getPieces(int color) {
+		return pieces[color];
+	}
+
+	/**
+	 * Returns a copy of data that's lost when a move is made.
+	 * @return A BoardStorage object containing enPassant, halfMove, and castling potential.
+	 */
+	public BoardStorage copyData() {
+		return new BoardStorage(getEnPassant(), halfMove, getCastlingPotential(getTurn()));
+	}
+
+	/**
+	 * Returns a computer that can analyze the board.
+	 * @return A computer object that can evaluate the best move or find the max amount of possible moves.
+	 */
+	public Computer getComputer() {
+		return new Computer(this);
+	}
+
+	/**
+	 * Returns the piece that is currently attacking the king.
+	 * @return The ChessPiece attacking the king.
+	 */
+	public ChessPiece getKingAttacker() {
+		if (kingAttacker.isEmpty()) {
+			for (final ChessPiece piece : getAttackers(board[kingPos[turn]])) kingAttacker = piece;
+		}
+		return kingAttacker;
+	}
+
+	/**
+	 * Returns whether a clear path exists between two points meaning all empty spaces in between.
+	 * @param pos1 The first position.
+	 * @param pos2 The second position.
+	 * @return Whether a clear path exists between the two points.
+	 */
+	public boolean clearPath(int pos1, int pos2) {
+		final int direction = getDirection(pos1, pos2);
+		int pos = pos1 + direction;
+		while (pos != pos2) {
+			if (!getPiece(pos).isEmpty()) return false;	//Piece blocks the path.
 			pos += direction;
 		}
 		return true;
 	}
 
+	/**
+	 * Returns whether or not the king can castle queenside or kingside.
+	 * @param kingSide Whether or not to check for kingside or queenside.
+	 * @param color The color of the king.
+	 * @return Whether or not the king can castle.
+	 */
 	public boolean canCastle(boolean kingSide, int color) {
+		//If the king is checked, it can't castle.
 		if (isChecked(color)) return false;
+
+		//If the king or associated rook have already moved, it can't castle.
 		if (!castling[turn][kingSide ? 1 : 0]) return false;
 
+		//If the piece on the side is not a rook, it can't castle.
 		final int rookPos = ROOK_POSITIONS[color][kingSide ? 1 : 0];
 		if (!getPiece(rookPos).isRook()) return false;
+		
+		//There must be a clear path between the king and rook.
+		if (!clearPath(getKingPos(color), rookPos)) return false;
 
-		final int distance = Math.abs(rookPos - KING_POSITIONS[color]);
-		for (int i = 1; i < distance; i++) {
-			if (!getPiece(kingSide ? KING_POSITIONS[color] + i : KING_POSITIONS[color] - i).isEmpty()) return false;
-		}
-
-		for (int i = 1; i < 3; i++) {
-			if (isAttacked(kingSide ? KING_POSITIONS[color] + i : KING_POSITIONS[color] - i, color)) return false;
+		//Each square must not be attacked, except on the queenside with square next to the rook.
+		for (int distance = 1; distance < 3; distance++) {
+			if (isAttacked(kingSide ? getKingPos(color) + distance : getKingPos(color) - distance, color)) return false;
 		}
 
 		return true;
 	}
-
-	public boolean[] getCastlingPotential(int turn) {
-		return castling[turn];
-	}
 	
-	public int numAttacks(int pos, int color) {
-		return attacks[next(color)][pos].size();
-	}
-
-	public int getKingPos(int color) {
-		return kingPos[color];
-	}
-	
-	public static int next(int currTurn) {
-		return (currTurn + 1) % 2;
-	}
-
-	public int getEnPassant() {
-		return enPassant;
-	}
-
-	public int getTurn() {
-		return turn;
-	}
-
-	public ChessPiece getPiece(int pos) {
-		return board[pos];
-	}
-
-	private ChessPiece kingAttacker = null;
-	public ChessPiece getKingAttacker(int color) {
-		if (kingAttacker == null) {
-			for (final ChessPiece piece : getAttackers(board[kingPos[color]])) kingAttacker = piece;
-		}
-		return kingAttacker;
-	}
-	
-	public PieceSet getPieces(int color) {
-		return pieces[color];
-	}
-
-	public PieceSet getAttackers(ChessPiece piece) {
-		return attacks[next(piece.color)][piece.getPos()];
-	}
-
-	public PieceSet getAttacks(int pos, int color)  {
-		return attacks[color][pos];
-	}
-
-	public Computer getComputer() {
-		return new Computer(this);
-	}
-
-	public BoardStorage copyData() {
-		return new BoardStorage(getEnPassant(), halfMove, getCastlingPotential(getTurn()));
-	}
-	
+	/**
+	 * Debugging tool to display the attacks of each piece, checks for negative attacks.
+	 */
 	public void displayAttacks() {
 		boolean valid = true;
 		for (int color = 0; color < 2; color++) {
@@ -859,117 +1013,5 @@ public class ChessBoard {
 		System.out.println(isChecked(turn));
 		System.out.println(getFenString());
 		if (!valid) System.out.println("ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR");
-	}
-
-	public static int getDistFromEdge(int direction, int pos) {
-		switch (direction) {
-			case(9): return distFromEdge[pos][5];
-			case(-9): return distFromEdge[pos][4];
-			case(7): return distFromEdge[pos][7];
-			case(-7): return distFromEdge[pos][6];
-			case(8): return distFromEdge[pos][1];
-			case(-8): return distFromEdge[pos][0];
-			case(1): return distFromEdge[pos][3];
-			case(-1): return distFromEdge[pos][2];
-			default:
-				new Exception("Invalid direction");
-				return -1;
-		} 
-	}
-
-	public static int getPawnDirection(int color) {
-		return color == WHITE ? -8 : 8;
-	}
-
-	public static int getDirection(int startingPos, int endPos) {
-		return onDiagonal(startingPos, endPos) ? getDiagonalDirection(startingPos, endPos) : getHorizontalDirection(startingPos, endPos);
-	}
-
-	public static int getDiagonalDirection(int startingPos, int endPos) {
-		int direction = Math.abs(startingPos - endPos) % 7 == 0 ? 7 : 9;
-		if (startingPos - endPos > 0) direction *= -1;
-		return direction;
-	}
-
-	public static int getHorizontalDirection(int startingPos, int endPos) {
-		int direction = onColumn(startingPos, endPos) ? 8 : 1;
-		if (startingPos - endPos > 0) direction *= -1;
-		return direction;
-	}
-
-	public static boolean onPawn(ChessPiece pawn, int moveSquare) {
-		final int offset = moveSquare - pawn.getPos();
-		final int direction = (pawn.color == WHITE) ? -1 : 1;
-		if (offset == 8 * direction || (getRow(pawn.getPos()) == PAWN_STARTS[pawn.color] && offset == 16 * direction)) return true;
-		if (!onDiagonal(pawn.getPos(), moveSquare)) return false;
-		return (offset == 7 * direction || offset == 9 * direction);
-	}
-	
-	public static boolean blocksLine(int attacker, int target, int defender) {
-		return onSameLine(attacker, target, defender) && getDistance(defender, target) < getDistance(attacker, target) &&
-				getDistance(defender, attacker) < getDistance (target, attacker);
-	}
-	
-	public static boolean onSameLine(int pos1, int pos2, int pos3) {
-		return (onColumn(pos1, pos2) && onColumn(pos1, pos3)) || (onRow(pos1, pos2) && onRow(pos1, pos3));
-	}
-
-	public static boolean hasPawnMoved(int pos, int color) {
-		return getRow(pos) != PAWN_STARTS[color];
-	}
-	
-	public static boolean onLine(int pos1, int pos2) {
-		return onRow(pos1, pos2) || onColumn(pos1, pos2);
-	}
-	
-	public static boolean onL(int pos1, int pos2) {
-		final int distanceVert = getDistanceVert(pos1, pos2);
-		final int distanceHor = getDistanceHor(pos1, pos2);
-		return (distanceVert == 1 && distanceHor == 2) || (distanceVert == 2 && distanceHor == 1);
-	}
-	
-	public static boolean blocksDiagonal(int attacker, int target, int defender) {
-		return onSameDiagonal(attacker, target, defender) && getDistance(defender, target) < getDistance(attacker, target) &&
-				getDistance(defender, attacker) < getDistance (target, attacker);
-	}
-	
-	public static boolean onSameDiagonal(int pos1, int pos2, int pos3) {
-		return onDiagonal(pos1, pos2) && onDiagonal(pos2, pos3) && onDiagonal(pos1, pos3);
-	}
-	
-	public static boolean onDiagonal(int pos1, int pos2) {
-		return getDistanceVert(pos1, pos2) == getDistanceHor(pos1, pos2);
-	}
-	
-	public static boolean onColumn(int pos1, int pos2) {
-		return getColumn(pos1) == getColumn(pos2);
-	}
-	
-	public static boolean onRow(int pos1, int pos2) {
-		return getRow(pos1) == getRow(pos2);
-	}
-	
-	public static boolean onBoard(int pos) {
-		return (pos >= 0 && pos <= 63);
-	}
-	
-	public static int getDistance(int pos1, int pos2) {
-		return getDistanceHor(pos1, pos2) + getDistanceVert(pos1, pos2);
-	}
-	
-	public static int getDistanceHor(int pos1, int pos2) {
-		return Math.abs(getColumn(pos1) - getColumn(pos2));
-	}
-	
-	public static int getDistanceVert(int pos1, int pos2) {
-		return Math.abs(getRow(pos1) - getRow(pos2));
-	}
-	
-	public static int getRow(int pos) {
-		return pos / 8;
-	}
-	
-	public static int getColumn(int pos) {
-		return pos % 8;
 	}
 }

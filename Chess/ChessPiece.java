@@ -3,12 +3,14 @@ package Chess;
 import java.util.ArrayList;
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PieceConstants.*;
-import static Chess.ChessBoard.*;
+import static Chess.BoardUtil.*;
 
 /**
  * Class representing an individual chess piece.
  */
 public class ChessPiece {
+	private static final ChessPiece emptySquare = new ChessPiece(EMPTY, EMPTY, EMPTY, null, EMPTY);
+
 	private byte type;
 	private int pos;
 	private boolean updatingCopy;
@@ -79,11 +81,11 @@ public class ChessPiece {
 			final int newPos = pos + direction;
 
 			board.modifyAttacks(this, newPos, remove);
-			if (!remove && board.getPiece(newPos).color == ChessBoard.next(color)) movesCopy.add(newPos);
+			if (!remove && board.getPiece(newPos).color == next(color)) movesCopy.add(newPos);
 		}
 
 		//Update the pawns move copy with the squares in front of it.
-		final int direction = ChessBoard.getPawnDirection(color);
+		final int direction = getPawnDirection(color);
 		if (!remove && board.getPiece(pos + direction).isEmpty()) {
 			movesCopy.add(pos + direction);
 			if (getRow(pos) == PAWN_STARTS[color]) {
@@ -322,7 +324,7 @@ public class ChessPiece {
 		if (board.getEnPassant() != EMPTY) {
 			final int enPassantPos = board.getEnPassant();
 			if (onRow(enPassantPos, pos) && Math.abs(enPassantPos - pos) == 1) {
-				final int newPos = enPassantPos + ChessBoard.getPawnDirection(color);
+				final int newPos = enPassantPos + getPawnDirection(color);
 				addMove(moves, new Move(pos, newPos, true), attacksOnly);
 			}
 		}
@@ -334,7 +336,7 @@ public class ChessPiece {
 		}
 		
 		//Move pawns forward.
-		final int direction = ChessBoard.getPawnDirection(color);
+		final int direction = getPawnDirection(color);
 		if (board.getPiece(pos + direction).isEmpty()) {
 			addMove(moves, new Move(pos, pos + direction, false), attacksOnly);
 			if (!hasPawnMoved(pos, color)) {
@@ -346,7 +348,7 @@ public class ChessPiece {
 		for (int i = 0; i < 2; i++) {
 			if (getDistFromEdge(PAWN_DIAGONALS[color][i], pos) < 1) continue;	// Checks if the pawn is at the edge of the board
 			final int newPos = pos + PAWN_DIAGONALS[color][i];
-			if (board.getPiece(newPos).color == ChessBoard.next(color)) addMove(moves, new Move(pos, newPos, false), attacksOnly);
+			if (board.getPiece(newPos).color == next(color)) addMove(moves, new Move(pos, newPos, false), attacksOnly);
 		}
 	}
 
@@ -379,17 +381,17 @@ public class ChessPiece {
 	 */
 	private void copyPawnMovesPinned(ArrayList<Move> moves, boolean attacksOnly) {
 		//Runs if the pinning piece piece is on the same row.
-		if (ChessBoard.onRow(pinPiece.pos, pos)) {
+		if (onRow(pinPiece.pos, pos)) {
 			//The pawn has no legal moves in this case.
 			return;
 		}
 
 		//Runs if the pinning piece piece is on the same column.
-		if (ChessBoard.onColumn(pinPiece.pos, pos)) {
+		if (onColumn(pinPiece.pos, pos)) {
 			if (attacksOnly) return;
 			for (final Integer finish : movesCopy) {
 				ChessGame.copyCount ++;
-				if (ChessBoard.onColumn(pos, finish)) moves.add(new Move(pos, finish));
+				if (onColumn(pos, finish)) moves.add(new Move(pos, finish));
 			}
 			return;
 		}
@@ -540,7 +542,7 @@ public class ChessPiece {
 
 		if (updatingCopy && !move.SPECIAL) movesCopy.add(move.finish);		//Fill copy with moves to be reused later.
 
-		if (attacksOnly && board.getPiece(move.finish).isEmpty() && !board.isPassant(move)) return;		//Checks for attacks only.
+		if (attacksOnly && board.getPiece(move.finish).isEmpty() && !board.isEnPassant(move)) return;		//Checks for attacks only.
 
 		//Adds the move if it is legal.
 		if (!CHECKS || isLegalMove(move)) {
@@ -609,9 +611,9 @@ public class ChessPiece {
 	 */
 	private boolean stopsCheck(Move move) {
 		final int king = board.getKingPos(color);
-		final ChessPiece attacker = board.getKingAttacker(color);
+		final ChessPiece attacker = board.getKingAttacker();
 		
-		if (board.getEnPassant() == attacker.pos && board.isPassant(move)) return true;	//Pawn captures enPassant to remove attacker.
+		if (board.getEnPassant() == attacker.pos && board.isEnPassant(move)) return true;	//Pawn captures enPassant to remove attacker.
 
 		if (attacker.isPawn() || attacker.isKnight()) return move.finish == attacker.pos;	//If the king is attacked by a knight or pawn, they must be captured.
 
@@ -634,11 +636,11 @@ public class ChessPiece {
 		final int king = board.getKingPos(color);
 
 		//Runs if the move is enPassant; if the pawn is pinned then the enPassant doesn't matter and use normal test case.
-		if (pinPiece.isEmpty() && board.isPassant(move)) {
+		if (pinPiece.isEmpty() && board.isEnPassant(move)) {
 			final int enPassant = board.getEnPassant();
 			//Check if the enPassant pawn potentially blocks an attack on the king.
 			if ((onDiagonal(king, enPassant) || onLine(king, enPassant))) {
-				final PieceSet attackers = board.getAttacks(enPassant, ChessBoard.next(color));
+				final PieceSet attackers = board.getAttackers(enPassant, color);
 				//Iterate over all pieces attacking the enPassant pawn.
 				for (final ChessPiece piece : attackers) {
 					if (piece.isPawn() || piece.isKnight() || piece.isKing()) continue;
@@ -658,7 +660,7 @@ public class ChessPiece {
 			}
 			//Check if a rook or queen blocks enPassant move.
 			if (onLine(king, move.start)) {
-				final PieceSet attackers = board.getAttacks(move.start, ChessBoard.next(color));
+				final PieceSet attackers = board.getAttackers(move.start, color);
 				for (final ChessPiece piece : attackers) {
 					if (piece.isPawn() || piece.isKnight() || piece.isBishop() || piece.isKing()) continue;
 
@@ -846,6 +848,6 @@ public class ChessPiece {
 	 * @return Empty square.
 	 */
 	public static ChessPiece empty() {
-		return new ChessPiece(EMPTY, EMPTY, EMPTY, null, EMPTY);
+		return emptySquare;
 	}
 }
