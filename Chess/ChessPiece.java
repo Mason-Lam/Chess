@@ -13,7 +13,7 @@ public class ChessPiece {
 	private int pos;
 	private boolean updatingCopy;
 	private ChessPiece pinPiece;
-	private ArrayList<Integer> movesCopy;
+	public ArrayList<Integer> movesCopy;
 	
 	public final byte color;
 	public final int pieceID;

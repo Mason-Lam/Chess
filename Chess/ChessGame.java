@@ -56,14 +56,19 @@ public class ChessGame {
 		//rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
 		reset();
 		long prevTime = System.currentTimeMillis();
-		Tests.runTests(); //5800, 8315, 3200
-		// Tests.test24.runTest();
+		// Tests.runTests(); //5800, 8315, 3200
+		// Tests.test8.runTest();
 		System.out.println(System.currentTimeMillis() - prevTime);
 
 		display();	//12582851
 
 		// Tests.test16.runTest();
 		board = new ChessBoard();	//Creates a new ChessBoard object
+
+		// BoardStorage store = board.copyData();
+		// board.makeMove(new Move(12, 19, false));
+		// board.undoMove(new Move(12, 19, false), ChessPiece.empty(), store);
+		// board.makeMove(new Move(12, 26, false));
 
 		reset();
 		computer = board.getComputer();

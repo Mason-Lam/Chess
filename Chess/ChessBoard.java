@@ -326,6 +326,8 @@ public class ChessBoard {
 		updatePosition(movingPiece, move.finish, false);		//Move the moving piece to the new position.
 		resetPieces(move, isAttack, false);		//Reset the move copies of pieces affected by this new position.
 
+		pawnReset(move);
+
 		if (promotingPawn == EMPTY) movingPiece.pieceAttacks(false);		//Update the squares the moving piece attacks in its new position.
 		if (castle != EMPTY) board[castle].pieceAttacks(false);	//Update the squares the castled rook attacks in its new position.
 
@@ -399,6 +401,8 @@ public class ChessBoard {
 
 		//Finnicky thing happens when you undo enPassant before calling softAttack on pieces.
 		if (!capturedPiece.isEmpty() && move.SPECIAL) updatePosition(capturedPiece, capturedPiece.getPos(), false);
+
+		pawnReset(move.invert());
 		
 		movingPiece.pieceAttacks(false);		//Update the squares the moving piece attacks in its new position.
 
@@ -508,10 +512,10 @@ public class ChessBoard {
 
 		int[] modifiedSquares = isPassant(move) ? new int[] {move.start, move.finish, enPassant} : new int[] {move.start, move.finish};
 		//Check each square that the move affects.
-		for (int index = 0; index < modifiedSquares.length; index ++) {
+		for (int movePart = 0; movePart < modifiedSquares.length; movePart ++) {
 
 			//Go through black and white pieces potentially affected.
-			final int pos = modifiedSquares[index];
+			final int pos = modifiedSquares[movePart];
 			for (int color = 0; color < 2; color++) {
 
 				//Check each piece attacking the square.
@@ -520,90 +524,153 @@ public class ChessBoard {
 					long prevTime2 = System.currentTimeMillis();
 
 					//Update straight line and diagonal attackers.
-					piece.softAttack(pos, index, isAttack, undoMove);
+					piece.softAttack(pos, movePart, isAttack, undoMove);
 
 					ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime2;
 
 					//Reset the moves copy in pieces affected by the move.
-					if (!isCastle) pieceReset(piece, index, pos, isAttack, undoMove);
+					if (!isCastle) pieceReset(piece, pos, movePart, isAttack, undoMove);
 				}
-
-				//Remove pawn moves affected by the piece moving.
-				if (!isCastle) pawnReset(pos, color);
 			}
 		}
 		ChessGame.timePieceUpdate += System.currentTimeMillis() - prevTime;
 	}
 
 	/**
-	 * 
-	 * @param piece
-	 * @param movePart
-	 * @param square
-	 * @param isAttack
-	 * @param undoMove
+	 * Resets a piece's move copy list based on a move made.
+	 * @param piece The chess piece being updated, prereq is that it's currently attacking the square.
+	 * @param square Position of the modified square; starting position or end position of a move.
+	 * @param movePart Integer representing if the square paramater is the starting position or end position of the move.
+	 * @param isAttack If the move resulted in a capture of another piece.
+	 * @param undoMove Whether or not the move is being undone.
 	 */
-	private void pieceReset(ChessPiece piece, int movePart, int square, boolean isAttack, boolean undoMove) {
+	private void pieceReset(ChessPiece piece, int square, int movePart, boolean isAttack, boolean undoMove) {
+		//Comments made from white's perspective
 		switch (piece.getType()) {
 			case PAWN:
 				if (movePart == EN_PASSANT) {
-					if (piece.color == turn) {
-						piece.resetMoveCopy();
+					/**
+					 * Square goes from black to empty (normal move) or empty to black (undo move),
+					 * only white pawn's change either attacking another the black piece or losing a capture possibility.
+					*/
+					if (piece.color == turn) piece.updateCopy(!undoMove, square);
+					break;
+				}
+				if (movePart == START) {
+					
+					/**
+					 * Square goes from white to black, covers the case where it's an capture and undo move.
+					 * Black pawns will lose their attack and white pawns will be able to attack the square.
+					 */
+					if (undoMove && isAttack) {
+						piece.updateCopy(piece.color != turn, square);
+						break;
 					}
+					/**
+					 * Square goes from white to empty for both normal and undo moves,
+					 * black pawns will then no longer be able to attack the square.
+					 */
+					if (piece.color != turn) piece.updateCopy(true, square);
 					break;
 				}
-				if (isAttack && ((movePart == START && undoMove) || (movePart == END && !undoMove))) {
-					piece.resetMoveCopy();
-					break;
-				}
+				if (movePart == END) {
+					/**
+					 * Square goes from empty to white for undoing a move or a non capturing normal move,
+					 * black pawns will then be able to target the square.
+					 */
+					if (undoMove || !isAttack) {
+						if (piece.color != turn) piece.updateCopy(false, square);
+						break;
+					}
 
-				if (piece.color != turn) {
-					piece.resetMoveCopy();
+					/**
+					 * Square goes from black to white for a capture normal move,
+					 * white pawns will no longer be able to attack the square, but black pawns will.
+					 */
+					piece.updateCopy(piece.color == turn, square);
 				}
 				break;
 			case KNIGHT:
 			case KING:
-				if (movePart == 2) {
+				if (movePart == EN_PASSANT) {
+					/**
+					 * Square goes from black to empty (normal move) or empty to black (undo move),
+					 * white pieces can still move to the square,
+					 * black pieces will gain an attack when the move is normal and lose an attack during an undo move.
+					 */
 					if (piece.color != turn) piece.updateCopy(undoMove, square);
-					//undoMove: empty to black; black to empty
-					break;
-				}
-				if (isAttack && ((movePart == 0 && undoMove) || (movePart == 1 && !undoMove))) {
-					final boolean remove = undoMove ? piece.color != turn : piece.color == turn;
-					//undoMove: white to black; black to white
-					piece.updateCopy(remove, square);
 					break;
 				}
 
 				/**
-				 * undoMove:
-				 *   index == 0: White to empty
-				 *   index == 1: empty to white
-				 * !undoMove:
-				 * 	 index == 0: White to empty
-				 *   index == 1: empty to white
+				 * Square goes from black to white or white to black.
 				 */
-				if (piece.color == turn) piece.updateCopy(movePart == 1, square);
+				if (isAttack && ((movePart == START && undoMove) || (movePart == END && !undoMove))) {
+					/**
+					 * If the square goes from black to white (normal move), white pieces lose a move and black pieces gain one.
+					 * If the square goes from white to black (undo move) black pieces lose a move and white pieces gain one.
+					 */
+					piece.updateCopy(undoMove ? piece.color != turn : piece.color == turn, square);
+					break;
+				}
+
+				/**
+				 * Square goes from empty to white or white to empty, black pieces do nothing,
+				 * white pieces will lose a move if the square goes from empty to white (END),
+				 * white pieces will gain a move if the square goes from white to empty (START).
+				 */
+				if (piece.color == turn) piece.updateCopy(movePart == END, square);
 				break;
 			default:
+				//Slidy pieces.
 				piece.resetMoveCopy();
 				break;
 		}
 	}
 
-	//Meh
-	private void pawnReset(int square, int color) {
-		final int direction = color == WHITE ? 8 : - 8;
-		final int size = Math.abs(getRow(square) - PAWN_STARTS[color]) == 2 ? 3 : 2;
-		for (int i = 1; i < size; i++) {
-			final int newPos = square + direction * i;
-			if (!onBoard(newPos)) return;
-			final ChessPiece piece = board[newPos];
-			if (piece.isPawn()) {
-				piece.resetMoveCopy();
+	/**
+	 * Removes or adds straight line moves to a pawn's move copy based on a move made.
+	 * @param move The move being made, make sure it is uninverted when undoing a move.
+	 */
+	private void pawnReset(Move move) {
+		final int[] squares = isPassant(move) ? new int[] {move.start, move.finish, enPassant} : new int[] {move.start, move.finish};
+
+		//Update both black and white pawns.
+		for (int color = 0; color < 2; color++) {
+			final int direction = getPawnDirection(color);
+
+			//Check every square involved in the move made.
+			for (final int pos : squares) {
+				final boolean isEmpty = board[pos].isEmpty();		//Checks if the square is empty, if so the pawn can make the move forward.
+				
+				//Go one square ahead of the involved square.
+				final int oneSquareAhead = pos - direction;
+				if (!onBoard(oneSquareAhead)) continue;
+				final ChessPiece pieceOneSquareAhead = board[oneSquareAhead];
+
+				//Check if it's a pawn that would be influneced by the move.
+				if (pieceOneSquareAhead.isPawn() && pieceOneSquareAhead.color == color) {
+					pieceOneSquareAhead.updateCopy(!isEmpty, pos);
+					//Check for double move forward.
+					if (getRow(oneSquareAhead) == PAWN_STARTS[color]) {
+						//Check the square behind the involved square.
+						final int oneSquareBehind = pos + direction;
+						if (board[oneSquareBehind].isEmpty()) pieceOneSquareAhead.updateCopy(!isEmpty, oneSquareBehind);
+					}
+					continue;
+				}
+				else if (!pieceOneSquareAhead.isEmpty()) continue;
+
+				//Go two squares ahead if the first is empty.
+				final int twoSquaresAhead = oneSquareAhead - direction;
+				if (!onBoard(twoSquaresAhead)) continue;
+				final ChessPiece pieceTwoSquaresAhead = board[twoSquaresAhead];
+
+				//Check if it's a pawn that would be influenced by the move.
+				if (pieceTwoSquaresAhead.isPawn() && pieceTwoSquaresAhead.color == color && getRow(twoSquaresAhead) == PAWN_STARTS[color]) {
+					pieceTwoSquaresAhead.updateCopy(!isEmpty, pos);
+				}
 			}
-			else if (piece.isEmpty()) continue;
-			return;
 		}
 	}
 
