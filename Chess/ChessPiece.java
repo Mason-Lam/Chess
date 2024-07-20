@@ -763,71 +763,71 @@ public class ChessPiece {
 	
 	/**
 	 * Checks whether or not a square is empty.
-	 * @return Whether or not a square is empty.
+	 * @return True if the square is empty, false otherwise.
 	 */
 	public boolean isEmpty() {
 		return type == EMPTY;
 	}
 
 	/**
-	 * Checks whether or not a square is a pawn.
-	 * @return Whether or not a square is a pawn.
+	 * Checks whether or not a piece is a pawn.
+	 * @return True if the piece is a pawn, false otherwise.
 	 */
 	public boolean isPawn() {
 		return type == PAWN;
 	}
 
 	/**
-	 * Checks whether or not a square is a knight.
-	 * @return Whether or not a square is a knight.
+	 * Checks whether or not a piece is a knight.
+	 * @return True if the piece is a knight, false otherwise.
 	 */
 	public boolean isKnight() {
 		return type == KNIGHT;
 	}
 
 	/**
-	 * Checks whether or not a square is a bishop.
-	 * @return Whether or not a square is a bishop.
+	 * Checks whether or not a piece is a bishop.
+	 * @return True if the piece is a bishop, false otherwise.
 	 */
 	public boolean isBishop() {
 		return type == BISHOP;
 	}
 
 	/**
-	 * Checks whether or not a square is a rook.
-	 * @return Whether or not a square is a rook.
+	 * Checks whether or not a piece is a rook.
+	 * @return True if the piece is a rook, false otherwise.
 	 */
 	public boolean isRook() {
 		return type == ROOK;
 	}
 
 	/**
-	 * Checks whether or not a square is a queen.
-	 * @return Whether or not a square is a queen.
+	 * Checks whether or not a piece is a queen.
+	 * @return True if the piece is a queen, false otherwise.
 	 */
 	public boolean isQueen() {
 		return type == QUEEN;
 	}
 
 	/**
-	 * Checks whether or not a square is a king.
-	 * @return Whether or not a square is a king.
+	 * Checks whether or not a piece is a king.
+	 * @return True if the piece is a king, false otherwise.
 	 */
 	public boolean isKing() {
 		return type == KING;
 	}
 
 	/**
-	 * Checks whether or not a square is a diagonal attacker.
-	 * @return Whether or not a square is a diagonal attacker.
+	 * Checks whether or not a piece is a diagonal attacker.
+	 * @return True if the piece is a diagonal attacker, false otherwise.
 	 */
 	public boolean isDiagonalAttacker() {
 		return (isBishop() || isQueen());
 	}
 
 	/**
-	 * Checks whether or not a square is a straight line attacker.
-	 * @return Whether or not a square is a straight line attacker.
+	 * Checks whether or not a piece is a straight line attacker.
+	 * @return True if the piece is a straight line attacker, false otherwise.
 	 */
 	public boolean isLineAttacker() {
 		return (isRook() || isQueen());

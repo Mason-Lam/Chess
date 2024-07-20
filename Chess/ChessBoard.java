@@ -13,11 +13,20 @@ import static Chess.BoardUtil.*;
  */
 public class ChessBoard {
 
+	/**
+	 * Class to store data that's lost when a move is made: halfmove, enPassant, and castling.
+	 */
 	public static class BoardStorage {
 		public final int enPassant;
 		public final int halfMove;
 		private final boolean[] castling;
 
+		/**
+		 * Creates a new BoardStorage object.
+		 * @param enPassant The position of the enPassant pawn.
+		 * @param halfMove The halfmove count.
+		 * @param castling The castling ability of both sides.
+		 */
 		public BoardStorage(int enPassant, int halfMove, boolean[] castling) {
 			this.enPassant = enPassant;
 			this.halfMove = halfMove;
@@ -26,6 +35,10 @@ public class ChessBoard {
 			this.castling[1] = castling[1];
 		}
 
+		/**
+		 * Gets the castling ability of the color, copies it to not modify the original.
+		 * @return A boolean array storing the ability to castle.
+		 */
 		public boolean[] getCastling() {
 			final boolean[] castle = new boolean[2];
 			castle[0] = castling[0];
@@ -283,7 +296,7 @@ public class ChessBoard {
 				updatePosition(board[enPassant], enPassant, true);	//Remove the enPassant pawn from the board.
 			}
 			//Pawn moves two squares forward.
-			if (getDistanceVert(move.start, move.finish) == 2) {
+			if (getRowDistance(move.start, move.finish) == 2) {
 				newEnPassant = move.finish;
 			}
 			//Pawn is promoting.
@@ -779,9 +792,9 @@ public class ChessBoard {
 	}
 
 	/**
-	 * Returns whether or not a king can castle.
+	 * Returns whether or not a king can castle in the future.
 	 * @param color The color of the king.
-	 * @return Whether or not a king can castle, covers queenside and kingside.
+	 * @return True if the king can castle in the future, false if it can't.
 	 */
 	public boolean[] getCastlingPotential(int color) {
 		return castling[color];
@@ -799,7 +812,7 @@ public class ChessBoard {
 	/**
 	 * Checks if a move castles the king.
 	 * @param move The move being played.
-	 * @return Whether or not the move is a castle.
+	 * @return True if the move is a castle, false if it isn't.
 	 */
 	public boolean isCastle(Move move) {
 		return move.SPECIAL && (move.contains(getKingPos(turn)));
@@ -808,7 +821,7 @@ public class ChessBoard {
 	/**
 	 * Checks if a move is a capture through enPassant.
 	 * @param move The move being played.
-	 * @return Whether or not the move is a capture through enPassant.
+	 * @return True if the move is a capture through enPassant, false if it isn't.
 	 */
 	public boolean isEnPassant(Move move) {
 		return (board[move.start].isPawn() || board[move.finish].isPawn()) && move.SPECIAL;
@@ -817,7 +830,7 @@ public class ChessBoard {
 	/**
 	 * Checks if a king is in double check; two pieces attacking.
 	 * @param color The color of the king being attacked.
-	 * @return Whether or not the king is in double check.
+	 * @return True if the king is in double check, false if it isn't.
 	 */
 	public boolean doubleCheck(int color) {
 		return numAttacks(kingPos[color], color) >= 2;
@@ -826,7 +839,7 @@ public class ChessBoard {
 	/**
 	 * Checks if a king is in check; at least one piece attacking.
 	 * @param color The color of the king being attacked.
-	 * @return Whether or not the king is check.
+	 * @return True if the king is in check, false if it isn't.
 	 */
 	public boolean isChecked(int color) {
 		return isAttacked(board[kingPos[color]]);
@@ -836,7 +849,7 @@ public class ChessBoard {
 	 * Checks if a square is attacked; at least one piece attacking.
 	 * @param pos The position of the square being attacked.
 	 * @param color The color of pieces that are attacking the square.
-	 * @return Whether or not the square is attacked.
+	 * @return True if the square is attacked, false if it isn't.
 	 */
 	public boolean isAttacked(int pos, int color) {
 		return numAttacks(pos,color) >= 1;
@@ -845,7 +858,7 @@ public class ChessBoard {
 	/**
 	 * Checks if a piece is attacked; at least one piece attacking.
 	 * @param piece The ChessPiece that is being attacked.
-	 * @return Whether or not the piece is attacked.
+	 * @return True if the piece is attacked, false if it isn't.
 	 */
 	public boolean isAttacked(ChessPiece piece) {
 		return numAttacks(piece.getPos(), piece.color) >= 1;
@@ -882,7 +895,7 @@ public class ChessBoard {
 
 	/**
 	 * Checks if a promotion is ongoing.
-	 * @return Whether or not a promotion is happenning.
+	 * @return True if a promotion is happening, false if it isn't.
 	 */
 	public boolean is_promote() {
 		return promotingPawn != EMPTY;
@@ -953,7 +966,7 @@ public class ChessBoard {
 	 * Returns whether a clear path exists between two points meaning all empty spaces in between.
 	 * @param pos1 The first position.
 	 * @param pos2 The second position.
-	 * @return Whether a clear path exists between the two points.
+	 * @return True if a clear path exists, false if it doesn't.
 	 */
 	public boolean clearPath(int pos1, int pos2) {
 		final int direction = getDirection(pos1, pos2);
@@ -969,7 +982,7 @@ public class ChessBoard {
 	 * Returns whether or not the king can castle queenside or kingside.
 	 * @param kingSide Whether or not to check for kingside or queenside.
 	 * @param color The color of the king.
-	 * @return Whether or not the king can castle.
+	 * @return True if the king can castle, false if it can't.
 	 */
 	public boolean canCastle(boolean kingSide, int color) {
 		//If the king is checked, it can't castle.
