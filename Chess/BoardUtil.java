@@ -100,10 +100,16 @@ public class BoardUtil {
 	 * Returns the direction to travel to get from one point to another.
 	 * @param startingPos The starting point. 
 	 * @param endPos The point to travel towards.
-	 * @return The direction to travel.
+	 * @return The direction to travel, returns 0 if there is none.
 	 */
 	public static int getDirection(int startingPos, int endPos) {
-		return onDiagonal(startingPos, endPos) ? getDiagonalDirection(startingPos, endPos) : getHorizontalDirection(startingPos, endPos);
+		if (onDiagonal(startingPos, endPos)) {
+			return getDiagonalDirection(startingPos, endPos);
+		}
+		if (onLine(startingPos, endPos)) {
+			return getHorizontalDirection(startingPos, endPos);
+		}
+		return 0;
 	}
 
 	/**

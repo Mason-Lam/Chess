@@ -64,15 +64,18 @@ public class PieceSet implements Iterable<ChessPiece> {
         private int currentIndex;
         private int cursor;
 
+        private final int size;
+
         public PieceMapIterator(PieceSet map) {
             this.map = map;
             currentIndex = 0;
             cursor = 0;
+            size = map.size();
         }
 
         @Override
         public boolean hasNext() {
-            return currentIndex < map.size();
+            return currentIndex < size;
         }
 
         @Override

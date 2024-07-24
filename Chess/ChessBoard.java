@@ -515,7 +515,39 @@ public class ChessBoard {
 	 */
 	private void resetPieces(Move move, boolean isAttack, boolean undoMove) {
 		final long prevTime = System.currentTimeMillis();
+
 		final boolean isCastle = isCastle(move);
+
+		final int[] modifiedSquares = isEnPassant(move) ? new int[] {move.start, move.finish, enPassant} : new int[] {move.start, move.finish};
+		//Check each square that the move affects.
+		for (int color = 0; color < 2; color++) {
+			//Go through black and white pieces potentially affected.
+			final PieceSet softAttackPieces = new PieceSet();
+			for (int movePart = 0; movePart < modifiedSquares.length; movePart++) {
+				final int pos = modifiedSquares[movePart];
+				//Check each piece attacking the square.
+				final PieceSet attacks = getAttackers(pos, color);
+				for (final ChessPiece piece : attacks) {
+					long prevTime2 = System.currentTimeMillis();
+
+					boolean updated = false;
+					//Update straight line and diagonal attackers.
+					if (!softAttackPieces.contains(piece)) {
+						updated = piece.softAttack(pos, movePart, move, isAttack, undoMove);
+					}
+					else continue;
+
+					ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime2;
+
+					//Reset the moves copy in pieces affected by the move.
+					if (!isCastle) pieceReset(piece, pos, movePart, isAttack, undoMove);
+
+					if (updated) {
+						softAttackPieces.add(piece);
+					}
+				}
+			}
+		}
 
 		if (isCastle) {
 			//Can't be bothered to handle castling because it happens at max twice in a game.
@@ -527,29 +559,6 @@ public class ChessBoard {
 			}
 		}
 
-		int[] modifiedSquares = isEnPassant(move) ? new int[] {move.start, move.finish, enPassant} : new int[] {move.start, move.finish};
-		//Check each square that the move affects.
-		for (int movePart = 0; movePart < modifiedSquares.length; movePart ++) {
-
-			//Go through black and white pieces potentially affected.
-			final int pos = modifiedSquares[movePart];
-			for (int color = 0; color < 2; color++) {
-
-				//Check each piece attacking the square.
-				final PieceSet attacks = getAttackers(pos, color);
-				for (final ChessPiece piece : attacks) {
-					long prevTime2 = System.currentTimeMillis();
-
-					//Update straight line and diagonal attackers.
-					piece.softAttack(pos, movePart, isAttack, undoMove);
-
-					ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime2;
-
-					//Reset the moves copy in pieces affected by the move.
-					if (!isCastle) pieceReset(piece, pos, movePart, isAttack, undoMove);
-				}
-			}
-		}
 		ChessGame.timePieceUpdate += System.currentTimeMillis() - prevTime;
 	}
 
@@ -771,8 +780,8 @@ public class ChessBoard {
 	 * @param piece The piece being added as an attacker.
 	 * @param pos The square being attacked.
 	 */
-	public void addAttacker(ChessPiece piece, int pos) {
-		attacks[piece.color][pos].add(piece);
+	public boolean addAttacker(ChessPiece piece, int pos) {
+		return attacks[piece.color][pos].add(piece);
 	}
 
 	/**
@@ -780,8 +789,8 @@ public class ChessBoard {
 	 * @param piece The piece being removed as an attacker.
 	 * @param pos The square being attacked.
 	 */
-	public void removeAttacker(ChessPiece piece, int pos) {
-		attacks[piece.color][pos].remove(piece);
+	public boolean removeAttacker(ChessPiece piece, int pos) {
+		return attacks[piece.color][pos].remove(piece);
 	}
 
 	/**
@@ -824,7 +833,7 @@ public class ChessBoard {
 	 * @return True if the move is a capture through enPassant, false if it isn't.
 	 */
 	public boolean isEnPassant(Move move) {
-		return (board[move.start].isPawn() || board[move.finish].isPawn()) && move.SPECIAL;
+		return move.SPECIAL && (board[move.start].isPawn() || board[move.finish].isPawn());
 	}
 	
 	/**

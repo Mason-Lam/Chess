@@ -170,50 +170,113 @@ public class ChessPiece {
 	}
 
 	/**
-	 * Updates the attacks of a bishop, rook, or queen aloong a diagonal or line.
-	 * @param square Position of the modified square; starting position or end position of a move.
-	 * @param movePart Integer representing if the square paramater is the starting position or end position of the move.
-	 * @param isAttack If the move resulted in a capture of another piece.
-	 * @param undoMove Whether or not the move is being undone.
+	 * Update a bishop, rook, or queen's attacks based on a move made, precondition: the piece is attacking a square involved in a move.
+	 * @param square The square that the piece is guaranteed to have been attacking.
+	 * @param movePart What part of the move is the square, START: 0, END: 1, EN_PASSANT: 2.
+	 * @param move The move made.
+	 * @param isAttack True if the move is a capture, false if not.
+	 * @param undoMove True if the move is an undo move, false if a normal move.
+	 * @return True if the piece is fully updated, false if not.
 	 */
-	public void softAttack(int square, int movePart, boolean isAttack, boolean undoMove) {
+	public boolean softAttack(int square, int movePart, Move move, boolean isAttack, boolean undoMove) {
+		//Comment this.
+		if (isPawn() || isKnight() || isKing()) return false;
 
-		if (isPawn() || isKnight() || isKing()) return;
+		final int enPassantDirection = board.isEnPassant(move) ? getDirection(pos, board.getEnPassant()) : 0;
 
-		if (movePart == START) {
-			final int direction = getDirection(pos, square);
+		//Handles the case where a rook or queen is on the same column as the enPassant square.
+		if (enPassantDirection == 8 || enPassantDirection == -8 && isLineAttacker()) {
+			final int enPassant = board.getEnPassant();
+			final boolean enPassantIsCloser = getDistFromEdge(enPassantDirection, enPassant) > getDistFromEdge(enPassantDirection, undoMove ? move.start : move.finish);
+
+			//The enPassant square is closer to the attacking piece than the end square of the move.
+			if (enPassantIsCloser) {
+				//The square goes from empty to filled meaning remove attacks.
+				if (undoMove) removeAttacks(enPassantDirection, enPassant, 1);
+				//The square goes from filled to empty meaning add attacks.
+				else addAttacks(enPassantDirection, enPassant, 1);
+				return true;
+			}
+			//The square goes from empty to filled meaning add attacks.
+			if (undoMove) addAttacks(enPassantDirection, move.start, 1);
+			//The square goes from filled to empty meaning remove attacks.
+			else removeAttacks(enPassantDirection, move.finish, 1);
+			return true;
+		}
+
+		final int startDirection = getDirection(pos, move.start);
+		final int finishDirection = getDirection(pos, move.finish);
+		
+		//Each square is attacked independently of each other.
+		if (startDirection != finishDirection || (startDirection == 0 && finishDirection == 0)) {
+			switch (movePart) {
+				case START:
+					/** 
+					 * If the move is a capture and we're undoing it, then the square will be replaced by the captured piece
+					 * and thus no attacks are added.
+					 * If the move is normal then the starting square will always be empty and attacks must be added. 
+					*/
+					if (!(isAttack && undoMove)) {
+						addAttacks(startDirection, square);
+						return board.isEnPassant(move) && !undoMove;
+					}
+					return false;
+				case END:
+					/**
+					 * If the move is a capture and normal, then the square would've already been occupied and thus no attacks
+					 * need to be removed.
+					 * If the move is an undo or not a capture, then the square was empty and thus attacks will be removed.
+					 */
+					if (!(isAttack && !undoMove)) {
+						removeAttacks(finishDirection, square);
+
+					}
+					return false;
+				case EN_PASSANT:
+					//If undoing the move, the En Passant square is now occupied .
+					if (undoMove) {
+						removeAttacks(enPassantDirection, square);
+					}
+					else {
+						addAttacks(enPassantDirection, square);
+					}
+					return false;
+				default:
+					throw new IllegalArgumentException("Invalid move part: " + movePart);
+			}
+		}
+		
+		/**
+		 * Run when a the start and end of a move are on the same path of attack.
+		 */
+		final int attackDirection = startDirection;
+		final boolean startIsCloser = getDistFromEdge(startDirection, move.start) > getDistFromEdge(startDirection, move.finish);
+		//If the start of the move is closer, then you only have to add attacks.
+		if (startIsCloser) {
 			/** 
 			 * If the move is a capture and we're undoing it, then the square will be replaced by the captured piece
 			 * and thus no attacks are added.
 			 * If the move is normal then the starting square will always be empty and attacks must be added. 
 			*/
-			if (!(isAttack && undoMove)) addAttacks(direction, square);
-			return;
+			if (!(isAttack && undoMove)) {
+				addAttacks(attackDirection, move.start);
+			}
+			return true;
 		}
 
-		if (movePart == END) {
-			final int direction = getDirection(pos, square);
-			/**
-			 * If the move is a capture and normal, then the square would've already been occupied and thus no attacks
-			 * need to be removed.
-			 * If the move is an undo or not a capture, then the square was empty and thus attacks will be removed.
-			 */
-			if (!(isAttack && !undoMove)) removeAttacks(direction, square);
-			return;
+		//If the end of the move is closer, then you only have to remove attacks.
+		final int distance = getDistFromEdge(attackDirection, move.finish) - getDistFromEdge(attackDirection, move.start);
+		/**
+		 * If the move is a capture and normal, then the square would've already been occupied and thus no attacks
+		 * need to be removed.
+		 * If the move is an undo or not a capture, then the square was empty and thus attacks will be removed.
+		 */
+		if (!(isAttack && !undoMove)) {
+			removeAttacks(attackDirection, move.finish, board.isCastle(move) ? 1 : distance);
 		}
-
-		//Runs for the enPassant square.
-		final int direction = getDirection(pos, square);
-
-		//If undoing the move, the En Passant square is now occupied .
-		if (undoMove) {
-			removeAttacks(direction, square);
-		}
-		else {
-			addAttacks(direction, square);
-		}
+		return true;
 	}
-	
+
 	/**
 	 * Adds attacks along a direction until the edge of the board is reached or a piece blocks.
 	 * @param direction Represents the direction to add attacks along.
@@ -241,7 +304,7 @@ public class ChessPiece {
 	private void addAttacks(int direction, int startingPos, int distance) {
 		for (int i = 1; i < distance + 1; i++) {
 			final int newPos = startingPos + direction * i;
-			board.addAttacker(this, newPos);
+			if (!board.addAttacker(this, newPos)) throw new IllegalArgumentException();
 			if (!board.getPiece(newPos).isEmpty()) break;
 		}
 	}
@@ -255,7 +318,7 @@ public class ChessPiece {
 	private void removeAttacks(int direction, int startingPos, int distance) {
 		for (int i = 1; i < distance + 1; i++) {
 			final int newPos = startingPos + direction * i;
-			board.removeAttacker(this, newPos);
+			if (!board.removeAttacker(this, newPos)) throw new IllegalArgumentException();
 			if (!board.getPiece(newPos).isEmpty()) break;
 		}
 	}

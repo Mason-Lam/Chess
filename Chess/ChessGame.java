@@ -68,13 +68,14 @@ public class ChessGame {
 
 		display();	//12582851
 
-		// Tests.test16.runTest();
+		// Tests.test10.runTest();
 		board = new ChessBoard();	//Creates a new ChessBoard object
 
 		// BoardStorage store = board.copyData();
-		// board.makeMove(new Move(12, 19, false));
-		// board.undoMove(new Move(12, 19, false), ChessPiece.empty(), store);
-		// board.makeMove(new Move(12, 26, false));
+		// board.makeMove(new Move(48, 40, false));
+		// board.undoMove(new Move(48, 40, false), ChessPiece.empty(), store);
+		// board.makeMove(new Move(48, 32, false));
+		// board.makeMove(new Move(1, 16, false));
 
 		reset();
 		computer = board.getComputer();
@@ -126,6 +127,7 @@ public class ChessGame {
 		/*ChessGame.upadate_display()-> None
 		 * a function that updates every chess square
 		 * with the correct piece and color*/
+		// board.displayAttacks();
 		String address;		//Stores the location of the correct image
 		final String fen = board.getFenString();
 		int count = 0;
