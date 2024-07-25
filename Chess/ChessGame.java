@@ -53,9 +53,10 @@ public class ChessGame {
 		legal = new ArrayList<Move>(QUEEN);
 		winner = false;
 		click1 = -1;		//sets var as no clicks
+		long prevTime = System.currentTimeMillis();
 		//rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
 		reset();
-		long prevTime = System.currentTimeMillis();
+		prevTime = System.currentTimeMillis();
 		Tests.runTests(); //5800, 8315, 3200
 		System.out.println(System.currentTimeMillis() - prevTime);
 

@@ -551,10 +551,12 @@ public class ChessBoard {
 
 		if (isCastle) {
 			//Can't be bothered to handle castling because it happens at max twice in a game.
+			//Nope u have to fix this.
 			for (int color = 0; color < 2; color ++) {
 				final PieceSet coloredPieces = pieces[color];
 				for (final ChessPiece piece : coloredPieces) {
 					piece.resetMoveCopy();
+					piece.pieceMoves(new ArrayList<Move>(MAX_MOVES[piece.getType()]));
 				}
 			}
 		}

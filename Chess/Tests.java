@@ -20,10 +20,13 @@ public class Tests {
 		}
 		
 		public boolean runTest() {
-			final long prevTime = System.currentTimeMillis();
-			final int totalMoves = computer.totalMoves(depth);
 			System.out.println(fen);
-			System.out.println("Total Possible Moves: " + totalMoves);
+			final long prevTime = System.currentTimeMillis();
+			for (int i = 1; i < depth; i++) {
+				System.out.println("Depth: " + i + ", Total Possible Moves: " + computer.totalMoves(i));
+			}
+			final int totalMoves = computer.totalMoves(depth);
+			System.out.println("Depth: " + depth + ", Total Possible Moves: " + totalMoves);
 			if (totalMoves == nodes) {
 				System.out.println("TEST PASSED");
 			}
