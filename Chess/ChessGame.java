@@ -69,14 +69,22 @@ public class ChessGame {
 
 		display();	//12582851
 
-		// Tests.test10.runTest();
+		// Tests.test15.runTest();
 		board = new ChessBoard();	//Creates a new ChessBoard object
 
 		// BoardStorage store = board.copyData();
-		// board.makeMove(new Move(48, 40, false));
-		// board.undoMove(new Move(48, 40, false), ChessPiece.empty(), store);
-		// board.makeMove(new Move(48, 32, false));
-		// board.makeMove(new Move(1, 16, false));
+		// board.makeMove(new Move(55, 28, false));
+		// board.makeMove(new Move(0, 56, false));
+		// store = board.copyData();
+		// ChessPiece piece = board.getPiece(56);
+		// board.makeMove(new Move(28, 56, false));
+		// board.undoMove(new Move (28, 56), piece, store);
+		// board.makeMove(new Move(60, 52, false));
+		// board.promote((byte) 1);
+		// board.unPromote(2);
+		// board.undoMove(new Move(11, 2, false), piece, store);
+		// board.makeMove(new Move(11, 2, false));
+		// board.promote((byte) 2);
 
 		reset();
 		computer = board.getComputer();
@@ -100,7 +108,7 @@ public class ChessGame {
 		System.out.println(System.currentTimeMillis() - prevTime);
 		display();	//129150836
 
-		// board.displayAttacks();
+		board.displayAttacks();
 		// long prevTime = System.currentTimeMillis();
 		// //Current (3, 33), (4, 145), (5, 1203), (6, 17052)
 		// System.out.println(computer.totalMoves(6)); //Goal: (3, 0), (4, 11), (5, 259), (6, 6502)

@@ -56,7 +56,7 @@ public class Computer {
 
 		for (final Move move : moves) {
 				final ChessPiece capturedPiece = board.isEnPassant(move) ? board.getPiece(board.getEnPassant()) : board.getPiece(move.finish);
-				// final int prevCount = count;
+				final int prevCount = count;
 				board.makeMove(move);
 
 				if (board.is_promote()) {
@@ -69,7 +69,7 @@ public class Computer {
 				else {
 					count += totalMoves(depth - 1);
 				}
-				// if (depth == 2) logMove(move, count - prevCount);
+				if (depth == 1) logMove(move, count - prevCount);
 				board.undoMove(move, capturedPiece, store);
 		}
 		return count;

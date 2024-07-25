@@ -412,12 +412,12 @@ public class ChessBoard {
 		updatePosition(movingPiece, invertedMove.finish, false);			//Move the moving piece to the new position.
 
 		//Add the captured piece back onto the board.
-		if (!capturedPiece.isEmpty() && !move.SPECIAL) updatePosition(capturedPiece, capturedPiece.getPos(), false);
+		// if (!capturedPiece.isEmpty() && !move.SPECIAL) updatePosition(capturedPiece, capturedPiece.getPos(), false);
 
 		resetPieces(invertedMove, isAttack, true);
 
 		//Finnicky thing happens when you undo enPassant before calling softAttack on pieces.
-		if (!capturedPiece.isEmpty() && move.SPECIAL) updatePosition(capturedPiece, capturedPiece.getPos(), false);
+		if (!capturedPiece.isEmpty()) updatePosition(capturedPiece, capturedPiece.getPos(), false);
 
 		pawnReset(move, isAttack);
 		
@@ -530,21 +530,21 @@ public class ChessBoard {
 				for (final ChessPiece piece : attacks) {
 					long prevTime2 = System.currentTimeMillis();
 
-					boolean updated = false;
 					//Update straight line and diagonal attackers.
 					if (!softAttackPieces.contains(piece)) {
-						updated = piece.softAttack(pos, movePart, move, isAttack, undoMove);
+						final boolean updated = piece.softAttack(pos, movePart, move, isAttack, undoMove);
+						if (updated) {
+							softAttackPieces.add(piece);
+							continue;
+						}
 					}
 					else continue;
 
 					ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime2;
 
 					//Reset the moves copy in pieces affected by the move.
-					if (!isCastle) pieceReset(piece, pos, movePart, isAttack, undoMove);
+					if (!isCastle) piece.pieceReset(pos, movePart, isAttack, undoMove);
 
-					if (updated) {
-						softAttackPieces.add(piece);
-					}
 				}
 			}
 		}
@@ -562,98 +562,6 @@ public class ChessBoard {
 		}
 
 		ChessGame.timePieceUpdate += System.currentTimeMillis() - prevTime;
-	}
-
-	/**
-	 * Resets a piece's move copy list based on a move made.
-	 * @param piece The chess piece being updated, prereq is that it's currently attacking the square.
-	 * @param square Position of the modified square; starting position or end position of a move.
-	 * @param movePart Integer representing if the square paramater is the starting position or end position of the move.
-	 * @param isAttack If the move resulted in a capture of another piece.
-	 * @param undoMove Whether or not the move is being undone.
-	 */
-	private void pieceReset(ChessPiece piece, int square, int movePart, boolean isAttack, boolean undoMove) {
-		//Comments made from white's perspective
-		switch (piece.getType()) {
-			case PAWN:
-				if (movePart == EN_PASSANT) {
-					/**
-					 * Square goes from black to empty (normal move) or empty to black (undo move),
-					 * only white pawn's change either attacking another the black piece or losing a capture possibility.
-					*/
-					if (piece.color == turn) piece.updateCopy(!undoMove, square);
-					break;
-				}
-				if (movePart == START) {
-					
-					/**
-					 * Square goes from white to black, covers the case where it's an capture and undo move.
-					 * Black pawns will lose their attack and white pawns will be able to attack the square.
-					 */
-					if (undoMove && isAttack) {
-						piece.updateCopy(piece.color != turn, square);
-						break;
-					}
-					/**
-					 * Square goes from white to empty for both normal and undo moves,
-					 * black pawns will then no longer be able to attack the square.
-					 */
-					if (piece.color != turn) piece.updateCopy(true, square);
-					break;
-				}
-				if (movePart == END) {
-					/**
-					 * Square goes from empty to white for undoing a move or a non capturing normal move,
-					 * black pawns will then be able to target the square.
-					 */
-					if (undoMove || !isAttack) {
-						if (piece.color != turn) piece.updateCopy(false, square);
-						break;
-					}
-
-					/**
-					 * Square goes from black to white for a capture normal move,
-					 * white pawns will no longer be able to attack the square, but black pawns will.
-					 */
-					piece.updateCopy(piece.color == turn, square);
-				}
-				break;
-			case KNIGHT:
-			case KING:
-				if (movePart == EN_PASSANT) {
-					/**
-					 * Square goes from black to empty (normal move) or empty to black (undo move),
-					 * white pieces can still move to the square,
-					 * black pieces will gain an attack when the move is normal and lose an attack during an undo move.
-					 */
-					if (piece.color != turn) piece.updateCopy(undoMove, square);
-					break;
-				}
-
-				/**
-				 * Square goes from black to white or white to black.
-				 */
-				if (isAttack && ((movePart == START && undoMove) || (movePart == END && !undoMove))) {
-					/**
-					 * If the square goes from black to white (normal move), white pieces lose a move and black pieces gain one.
-					 * If the square goes from white to black (undo move) black pieces lose a move and white pieces gain one.
-					 */
-					piece.updateCopy(undoMove ? piece.color != turn : piece.color == turn, square);
-					break;
-				}
-
-				/**
-				 * Square goes from empty to white or white to empty, black pieces do nothing,
-				 * white pieces will lose a move if the square goes from empty to white (END),
-				 * white pieces will gain a move if the square goes from white to empty (START).
-				 */
-				if (piece.color == turn) piece.updateCopy(movePart == END, square);
-				break;
-			default:
-				//Slidy pieces.
-				piece.resetMoveCopy();
-				break;
-		}
 	}
 
 	/**

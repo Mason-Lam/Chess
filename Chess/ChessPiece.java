@@ -126,7 +126,7 @@ public class ChessPiece {
 		// Adds or removes attacks in each direction.
 		for (final int direction : directions) {
 			if (remove) {
-				removeAttacks(direction, pos);
+				removeAttacksSliding(direction);
 				continue;
 			}
 			addAttacksSliding(direction);
@@ -145,6 +145,16 @@ public class ChessPiece {
 			final int newPos = pos + direction * i;
 			board.addAttacker(this, newPos);
 			if (board.getPiece(newPos).color != color) movesCopy.add(newPos);
+
+			if (!board.getPiece(newPos).isEmpty()) break;
+		}
+	}
+
+	private void removeAttacksSliding(int direction) {
+		final int distance = getDistFromEdge(direction, pos);
+		for (int i = 1; i < distance + 1; i++) {
+			final int newPos = pos + direction * i;
+			board.removeAttacker(this, newPos);
 
 			if (!board.getPiece(newPos).isEmpty()) break;
 		}
@@ -218,7 +228,10 @@ public class ChessPiece {
 					*/
 					if (!(isAttack && undoMove)) {
 						addAttacks(startDirection, square);
-						return board.isEnPassant(move) && !undoMove;
+						if (board.isEnPassant(move) && !undoMove) {
+							pieceReset(move.start, START, isAttack, undoMove);
+							return true;
+						}
 					}
 					return false;
 				case END:
@@ -261,6 +274,7 @@ public class ChessPiece {
 			if (!(isAttack && undoMove)) {
 				addAttacks(attackDirection, move.start);
 			}
+			pieceReset(move.start, START, isAttack, undoMove);
 			return true;
 		}
 
@@ -274,7 +288,102 @@ public class ChessPiece {
 		if (!(isAttack && !undoMove)) {
 			removeAttacks(attackDirection, move.finish, board.isCastle(move) ? 1 : distance);
 		}
+		pieceReset(move.finish, END, isAttack, undoMove);
 		return true;
+	}
+
+	/**
+	 * Updates a piece's move copy list based on a move made.
+	 * @param square Position of the modified square; starting position or end position of a move.
+	 * @param movePart Integer representing if the square paramater is the starting position or end position of the move.
+	 * @param isAttack If the move resulted in a capture of another piece.
+	 * @param undoMove Whether or not the move is being undone.
+	 */
+	public void pieceReset(int square, int movePart, boolean isAttack, boolean undoMove) {
+		final int turn = board.getTurn();
+		//Comments made from white's perspective
+		switch (type) {
+			case PAWN:
+				if (movePart == EN_PASSANT) {
+					/**
+					 * Square goes from black to empty (normal move) or empty to black (undo move),
+					 * only white pawn's change either attacking another the black piece or losing a capture possibility.
+					*/
+					if (color == turn) updateCopy(!undoMove, square);
+					break;
+				}
+				if (movePart == START) {
+					
+					/**
+					 * Square goes from white to black, covers the case where it's an capture and undo move.
+					 * Black pawns will lose their attack and white pawns will be able to attack the square.
+					 */
+					if (undoMove && isAttack) {
+						updateCopy(color != turn, square);
+						break;
+					}
+					/**
+					 * Square goes from white to empty for both normal and undo moves,
+					 * black pawns will then no longer be able to attack the square.
+					 */
+					if (color != turn) updateCopy(true, square);
+					break;
+				}
+				if (movePart == END) {
+					/**
+					 * Square goes from empty to white for undoing a move or a non capturing normal move,
+					 * black pawns will then be able to target the square.
+					 */
+					if (undoMove || !isAttack) {
+						if (color != turn) updateCopy(false, square);
+						break;
+					}
+
+					/**
+					 * Square goes from black to white for a capture normal move,
+					 * white pawns will no longer be able to attack the square, but black pawns will.
+					 */
+					updateCopy(color == turn, square);
+				}
+				break;
+			case KNIGHT:
+			case BISHOP:
+			case ROOK:
+			case QUEEN:
+			case KING:
+				if (movePart == EN_PASSANT) {
+					/**
+					 * Square goes from black to empty (normal move) or empty to black (undo move),
+					 * white pieces can still move to the square,
+					 * black pieces will gain an attack when the move is normal and lose an attack during an undo move.
+					 */
+					if (color != turn) updateCopy(undoMove, square);
+					break;
+				}
+
+				/**
+				 * Square goes from black to white or white to black.
+				 */
+				if (isAttack && ((movePart == START && undoMove) || (movePart == END && !undoMove))) {
+					/**
+					 * If the square goes from black to white (normal move), white pieces lose a move and black pieces gain one.
+					 * If the square goes from white to black (undo move) black pieces lose a move and white pieces gain one.
+					 */
+					updateCopy(undoMove ? color != turn : color == turn, square);
+					break;
+				}
+
+				/**
+				 * Square goes from empty to white or white to empty, black pieces do nothing,
+				 * white pieces will lose a move if the square goes from empty to white (END),
+				 * white pieces will gain a move if the square goes from white to empty (START).
+				 */
+				if (color == turn) updateCopy(movePart == END, square);
+				break;
+			default:
+				//Slidy pieces.
+				throw new IllegalArgumentException("Invalid piece type: " + getType());
+		}
 	}
 
 	/**
@@ -305,7 +414,12 @@ public class ChessPiece {
 		for (int i = 1; i < distance + 1; i++) {
 			final int newPos = startingPos + direction * i;
 			if (!board.addAttacker(this, newPos)) throw new IllegalArgumentException();
-			if (!board.getPiece(newPos).isEmpty()) break;
+			final ChessPiece piece = board.getPiece(newPos);
+
+			if (piece.color != color) {
+				movesCopy.add(newPos);
+			}
+			if (!piece.isEmpty()) break;
 		}
 	}
 
@@ -319,7 +433,10 @@ public class ChessPiece {
 		for (int i = 1; i < distance + 1; i++) {
 			final int newPos = startingPos + direction * i;
 			if (!board.removeAttacker(this, newPos)) throw new IllegalArgumentException();
-			if (!board.getPiece(newPos).isEmpty()) break;
+			final ChessPiece piece = board.getPiece(newPos);
+
+			if (piece.color != color) movesCopy.remove((Integer) newPos);
+			if (!piece.isEmpty()) break;
 		}
 	}
 
