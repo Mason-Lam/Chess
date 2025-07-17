@@ -119,8 +119,8 @@ public class ChessGame {
 		GUI = new ChessSquare[64];					//ChessSquare array with a memory of 64
 		//For loop to create 64 chess squares and add them to the panel
 		for(int i=0; i< 64; i++) {
-			GUI[i] = new ChessSquare(i, (Integer pos) -> get_click(pos));	//Elon Musk
-			panel.add(GUI[i]);				//Tesla
+			GUI[i] = new ChessSquare(i, (Integer pos) -> get_click(pos));
+			panel.add(GUI[i]);
 		}
 		frame.addKeyListener(new KeyListener((Byte type)-> promotion(type)));	//Adds a key listner for promotion
 		frame.add(panel,BorderLayout.CENTER);		//Adds the panel to the frame

@@ -31,8 +31,8 @@ public class ChessBoard {
 			this.enPassant = enPassant;
 			this.halfMove = halfMove;
 			this.castling = new boolean[2];
-			this.castling[0] = castling[0];
-			this.castling[1] = castling[1];
+			this.castling[QUEENSIDE] = castling[QUEENSIDE];
+			this.castling[KINGSIDE] = castling[KINGSIDE];
 		}
 
 		/**
@@ -100,8 +100,8 @@ public class ChessBoard {
 		
 		kingPos = new int[2];
 		pieceCount = new int[2][5];
-		pieceCount[0] = new int[5];
-		pieceCount[1] = new int[5];
+		pieceCount[BLACK] = new int[5];
+		pieceCount[WHITE] = new int[5];
 		Arrays.fill(pieceCount[0], 0);
 		Arrays.fill(pieceCount[1], 0);
 		board = new ChessPiece[64];
@@ -149,21 +149,21 @@ public class ChessBoard {
 		boolean whiteCanCastle = true;
 
 		//If white can't castle at all, add a "-".
-		if (!castling[WHITE][0] && !castling[WHITE][1]) {
+		if (!castling[WHITE][QUEENSIDE] && !castling[WHITE][KINGSIDE]) {
 			fen += " -";
 			whiteCanCastle = false;
 		}
 
 		//Add capital letters based on white's castling ability.
-		if (castling[WHITE][1]) fen += " K";
-		if (castling[WHITE][0]) fen += "Q";
+		if (castling[WHITE][KINGSIDE]) fen += " K";
+		if (castling[WHITE][QUEENSIDE]) fen += "Q";
 		
 		//If Black can't castle at all but white can, add a "-".
-		if (!castling[BLACK][0] && !castling[BLACK][1] && whiteCanCastle) fen += " -";
+		if (!castling[BLACK][QUEENSIDE] && !castling[BLACK][KINGSIDE] && whiteCanCastle) fen += " -";
 
 		//Add lowercase letter based on black's castling ability.
-		if (castling[BLACK][1]) fen += "k";
-		if (castling[BLACK][0]) fen += "q";
+		if (castling[BLACK][KINGSIDE]) fen += "k";
+		if (castling[BLACK][QUEENSIDE]) fen += "q";
 		
 		//Handle enPassant
 		if (enPassant == EMPTY) fen += " -";
@@ -202,16 +202,16 @@ public class ChessBoard {
 				
 				//Castling.
 				else if (letter == 'K') {
-					castling[WHITE][1] = true;
+					castling[WHITE][KINGSIDE] = true;
 				}
 				else if (letter == 'Q') {
-					castling[WHITE][0] = true;
+					castling[WHITE][QUEENSIDE] = true;
 				}
 				else if (letter == 'k') {
-					castling[BLACK][1] = true;
+					castling[BLACK][KINGSIDE] = true;
 				}
 				else if (letter == 'q') {
-					castling[BLACK][0] = true;
+					castling[BLACK][QUEENSIDE] = true;
 				}
 				
 				//enPassant; it's garbage but I can't be bothered to clean it up.
@@ -309,10 +309,10 @@ public class ChessBoard {
 		if (movingPiece.isRook()) {
 			//Queenside
 			if (move.start == ROOK_POSITIONS[movingPiece.color][0])
-				castling[movingPiece.color][0] = false;
+				castling[movingPiece.color][QUEENSIDE] = false;
 			//Kingside
 			if (move.start == ROOK_POSITIONS[movingPiece.color][1])
-				castling[movingPiece.color][1] = false;
+				castling[movingPiece.color][KINGSIDE] = false;
 		}
 		
 		//Handles king moves.
@@ -908,7 +908,7 @@ public class ChessBoard {
 		if (isChecked(color)) return false;
 
 		//If the king or associated rook have already moved, it can't castle.
-		if (!castling[turn][kingSide ? 1 : 0]) return false;
+		if (!castling[turn][kingSide ? KINGSIDE : QUEENSIDE]) return false;
 
 		//If the piece on the side is not a rook, it can't castle.
 		final int rookPos = ROOK_POSITIONS[color][kingSide ? 1 : 0];

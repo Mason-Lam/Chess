@@ -13,6 +13,10 @@ public class Constants {
 
 		public static final int EN_PASSANT = 2;
 
+		public static final int QUEENSIDE = 0;
+
+		public static final int KINGSIDE = 1;
+
 		public static final int[] MAX_MOVES = new int[] {
 			4,
 			8,
