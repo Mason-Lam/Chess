@@ -12,7 +12,6 @@ import Chess.ChessBoard.BoardStorage;
 
 import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
-import static Chess.Constants.MoveConstants.distFromEdge;
 
 public class ChessGame {
 	/*A Chess Game class*/

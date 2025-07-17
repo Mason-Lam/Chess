@@ -2,6 +2,8 @@ package Chess;
 
 import java.util.ArrayList;
 import static Chess.Constants.MoveConstants.*;
+import static Chess.Constants.PositionConstants.*;
+import static Chess.Constants.DirectionConstants.*;
 import static Chess.Constants.PieceConstants.*;
 import static Chess.BoardUtil.*;
 
@@ -76,8 +78,8 @@ public class ChessPiece {
 		long prevTime = System.currentTimeMillis();
 
 		// Checks the two diagonals next to the pawn.
-		for (final int direction : PAWN_DIAGONALS[color]) {
-			if (getDistFromEdge(direction, pos) < 1) continue;
+		for (final int direction : PAWN_ATTACK_DIRECTIONS[color]) {
+			if (getNumSquaresFromEdge(direction, pos) < 1) continue;
 			final int newPos = pos + direction;
 
 			board.modifyAttacks(this, newPos, remove);
@@ -88,7 +90,7 @@ public class ChessPiece {
 		final int direction = getPawnDirection(color);
 		if (!remove && board.getPiece(pos + direction).isEmpty()) {
 			movesCopy.add(pos + direction);
-			if (getRow(pos) == PAWN_STARTS[color]) {
+			if (getRow(pos) == PAWN_STARTING_ROW[color]) {
 				if (board.getPiece(pos + direction * 2).isEmpty()) movesCopy.add(pos + direction * 2);
 			}
 		}
@@ -104,7 +106,7 @@ public class ChessPiece {
 		long prevTime = System.currentTimeMillis();
 
 		//Checks all squares a knight can attack.
-		for (final int direction : KNIGHT_MOVES) {
+		for (final int direction : KNIGHT_DIRECTIONS) {
 			final int newPos = pos + direction;
 			if (!onBoard(newPos) || !onL(pos, newPos)) continue;		//Makes sure the knight doesn't skip rows or columns.
 
@@ -140,7 +142,7 @@ public class ChessPiece {
 	 * @param direction Direction to move towards.
 	 */
 	private void addAttacksSliding(int direction) {
-		final int distance = getDistFromEdge(direction, pos);
+		final int distance = getNumSquaresFromEdge(direction, pos);
 		for (int i = 1; i < distance + 1; i++) {
 			final int newPos = pos + direction * i;
 			board.addAttacker(this, newPos);
@@ -151,7 +153,7 @@ public class ChessPiece {
 	}
 
 	private void removeAttacksSliding(int direction) {
-		final int distance = getDistFromEdge(direction, pos);
+		final int distance = getNumSquaresFromEdge(direction, pos);
 		for (int i = 1; i < distance + 1; i++) {
 			final int newPos = pos + direction * i;
 			board.removeAttacker(this, newPos);
@@ -169,7 +171,7 @@ public class ChessPiece {
 
 		//Adds or removes attacks one square in each direction.
 		for (final int direction : DIRECTIONS) {
-			if (getDistFromEdge(direction, pos) < 1) continue;
+			if (getNumSquaresFromEdge(direction, pos) < 1) continue;
 			final int newPos = pos + direction;
 
 			board.modifyAttacks(this, newPos, remove);
@@ -197,7 +199,7 @@ public class ChessPiece {
 		//Handles the case where a rook or queen is on the same column as the enPassant square.
 		if (enPassantDirection == 8 || enPassantDirection == -8 && isLineAttacker()) {
 			final int enPassant = board.getEnPassant();
-			final boolean enPassantIsCloser = getDistFromEdge(enPassantDirection, enPassant) > getDistFromEdge(enPassantDirection, undoMove ? move.start : move.finish);
+			final boolean enPassantIsCloser = getNumSquaresFromEdge(enPassantDirection, enPassant) > getNumSquaresFromEdge(enPassantDirection, undoMove ? move.start : move.finish);
 
 			//The enPassant square is closer to the attacking piece than the end square of the move.
 			if (enPassantIsCloser) {
@@ -263,7 +265,7 @@ public class ChessPiece {
 		 * Run when a the start and end of a move are on the same path of attack.
 		 */
 		final int attackDirection = startDirection;
-		final boolean startIsCloser = getDistFromEdge(startDirection, move.start) > getDistFromEdge(startDirection, move.finish);
+		final boolean startIsCloser = getNumSquaresFromEdge(startDirection, move.start) > getNumSquaresFromEdge(startDirection, move.finish);
 		//If the start of the move is closer, then you only have to add attacks.
 		if (startIsCloser) {
 			/** 
@@ -279,7 +281,7 @@ public class ChessPiece {
 		}
 
 		//If the end of the move is closer, then you only have to remove attacks.
-		final int distance = getDistFromEdge(attackDirection, move.finish) - getDistFromEdge(attackDirection, move.start);
+		final int distance = getNumSquaresFromEdge(attackDirection, move.finish) - getNumSquaresFromEdge(attackDirection, move.start);
 		/**
 		 * If the move is a capture and normal, then the square would've already been occupied and thus no attacks
 		 * need to be removed.
@@ -381,7 +383,6 @@ public class ChessPiece {
 				if (color == turn) updateCopy(movePart == END, square);
 				break;
 			default:
-				//Slidy pieces.
 				throw new IllegalArgumentException("Invalid piece type: " + getType());
 		}
 	}
@@ -392,7 +393,7 @@ public class ChessPiece {
 	 * @param startingPos Position to start adding attacks, non inclusive.
 	 */
 	private void addAttacks(int direction, int startingPos) {
-		addAttacks(direction, startingPos, getDistFromEdge(direction, startingPos));
+		addAttacks(direction, startingPos, getNumSquaresFromEdge(direction, startingPos));
 	}
 
 	/**
@@ -401,7 +402,7 @@ public class ChessPiece {
 	 * @param startingPos Position to start removing attacks, non inclusive.
 	 */
 	private void removeAttacks(int direction, int startingPos) {
-		removeAttacks(direction, startingPos, getDistFromEdge(direction, startingPos));
+		removeAttacks(direction, startingPos, getNumSquaresFromEdge(direction, startingPos));
 	}
 
 	/**
@@ -526,8 +527,8 @@ public class ChessPiece {
 
 		//Attacks.
 		for (int i = 0; i < 2; i++) {
-			if (getDistFromEdge(PAWN_DIAGONALS[color][i], pos) < 1) continue;	// Checks if the pawn is at the edge of the board
-			final int newPos = pos + PAWN_DIAGONALS[color][i];
+			if (getNumSquaresFromEdge(PAWN_ATTACK_DIRECTIONS[color][i], pos) < 1) continue;	// Checks if the pawn is at the edge of the board
+			final int newPos = pos + PAWN_ATTACK_DIRECTIONS[color][i];
 			if (board.getPiece(newPos).color == next(color)) addMove(moves, new Move(pos, newPos, false), attacksOnly);
 		}
 	}
@@ -609,8 +610,8 @@ public class ChessPiece {
 		}
 
 		//Iterates over every L shape.
-		for (int i = 0; i < KNIGHT_MOVES.length; i++) {
-			final int newPos = pos + KNIGHT_MOVES[i];
+		for (int i = 0; i < KNIGHT_DIRECTIONS.length; i++) {
+			final int newPos = pos + KNIGHT_DIRECTIONS[i];
 			if (!onBoard(newPos) || !onL(pos, newPos)) continue;
 			
 			if (board.getPiece(newPos).color == color) continue;
@@ -625,13 +626,13 @@ public class ChessPiece {
 	 */
 	private void kingMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		//Check for castling king side/shorter side.
-		if (board.canCastle(true, color)) {
-			addMove(moves, new Move(pos, ROOK_POSITIONS[color][1] - 1, true), attacksOnly);
+		if (board.canCastle(KINGSIDE, color)) {
+			addMove(moves, new Move(pos, ROOK_POSITIONS[color][KINGSIDE] - 1, true), attacksOnly);
 		}
 
 		//Check for castling queen side/longer side.
-		if (board.canCastle(false, color)) {
-			addMove(moves, new Move(pos, ROOK_POSITIONS[color][0] + 2, true), attacksOnly);
+		if (board.canCastle(QUEENSIDE, color)) {
+			addMove(moves, new Move(pos, ROOK_POSITIONS[color][QUEENSIDE] + 2, true), attacksOnly);
 		}
 
 		//Skips regenerating moves if a stored copy is available.
@@ -642,7 +643,7 @@ public class ChessPiece {
 
 		//Iterates over each square that's 1 away from the king.
 		for (int i = 0; i < DIRECTIONS.length; i++) {
-			if (getDistFromEdge(DIRECTIONS[i], pos) < 1) continue;
+			if (getNumSquaresFromEdge(DIRECTIONS[i], pos) < 1) continue;
 			final int newPos = pos + DIRECTIONS[i];
 			if(board.getPiece(newPos).color == color) continue;
 
@@ -672,7 +673,7 @@ public class ChessPiece {
 		//Iterate over all sliding directions.
 		for (int i = startingIndex; i < endIndex; i++) {
 			//Iterate to the edge of the board.
-			for (int j = 1; j < getDistFromEdge(DIRECTIONS[i], pos) + 1; j++) {
+			for (int j = 1; j < getNumSquaresFromEdge(DIRECTIONS[i], pos) + 1; j++) {
 				final int newPos = pos + DIRECTIONS[i] * j;
 				final ChessPiece piece = board.getPiece(newPos);
 

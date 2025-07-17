@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import static Chess.Constants.MoveConstants.*;
+import static Chess.Constants.PositionConstants.*;
 import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
 import static Chess.BoardUtil.*;
@@ -300,7 +301,7 @@ public class ChessBoard {
 				newEnPassant = move.finish;
 			}
 			//Pawn is promoting.
-			if (getRow(move.finish) == PROMOTION_LINE[turn]) {
+			if (getRow(move.finish) == PROMOTION_ROW[turn]) {
 				promotingPawn = move.finish;
 			}
 		}
@@ -308,10 +309,10 @@ public class ChessBoard {
 		//Removes castling rights when a rook moves.
 		if (movingPiece.isRook()) {
 			//Queenside
-			if (move.start == ROOK_POSITIONS[movingPiece.color][0])
+			if (move.start == ROOK_POSITIONS[movingPiece.color][QUEENSIDE])
 				castling[movingPiece.color][QUEENSIDE] = false;
 			//Kingside
-			if (move.start == ROOK_POSITIONS[movingPiece.color][1])
+			if (move.start == ROOK_POSITIONS[movingPiece.color][KINGSIDE])
 				castling[movingPiece.color][KINGSIDE] = false;
 		}
 		
@@ -322,7 +323,7 @@ public class ChessBoard {
 			if (move.SPECIAL) {
 				//Kingside.
 				if (move.finish > move.start) {
-					castle = ROOK_POSITIONS[turn][1];			//Store the rook.
+					castle = ROOK_POSITIONS[turn][KINGSIDE];			//Store the rook.
 					board[castle].pieceAttacks(true);	//Update the squares the rook currently attacks.
 					updatePosition(board[castle], move.finish - 1, false);	//Move the rook to the new position.
 					board[castle] = ChessPiece.empty();		//Empty the square the rook used to occupy.
@@ -330,7 +331,7 @@ public class ChessBoard {
 				}
 				//Queenside.
 				else {
-					castle = ROOK_POSITIONS[turn][0];			//Store the rook.
+					castle = ROOK_POSITIONS[turn][QUEENSIDE];			//Store the rook.
 					board[castle].pieceAttacks(true);	//Update the squares the rook currently attacks.
 					updatePosition(board[castle], move.finish + 1, false);	//Move the rook to the new position.
 					board[castle] = ChessPiece.empty();	//Empty the square the rook used to occupy.
@@ -385,25 +386,25 @@ public class ChessBoard {
 		final boolean isAttack = !capturedPiece.isEmpty() && !move.SPECIAL;
 
 		final ChessPiece movingPiece = board[invertedMove.start];
-		int castle = EMPTY;
+		int castledRookPos = EMPTY;
 		movingPiece.pieceAttacks(true);		//Update the squares the moving piece currently attacks.
 
 		//Check for castling
 		if (isCastle(invertedMove)) {
 			//Kingside
 			if (invertedMove.start > invertedMove.finish) {
-				castle = invertedMove.start - 1;			//Store the rook position.
-				board[castle].pieceAttacks(true);		//Update the squares the rook currently attacks.
-				updatePosition(board[castle], ROOK_POSITIONS[turn][1], false);		//Move the rook to the new position.
-				board[castle] = ChessPiece.empty();			//Empty the square the rook used to occupy.
-				castle = ROOK_POSITIONS[turn][1];			//Set the new rook position.
+				castledRookPos = invertedMove.start - 1;			//Store the rook position.
+				board[castledRookPos].pieceAttacks(true);		//Update the squares the rook currently attacks.
+				updatePosition(board[castledRookPos], ROOK_POSITIONS[turn][KINGSIDE], false);		//Move the rook to the new position.
+				board[castledRookPos] = ChessPiece.empty();			//Empty the square the rook used to occupy.
+				castledRookPos = ROOK_POSITIONS[turn][KINGSIDE];			//Set the new rook position.
 			}
 			//Queenside
 			else {
-				castle = invertedMove.start + 1;			//Store the rook position.
-				board[castle].pieceAttacks(true);		//Update the squares the rook currently attacks.
-				updatePosition(board[castle], ROOK_POSITIONS[turn][0], false);		//Move the rook to the new position.
-				castle = ROOK_POSITIONS[turn][0];				//Empty the square the rook used to occupy.
+				castledRookPos = invertedMove.start + 1;			//Store the rook position.
+				board[castledRookPos].pieceAttacks(true);		//Update the squares the rook currently attacks.
+				updatePosition(board[castledRookPos], ROOK_POSITIONS[turn][QUEENSIDE], false);		//Move the rook to the new position.
+				castledRookPos = ROOK_POSITIONS[turn][QUEENSIDE];				//Empty the square the rook used to occupy.
 				board[invertedMove.start + 1] = ChessPiece.empty();		//Set the new rook position.
 			}
 		}
@@ -425,7 +426,7 @@ public class ChessBoard {
 
 		if (!capturedPiece.isEmpty()) capturedPiece.pieceAttacks(false);		//Update the squares the captured piece now attacks.
 		
-		if (castle != EMPTY) board[castle].pieceAttacks(false);			//Update the squares the castled rook now attacks.
+		if (castledRookPos != EMPTY) board[castledRookPos].pieceAttacks(false);			//Update the squares the castled rook now attacks.
 		
 		promotingPawn = EMPTY;
 
@@ -594,7 +595,7 @@ public class ChessBoard {
 				if (pieceOneSquareAhead.isPawn() && pieceOneSquareAhead.color == color) {
 					pieceOneSquareAhead.updateCopy(!isEmpty, pos);
 					//Check for double move forward.
-					if (getRow(oneSquareAhead) == PAWN_STARTS[color]) {
+					if (getRow(oneSquareAhead) == PAWN_STARTING_ROW[color]) {
 						//Check the square behind the involved square.
 						final int oneSquareBehind = pos + direction;
 						if (board[oneSquareBehind].isEmpty() && !move.contains(oneSquareBehind)) pieceOneSquareAhead.updateCopy(!isEmpty, oneSquareBehind);
@@ -609,7 +610,7 @@ public class ChessBoard {
 				final ChessPiece pieceTwoSquaresAhead = board[twoSquaresAhead];
 
 				//Check if it's a pawn that would be influenced by the move.
-				if (pieceTwoSquaresAhead.isPawn() && pieceTwoSquaresAhead.color == color && getRow(twoSquaresAhead) == PAWN_STARTS[color]) {
+				if (pieceTwoSquaresAhead.isPawn() && pieceTwoSquaresAhead.color == color && getRow(twoSquaresAhead) == PAWN_STARTING_ROW[color]) {
 					pieceTwoSquaresAhead.updateCopy(!isEmpty, pos);
 				}
 			}
@@ -899,19 +900,19 @@ public class ChessBoard {
 
 	/**
 	 * Returns whether or not the king can castle queenside or kingside.
-	 * @param kingSide Whether or not to check for kingside or queenside.
+	 * @param side Whether or not to check for kingside or queenside.
 	 * @param color The color of the king.
 	 * @return True if the king can castle, false if it can't.
 	 */
-	public boolean canCastle(boolean kingSide, int color) {
+	public boolean canCastle(int side, int color) {
 		//If the king is checked, it can't castle.
 		if (isChecked(color)) return false;
 
 		//If the king or associated rook have already moved, it can't castle.
-		if (!castling[turn][kingSide ? KINGSIDE : QUEENSIDE]) return false;
+		if (!castling[turn][side]) return false;
 
 		//If the piece on the side is not a rook, it can't castle.
-		final int rookPos = ROOK_POSITIONS[color][kingSide ? 1 : 0];
+		final int rookPos = ROOK_POSITIONS[color][side];
 		if (!getPiece(rookPos).isRook()) return false;
 		
 		//There must be a clear path between the king and rook.
@@ -919,7 +920,7 @@ public class ChessBoard {
 
 		//Each square must not be attacked, except on the queenside with square next to the rook.
 		for (int distance = 1; distance < 3; distance++) {
-			if (isAttacked(kingSide ? getKingPos(color) + distance : getKingPos(color) - distance, color)) return false;
+			if (isAttacked(side == KINGSIDE ? getKingPos(color) + distance : getKingPos(color) - distance, color)) return false;
 		}
 
 		return true;

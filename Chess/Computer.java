@@ -6,6 +6,7 @@ import Chess.ChessBoard.BoardStorage;
 
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PieceConstants.*;
+import static Chess.Constants.PositionConstants.*;
 import static Chess.BoardUtil.*;
 
 /**
@@ -37,7 +38,7 @@ public class Computer {
 			for (final ChessPiece piece : pieces) {
 				final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.getType()]);
 				piece.pieceMoves(moves);
-				if (moves.size() > 0 && piece.isPawn() && getRow(moves.get(0).finish) == PROMOTION_LINE[board.getTurn()]){
+				if (moves.size() > 0 && piece.isPawn() && getRow(moves.get(0).finish) == PROMOTION_ROW[board.getTurn()]){
 					count += moves.size() * 4;
 					continue;
 				}

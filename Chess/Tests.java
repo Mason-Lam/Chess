@@ -91,12 +91,15 @@ public class Tests {
 	public static final Test test26 = new Test(4, 232252, "3Q4/8/8/8/6q1/8/P4K2/k7 w - - 0 1");
 	
 	public static void runTests() {
+		System.out.println("----------------------------------------");
 		boolean passed = true;
 		for (int i = 0; i < tests.size(); i++) {
 			System.out.println("Test " + (i + 1) + ":");
 			if(!tests.get(i).runTest()) passed = false;
 		}
 		if (!passed) System.out.println("ENGINE FAULT: Test has failed");
+		else System.out.println("ALL TESTS PASSED!");
+		System.out.println("----------------------------------------");
 	}
 }
 

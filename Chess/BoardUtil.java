@@ -2,6 +2,8 @@ package Chess;
 
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PieceConstants.*;
+import static Chess.Constants.PositionConstants.*;
+import static Chess.Constants.DirectionConstants.*;
 
 /**
  * Utility class to organize commonly repeated board calculations.
@@ -72,16 +74,16 @@ public class BoardUtil {
 	 * @param pos The position of the square.
 	 * @return The distance between the square and the edge of the board.
 	 */
-    public static int getDistFromEdge(int direction, int pos) {
+    public static int getNumSquaresFromEdge(int direction, int pos) {
 		switch (direction) {
-			case(9): return distFromEdge[pos][5];	//Southeast
-			case(-9): return distFromEdge[pos][4];	//Northwest
-			case(7): return distFromEdge[pos][7];	//Southwest
-			case(-7): return distFromEdge[pos][6]; //Northeast
-			case(8): return distFromEdge[pos][1];  //South
-			case(-8): return distFromEdge[pos][0];  //North
-			case(1): return distFromEdge[pos][3];   //East
-			case(-1): return distFromEdge[pos][2];  //West
+			case(DOWNRIGHT): return NUM_SQUARES_FROM_EDGE[pos][5];
+			case(UPLEFT): return NUM_SQUARES_FROM_EDGE[pos][4];
+			case(DOWNLEFT): return NUM_SQUARES_FROM_EDGE[pos][7];
+			case(UPRIGHT): return NUM_SQUARES_FROM_EDGE[pos][6];
+			case(DOWN): return NUM_SQUARES_FROM_EDGE[pos][1];
+			case(UP): return NUM_SQUARES_FROM_EDGE[pos][0];
+			case(RIGHT): return NUM_SQUARES_FROM_EDGE[pos][3];
+			case(LEFT): return NUM_SQUARES_FROM_EDGE[pos][2];
 			default:
 				throw new IllegalArgumentException("Invalid direction");
 		}
@@ -136,7 +138,7 @@ public class BoardUtil {
 	}
 
 	public static boolean hasPawnMoved(int pos, int color) {
-		return getRow(pos) != PAWN_STARTS[color];
+		return getRow(pos) != PAWN_STARTING_ROW[color];
 	}
 
 	/**

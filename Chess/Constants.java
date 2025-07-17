@@ -13,10 +13,6 @@ public class Constants {
 
 		public static final int EN_PASSANT = 2;
 
-		public static final int QUEENSIDE = 0;
-
-		public static final int KINGSIDE = 1;
-
 		public static final int[] MAX_MOVES = new int[] {
 			4,
 			8,
@@ -28,69 +24,116 @@ public class Constants {
 		};
 
 		public static final boolean CHECKS = true;
-		
-		public static final int[][] distFromEdge = new int[64][8];
 
-		//Move Constants
-		public static final int[][] ROOK_POSITIONS = new int[][] {
-			new int[] {0, 7},
-			new int[] {56, 63}
-		};
+	}
 
-		public static final int[] KING_POSITIONS = new int[] {
-			4, 60
-		};
-		
-		public static final int[] PROMOTION_LINE = new int[] {
-			7, 0
-		};
-		
-		public static final int[] PAWN_STARTS = new int[] {
-			1, 6
-		};
-		
-		public static final int[] DIRECTIONS = new int[] {
-			8, -8, 1, -1, 7, 9, -7, -9
-		};
+	public static class DirectionConstants {
+		//Directions written from perspective of white player.
 
-		public static final int[] STRAIGHT_DIRECTIONS = new int[] {
-			8, -8, 1, -1
+		public static final int UP = -8;
+		public static final int DOWN = 8;
+
+		public static final int LEFT = -1;
+		public static final int RIGHT = 1;
+
+		public static final int UPLEFT = UP + LEFT;
+		public static final int UPRIGHT = UP + RIGHT;
+
+		public static final int DOWNLEFT = DOWN + LEFT;
+		public static final int DOWNRIGHT = DOWN + RIGHT;
+
+		public static final int[] STRAIGHT_DIRECTIONS = new int [] {
+			DOWN, UP, RIGHT, LEFT
 		};
 
 		public static final int[] DIAGONAL_DIRECTIONS = new int[] {
-			7, 9, -7, -9
+			DOWNLEFT, DOWNRIGHT, UPRIGHT, UPLEFT
 		};
-		
-		public static final int[] KNIGHT_MOVES = new int[] {
-			-15, -17, 15, 17, 10, -10, 6, -6
+
+		public static final int[] DIRECTIONS = new int[] {
+			DOWN, UP, RIGHT, LEFT, DOWNLEFT, DOWNRIGHT, UPRIGHT, UPLEFT
 		};
-		
-		public static final int[][] PAWN_DIAGONALS = new int[][] {
-			new int[] {7, 9},
-			new int[] {-7, -9}
+
+		public static final int[] KNIGHT_DIRECTIONS = new int[] {
+			UP + UP + RIGHT,
+			UP + UP + LEFT,
+			DOWN + DOWN + LEFT,
+			DOWN + DOWN + RIGHT,
+			RIGHT + RIGHT + DOWN,
+			LEFT + LEFT + UP,
+			LEFT + LEFT + DOWN,
+			RIGHT + RIGHT + UP
 		};
+
+		public static final int[][] PAWN_ATTACK_DIRECTIONS = new int[][] {
+			new int[] {DOWNLEFT, DOWNRIGHT},		//BLACK
+			new int[] {UPRIGHT, UPLEFT}				//WHITE
+		};
+
+		public static final int[][] NUM_SQUARES_FROM_EDGE = new int[64][8];
 
 		static {
 			for (int row = 0; row < 8; row++) {
 				for(int column = 0; column < 8; column++) {
-					final int northDist = row;
-					final int southDist = 7 - row;
-					final int westDist = column;
-					final int eastDist = 7 - column;
-					final int[] data = new int[] {
-						northDist,
-						southDist,
-						westDist,
-						eastDist,
-						Math.min(northDist, westDist),
-						Math.min(southDist, eastDist),
-						Math.min(northDist, eastDist),
-						Math.min(southDist, westDist)
+					final int upDist = row;
+					final int downDist = 7 - row;
+					final int leftDist = column;
+					final int rightDist = 7 - column;
+					final int upLeftDist = Math.min(upDist, leftDist);
+					final int downRightDist = Math.min(downDist, rightDist);
+					final int upRightDist = Math.min(upDist, rightDist);
+					final int downLeftDist = Math.min(downDist, leftDist);
+
+					final int[] NUM_SQUARES_FROM_EDGE_BY_DIRECTION = new int[] {
+						upDist,
+						downDist,
+						leftDist,
+						rightDist,
+						upLeftDist,
+						downRightDist,
+						upRightDist,
+						downLeftDist
 					};
-					distFromEdge[row * 8 + column] = data;
+					NUM_SQUARES_FROM_EDGE[row * 8 + column] = NUM_SQUARES_FROM_EDGE_BY_DIRECTION;
 				}
 			}
 		}
+	}
+
+	public static class PositionConstants {
+		//Grid has (0,0) at the top left with right being the positive x-axis and down being the positive y-axis.
+		public static final int ORIGIN = 0;
+
+		public static final int QUEENSIDE = 0;
+		public static final int KINGSIDE = 1;
+
+		public static final int BLACK_QUEENSIDE_ROOK_POS = ORIGIN;
+		public static final int BLACK_KINGSIDE_ROOK_POS = ORIGIN + DirectionConstants.RIGHT * 7;
+
+		public static final int WHITE_QUEENSIDE_ROOK_POS = ORIGIN + DirectionConstants.DOWN * 7;
+		public static final int WHITE_KINGSIDE_ROOK_POS = WHITE_QUEENSIDE_ROOK_POS + DirectionConstants.RIGHT * 7;
+
+		public static final int BLACK_KING_POS = ORIGIN + DirectionConstants.RIGHT * 4;
+		public static final int WHITE_KING_POS = BLACK_KING_POS + DirectionConstants.DOWN * 7;
+
+		public static final int BLACK_PROMOTION_ROW = 7;
+		public static final int WHITE_PROMOTION_ROW = 0;
+
+		public static final int BLACK_PAWN_STARTING_ROW = 1;
+		public static final int WHITE_PAWN_STARTING_ROW = 6;
+
+		public static final int[][] ROOK_POSITIONS = new int[][] {
+			new int[] {BLACK_QUEENSIDE_ROOK_POS, BLACK_KINGSIDE_ROOK_POS},
+			new int[] {WHITE_QUEENSIDE_ROOK_POS, WHITE_KINGSIDE_ROOK_POS}
+		};
+		
+		public static final int[] PROMOTION_ROW = new int[] {
+			BLACK_PROMOTION_ROW, WHITE_PROMOTION_ROW
+		};
+		
+		public static final int[] PAWN_STARTING_ROW = new int[] {
+			BLACK_PAWN_STARTING_ROW, WHITE_PAWN_STARTING_ROW
+		};
 	}
 
 	public static class PieceConstants {
