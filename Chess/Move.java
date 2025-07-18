@@ -1,37 +1,41 @@
 package Chess;
 
-import java.util.HashMap;
-
 public class Move {
 
 	private final int moveID;
-	public final int start;
-	public final int finish;
-	public final boolean SPECIAL;
 
 	public Move(int start, int finish) {
 		this(start, finish, false);
 	}
 
 	public Move(int start, int finish, boolean special) {
-		this.start = start;
-		this.finish = finish;
-		this.SPECIAL = special;
-		final int typeAdd = SPECIAL ? 1 : 0;
+		final int typeAdd = special ? 1 : 0;
 		moveID = typeAdd + (start << 1) + (finish << 7);
 	}
 
+	public int getStart() {
+		return (moveID >>> 1) % 64;
+	}
+
+	public int getFinish() {
+		return (moveID >>> 7);
+	}
+
+	public boolean isSpecial() {
+		return moveID % 2 == 1;
+	}
+
 	public boolean contains(int square) {
-		return start == square || finish == square;
+		return getStart() == square || getFinish() == square;
 	}
 
 	public Move invert() {
-		return new Move(finish, start, SPECIAL);
+		return new Move(getFinish(), getStart(), isSpecial());
 	}
 
 	@Override
 	public String toString() {
-		return start + ":" + finish + ":" + SPECIAL;
+		return getStart() + ":" + getFinish() + ":" + isSpecial();
 	}
 
 	@Override

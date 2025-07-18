@@ -202,7 +202,7 @@ public class ChessPiece {
 		//Handles the case where a rook or queen is on the same column as the enPassant square.
 		if (enPassantDirection == Direction.DOWN || enPassantDirection == Direction.UP && isLineAttacker()) {
 			final int enPassant = board.getEnPassant();
-			final boolean enPassantIsCloser = getNumSquaresFromEdge(enPassantDirection, enPassant) > getNumSquaresFromEdge(enPassantDirection, undoMove ? move.start : move.finish);
+			final boolean enPassantIsCloser = getNumSquaresFromEdge(enPassantDirection, enPassant) > getNumSquaresFromEdge(enPassantDirection, undoMove ? move.getStart() : move.getFinish());
 
 			//The enPassant square is closer to the attacking piece than the end square of the move.
 			if (enPassantIsCloser) {
@@ -213,14 +213,14 @@ public class ChessPiece {
 				return true;
 			}
 			//The square goes from empty to filled meaning add attacks.
-			if (undoMove) addAttacks(enPassantDirection, move.start, 1);
+			if (undoMove) addAttacks(enPassantDirection, move.getStart(), 1);
 			//The square goes from filled to empty meaning remove attacks.
-			else removeAttacks(enPassantDirection, move.finish, 1);
+			else removeAttacks(enPassantDirection, move.getFinish(), 1);
 			return true;
 		}
 
-		final Direction startDirection = getDirection(pos, move.start);
-		final Direction finishDirection = getDirection(pos, move.finish);
+		final Direction startDirection = getDirection(pos, move.getStart());
+		final Direction finishDirection = getDirection(pos, move.getFinish());
 		
 		//Each square is attacked independently of each other.
 		if (startDirection != finishDirection || (startDirection == null && finishDirection == null)) {
@@ -234,7 +234,7 @@ public class ChessPiece {
 					if (!(isAttack && undoMove)) {
 						addAttacks(startDirection, square);
 						if (board.isEnPassant(move) && !undoMove) {
-							pieceReset(move.start, START, isAttack, undoMove);
+							pieceReset(move.getStart(), START, isAttack, undoMove);
 							return true;
 						}
 					}
@@ -268,7 +268,7 @@ public class ChessPiece {
 		 * Run when a the start and end of a move are on the same path of attack.
 		 */
 		final Direction attackDirection = startDirection;
-		final boolean startIsCloser = getNumSquaresFromEdge(startDirection, move.start) > getNumSquaresFromEdge(startDirection, move.finish);
+		final boolean startIsCloser = getNumSquaresFromEdge(startDirection, move.getStart()) > getNumSquaresFromEdge(startDirection, move.getFinish());
 		//If the start of the move is closer, then you only have to add attacks.
 		if (startIsCloser) {
 			/** 
@@ -277,23 +277,23 @@ public class ChessPiece {
 			 * If the move is normal then the starting square will always be empty and attacks must be added. 
 			*/
 			if (!(isAttack && undoMove)) {
-				addAttacks(attackDirection, move.start);
+				addAttacks(attackDirection, move.getStart());
 			}
-			pieceReset(move.start, START, isAttack, undoMove);
+			pieceReset(move.getStart(), START, isAttack, undoMove);
 			return true;
 		}
 
 		//If the end of the move is closer, then you only have to remove attacks.
-		final int distance = getNumSquaresFromEdge(attackDirection, move.finish) - getNumSquaresFromEdge(attackDirection, move.start);
+		final int distance = getNumSquaresFromEdge(attackDirection, move.getFinish()) - getNumSquaresFromEdge(attackDirection, move.getStart());
 		/**
 		 * If the move is a capture and normal, then the square would've already been occupied and thus no attacks
 		 * need to be removed.
 		 * If the move is an undo or not a capture, then the square was empty and thus attacks will be removed.
 		 */
 		if (!(isAttack && !undoMove)) {
-			removeAttacks(attackDirection, move.finish, board.isCastle(move) ? 1 : distance);
+			removeAttacks(attackDirection, move.getFinish(), board.isCastle(move) ? 1 : distance);
 		}
-		pieceReset(move.finish, END, isAttack, undoMove);
+		pieceReset(move.getFinish(), END, isAttack, undoMove);
 		return true;
 	}
 
@@ -575,7 +575,7 @@ public class ChessPiece {
 			if (attacksOnly) return;
 			for (final Move move : movesCopy) {
 				Tests.copyCount ++;
-				if (onColumn(pos, move.finish)) moves.add(move);
+				if (onColumn(pos, move.getFinish())) moves.add(move);
 			}
 			return;
 		}
@@ -584,7 +584,7 @@ public class ChessPiece {
 		for (final Move move : movesCopy) {
 			Tests.copyCount ++;
 			//If a pawn is pinned on a diagonal, its only legal move would be to capture the piece.
-			if (move.finish == pinPiece.pos) {
+			if (move.getFinish() == pinPiece.pos) {
 				moves.add(move);
 				return;
 			}
@@ -710,7 +710,7 @@ public class ChessPiece {
 	private void copyMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		for (final Move move : movesCopy) {
 			Tests.copyCount ++;
-			if (attacksOnly && board.getPiece(move.finish).isEmpty()) continue;
+			if (attacksOnly && board.getPiece(move.getFinish()).isEmpty()) continue;
 			moves.add(move);
 		}
 	}
@@ -723,7 +723,7 @@ public class ChessPiece {
 	private void copyMovesInCheck(ArrayList<Move> moves, boolean attacksOnly) {
 		for (final Move move : movesCopy) {
 			Tests.copyCount ++;
-			addMove(moves, new Move(pos, move.finish), attacksOnly);
+			addMove(moves, new Move(pos, move.getFinish()), attacksOnly);
 		}
 	}
 
@@ -737,9 +737,9 @@ public class ChessPiece {
 
 		long prevTime = System.currentTimeMillis();
 
-		if (updatingCopy && !move.SPECIAL) movesCopy.add(new Move(pos, move.finish));		//Fill copy with moves to be reused later.
+		if (updatingCopy && !move.isSpecial()) movesCopy.add(new Move(pos, move.getFinish()));		//Fill copy with moves to be reused later.
 
-		if (attacksOnly && board.getPiece(move.finish).isEmpty() && !board.isEnPassant(move)) return;		//Checks for attacks only.
+		if (attacksOnly && board.getPiece(move.getFinish()).isEmpty() && !board.isEnPassant(move)) return;		//Checks for attacks only.
 
 		//Adds the move if it is legal.
 		if (!CHECKS || isLegalMove(move)) {
@@ -762,7 +762,7 @@ public class ChessPiece {
 	 * @return Whether or not the move is legal.
 	 */
 	private boolean isLegalMove(Move move) {
-		final ChessPiece piece = board.getPiece(move.start);
+		final ChessPiece piece = board.getPiece(move.getStart());
 
 		if (piece.isKing()) return isLegalKingMove(move);	//Seperate case for king moves.
 
@@ -780,22 +780,22 @@ public class ChessPiece {
 	 * @return Whether or not the move is legal.
 	 */
 	private boolean isLegalKingMove(Move move) {
-		if (board.isAttacked(move.finish, color)) return false;		//If the square is attacked, the king cannot move there.
+		if (board.isAttacked(move.getFinish(), color)) return false;		//If the square is attacked, the king cannot move there.
 
 		if (!board.isChecked(color)) return true;		//If the king is not in check, any square that is not attacked is legal.
 
 		//Iterates over each attacking the king.
 		for (final ChessPiece attacker : board.getAttackers(this)) {
-			if (move.finish == attacker.pos) return true;	//If the king captures the attacking piece, it's legal.
+			if (move.getFinish() == attacker.pos) return true;	//If the king captures the attacking piece, it's legal.
 
 			//Checks if the king would still be in check on the same diagonal.
 			if (attacker.isDiagonalAttacker()) {
-				if (onSameDiagonal(move.start, move.finish, attacker.pos)) return false;
+				if (onSameDiagonal(move.getStart(), move.getFinish(), attacker.pos)) return false;
 			}
 
 			//Checks if the king would still be in check on the same line.
 			if (attacker.isLineAttacker()) {
-				if (onSameLine(move.start, move.finish, attacker.pos)) return false;
+				if (onSameLine(move.getStart(), move.getFinish(), attacker.pos)) return false;
 			}
 		}
 		return true;
@@ -812,16 +812,16 @@ public class ChessPiece {
 		
 		if (board.getEnPassant() == attacker.pos && board.isEnPassant(move)) return true;	//Pawn captures enPassant to remove attacker.
 
-		if (attacker.isPawn() || attacker.isKnight()) return move.finish == attacker.pos;	//If the king is attacked by a knight or pawn, they must be captured.
+		if (attacker.isPawn() || attacker.isKnight()) return move.getFinish() == attacker.pos;	//If the king is attacked by a knight or pawn, they must be captured.
 
-		if (move.finish == attacker.pos) return true;	//If the attacking piece is captured, the king will no longer be in check.
+		if (move.getFinish() == attacker.pos) return true;	//If the attacking piece is captured, the king will no longer be in check.
 		
 		//If the king is checked by a bishop or queen on a diagonal, it must be blocked.
 		if (onDiagonal(king, attacker.pos)) {
-			return blocksDiagonal(attacker.pos, king, move.finish);
+			return blocksDiagonal(attacker.pos, king, move.getFinish());
 		}
 		//If the king is checked by a rook or queen along a line, it must be blocked.
-		return blocksLine(attacker.pos, king, move.finish);
+		return blocksLine(attacker.pos, king, move.getFinish());
 	}
 	
 	/**
@@ -849,20 +849,20 @@ public class ChessPiece {
 					}
 
 					// Check if the enPassant pawn is on the path between the attacker and king.
-					if (blocksLine(piece.pos, king, move.start)) {
+					if (blocksLine(piece.pos, king, move.getStart())) {
 						// If there is a clear path between enPassant pawn and king, the move is illegal.
-						return board.clearPath(move.start, king);
+						return board.clearPath(move.getStart(), king);
 					}
 				}
 			}
 			//Check if a rook or queen blocks enPassant move.
-			if (onLine(king, move.start)) {
-				final PieceSet attackers = board.getAttackers(move.start, color);
+			if (onLine(king, move.getStart())) {
+				final PieceSet attackers = board.getAttackers(move.getStart(), color);
 				for (final ChessPiece piece : attackers) {
 					if (piece.isPawn() || piece.isKnight() || piece.isBishop() || piece.isKing()) continue;
 
 					// Check if the pawn is on the path between the attacker and king.
-					if (blocksLine(piece.pos, king, move.start)) {
+					if (blocksLine(piece.pos, king, move.getStart())) {
 						// If there is a clear path between enPassant pawn and king, the move is illegal.
 						return board.clearPath(enPassant, king);
 					}
@@ -875,10 +875,10 @@ public class ChessPiece {
 		if (pinPiece.isEmpty()) return false;	//If the piece isn't pinned it can't sacrifice the king.
 
 		//If the piece is pinning the piece on a diagonal, the move is legal if the piece moves to the same diagonal.
-		if (onDiagonal(pos, king)) return !onSameDiagonal(move.finish, king, pinPiece.pos);
+		if (onDiagonal(pos, king)) return !onSameDiagonal(move.getFinish(), king, pinPiece.pos);
 
 		//If the piece is pinning the piece along a line, the move is legal if the piece moves to the same line.
-		return !onSameLine(move.finish, king, pinPiece.pos);
+		return !onSameLine(move.getFinish(), king, pinPiece.pos);
 	}
 
 	/**

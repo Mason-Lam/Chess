@@ -114,20 +114,20 @@ public class ChessGame {
 		if(click1 != -1) {
 			for(int j = 0; j < legal.size(); j++) {
 				final Move move = legal.get(j);
-				System.out.print(move.finish +" : ");
-				System.out.println(board.getPiece(move.finish).getType());
+				System.out.print(move.getFinish() +" : ");
+				System.out.println(board.getPiece(move.getFinish()).getType());
 				//Checks if the square is a legal move
-				if(board.getPiece(move.finish).isEmpty()) {
+				if(board.getPiece(move.getFinish()).isEmpty()) {
                     address = "Chess/Elements/";
 					//address = "C:\\Users\\Mason\\Documents\\Java\\Elements\\";
-					if(move.finish % 2 == (move.finish /8 ) %2){
+					if(move.getFinish() % 2 == (move.getFinish() /8 ) %2){
 						address += "W";
 					}
 					else {
 						address += "G";
 					}
 					address += "D.png";
-					GUI[perspective == PieceColor.BLACK ? 63 - move.finish : move.finish].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
+					GUI[perspective == PieceColor.BLACK ? 63 - move.getFinish() : move.getFinish()].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
 				}
 			}
 			System.out.println();
@@ -142,7 +142,7 @@ public class ChessGame {
 //		board.make_move(move,true);
 //		if(board.is_promote()) {
 //			move = board.computer_move(difficulty);
-//			board.promote(board.promotingPawn, move.finish);
+//			board.promote(board.promotingPawn, move.getFinish());
 //		}
 //		next_turn();
 	}
@@ -173,7 +173,7 @@ public class ChessGame {
 		for(int i = 0; i < legal.size(); i ++) {
 			final Move move = legal.get(i);
 			//Checks if the click is a legal move
-			if(move.finish == pos) {
+			if(move.getFinish() == pos) {
 				//makes the move on the board
 				board.makeMove(move);
 				legal.clear();
