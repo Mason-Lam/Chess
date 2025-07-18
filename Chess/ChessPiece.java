@@ -20,7 +20,7 @@ public class ChessPiece {
 	private int pos;
 	private boolean updatingCopy;
 	private ChessPiece pinPiece;
-	public ArrayList<Integer> movesCopy;
+	public ArrayList<Move> movesCopy;
 	
 	public final PieceColor color;
 	public final int pieceID;
@@ -51,7 +51,7 @@ public class ChessPiece {
 		this.pieceID = pieceID;
 
 		updatingCopy = false;
-		movesCopy = !isEmpty() ? new ArrayList<Integer>(MAX_MOVES[type.arrayIndex]) : null;
+		movesCopy = !isEmpty() ? new ArrayList<Move>(MAX_MOVES[type.arrayIndex]) : null;
 		pinPiece = null;
 	}
 
@@ -86,15 +86,15 @@ public class ChessPiece {
 			final int newPos = pos + direction.rawArrayValue;
 
 			board.modifyAttacks(this, newPos, remove);
-			if (!remove && board.getPiece(newPos).color == flipColor(color)) movesCopy.add(newPos);
+			if (!remove && board.getPiece(newPos).color == flipColor(color)) movesCopy.add(new Move(pos, newPos));
 		}
 
 		//Update the pawns move copy with the squares in front of it.
 		final Direction direction = getPawnDirection(color);
 		if (!remove && board.getPiece(pos + direction.rawArrayValue).isEmpty()) {
-			movesCopy.add(pos + direction.rawArrayValue);
+			movesCopy.add(new Move(pos, pos + direction.rawArrayValue));
 			if (getRow(pos) == PAWN_STARTING_ROW[color.arrayIndex]) {
-				if (board.getPiece(pos + direction.rawArrayValue * 2).isEmpty()) movesCopy.add(pos + direction.rawArrayValue * 2);
+				if (board.getPiece(pos + direction.rawArrayValue * 2).isEmpty()) movesCopy.add(new Move(pos, pos + direction.rawArrayValue * 2));
 			}
 		}
 
@@ -114,7 +114,7 @@ public class ChessPiece {
 			if (!onBoard(newPos) || !onL(pos, newPos)) continue;		//Makes sure the knight doesn't skip rows or columns.
 
 			board.modifyAttacks(this, newPos, remove);
-			if (board.getPiece(newPos).color != color && !remove) movesCopy.add(newPos);
+			if (board.getPiece(newPos).color != color && !remove) movesCopy.add(new Move(pos, newPos));
 		}
 
 		Tests.timeKnightAttack += System.currentTimeMillis() - prevTime;
@@ -149,7 +149,7 @@ public class ChessPiece {
 		for (int i = 1; i < distance + 1; i++) {
 			final int newPos = pos + direction.rawArrayValue * i;
 			board.addAttacker(this, newPos);
-			if (board.getPiece(newPos).color != color) movesCopy.add(newPos);
+			if (board.getPiece(newPos).color != color) movesCopy.add(new Move(pos, newPos));
 
 			if (!board.getPiece(newPos).isEmpty()) break;
 		}
@@ -178,7 +178,7 @@ public class ChessPiece {
 			final int newPos = pos + direction.rawArrayValue;
 
 			board.modifyAttacks(this, newPos, remove);
-			if (board.getPiece(newPos).color != color && !remove) movesCopy.add(newPos);
+			if (board.getPiece(newPos).color != color && !remove) movesCopy.add(new Move(pos, newPos));
 		}
 
 		Tests.timeKingAttack += System.currentTimeMillis() - prevTime;
@@ -421,7 +421,7 @@ public class ChessPiece {
 			final ChessPiece piece = board.getPiece(newPos);
 
 			if (piece.color != color) {
-				movesCopy.add(newPos);
+				movesCopy.add(new Move(pos, newPos));
 			}
 			if (!piece.isEmpty()) break;
 		}
@@ -439,7 +439,7 @@ public class ChessPiece {
 			if (!board.removeAttacker(this, newPos)) throw new IllegalArgumentException();
 			final ChessPiece piece = board.getPiece(newPos);
 
-			if (piece.color != color) movesCopy.remove((Integer) newPos);
+			if (piece.color != color) movesCopy.remove(new Move(pos, newPos));
 			if (!piece.isEmpty()) break;
 		}
 	}
@@ -573,19 +573,19 @@ public class ChessPiece {
 		//Runs if the pinning piece piece is on the same column.
 		if (onColumn(pinPiece.pos, pos)) {
 			if (attacksOnly) return;
-			for (final Integer finish : movesCopy) {
+			for (final Move move : movesCopy) {
 				Tests.copyCount ++;
-				if (onColumn(pos, finish)) moves.add(new Move(pos, finish));
+				if (onColumn(pos, move.finish)) moves.add(move);
 			}
 			return;
 		}
 
 		//Runs if the pinning piece is on the same diagonal.
-		for (final Integer finish : movesCopy) {
+		for (final Move move : movesCopy) {
 			Tests.copyCount ++;
 			//If a pawn is pinned on a diagonal, its only legal move would be to capture the piece.
-			if (finish == pinPiece.pos) {
-				moves.add(new Move(pos, finish));
+			if (move.finish == pinPiece.pos) {
+				moves.add(move);
 				return;
 			}
 		}
@@ -708,10 +708,10 @@ public class ChessPiece {
 	 * @param attacksOnly Whether or not captures only should be returned.
 	 */
 	private void copyMoves(ArrayList<Move> moves, boolean attacksOnly) {
-		for (final Integer finish : movesCopy) {
+		for (final Move move : movesCopy) {
 			Tests.copyCount ++;
-			if (attacksOnly && board.getPiece(finish).isEmpty()) continue;
-			moves.add(new Move(pos, finish));
+			if (attacksOnly && board.getPiece(move.finish).isEmpty()) continue;
+			moves.add(move);
 		}
 	}
 
@@ -721,9 +721,9 @@ public class ChessPiece {
 	 * @param attacksOnly Whether or not captures only should be returned.
 	 */
 	private void copyMovesInCheck(ArrayList<Move> moves, boolean attacksOnly) {
-		for (final Integer finish : movesCopy) {
+		for (final Move move : movesCopy) {
 			Tests.copyCount ++;
-			addMove(moves, new Move(pos, finish), attacksOnly);
+			addMove(moves, new Move(pos, move.finish), attacksOnly);
 		}
 	}
 
@@ -737,7 +737,7 @@ public class ChessPiece {
 
 		long prevTime = System.currentTimeMillis();
 
-		if (updatingCopy && !move.SPECIAL) movesCopy.add(move.finish);		//Fill copy with moves to be reused later.
+		if (updatingCopy && !move.SPECIAL) movesCopy.add(new Move(pos, move.finish));		//Fill copy with moves to be reused later.
 
 		if (attacksOnly && board.getPiece(move.finish).isEmpty() && !board.isEnPassant(move)) return;		//Checks for attacks only.
 
@@ -913,17 +913,17 @@ public class ChessPiece {
 	 */
 	public void updateCopy(boolean remove, int square) {
 		if (remove) {
-			movesCopy.remove((Integer) square);
+			movesCopy.remove(new Move(pos, square));
 			return;
 		}
-		movesCopy.add(square);
+		movesCopy.add(new Move(pos, square));
 	}
 
 	/**
 	 * Reset the move copy list, use when a piece moves or one of its moves becomes illegal.
 	 */
 	public void resetMoveCopy() {
-		movesCopy = new ArrayList<Integer>(MAX_MOVES[type.arrayIndex]);
+		movesCopy = new ArrayList<Move>(MAX_MOVES[type.arrayIndex]);
 	}
 
 	/**

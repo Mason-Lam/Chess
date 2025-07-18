@@ -57,22 +57,22 @@ public class Computer {
 		}
 
 		for (final Move move : moves) {
-				final ChessPiece capturedPiece = board.isEnPassant(move) ? board.getPiece(board.getEnPassant()) : board.getPiece(move.finish);
-				final int prevCount = count;
-				board.makeMove(move);
+			final ChessPiece capturedPiece = board.isEnPassant(move) ? board.getPiece(board.getEnPassant()) : board.getPiece(move.finish);
+			final int prevCount = count;
+			board.makeMove(move);
 
-				if (board.is_promote()) {
-					for (final PieceType type : PROMOTION_PIECES) {
-						board.promote(type);
-						count += totalMoves(depth - 1);
-						board.unPromote(move.finish);
-					}
-				}
-				else {
+			if (board.is_promote()) {
+				for (final PieceType type : PROMOTION_PIECES) {
+					board.promote(type);
 					count += totalMoves(depth - 1);
+					board.unPromote(move.finish);
 				}
-				if (depth == 1) logMove(move, count - prevCount);
-				board.undoMove(move, capturedPiece, store);
+			}
+			else {
+				count += totalMoves(depth - 1);
+			}
+			if (depth == 1) logMove(move, count - prevCount);
+			board.undoMove(move, capturedPiece, store);
 		}
 		return count;
 	}

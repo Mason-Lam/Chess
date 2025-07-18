@@ -1,5 +1,7 @@
 package Chess;
 
+import java.util.HashMap;
+
 public class Move {
 
 	private final int moveID;
