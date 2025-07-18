@@ -29,45 +29,55 @@ public class Constants {
 
 	public static class DirectionConstants {
 		//Directions written from perspective of white player.
+		enum Direction {
+			UP(-8),
+			DOWN(8),
+			LEFT(-1),
+			RIGHT(1),
+			UPLEFT(sumDirections(UP, LEFT)),
+			UPRIGHT(sumDirections(UP, RIGHT)),
+			DOWNLEFT(sumDirections(DOWN, LEFT)),
+			DOWNRIGHT(sumDirections(DOWN, RIGHT));
 
-		public static final int UP = -8;
-		public static final int DOWN = 8;
 
-		public static final int LEFT = -1;
-		public static final int RIGHT = 1;
+			public final int rawArrayValue;
+			private Direction(int rawArrayValue) {
+				this.rawArrayValue = rawArrayValue;
+			}
 
-		public static final int UPLEFT = UP + LEFT;
-		public static final int UPRIGHT = UP + RIGHT;
+			public static int sumDirections(Direction... directions) {
+				int sum = 0;
+				for (Direction direction : directions) {
+					sum += direction.rawArrayValue;
+				}
+				return sum;
+			}
+		}
 
-		public static final int DOWNLEFT = DOWN + LEFT;
-		public static final int DOWNRIGHT = DOWN + RIGHT;
-
-		public static final int[] STRAIGHT_DIRECTIONS = new int [] {
-			DOWN, UP, RIGHT, LEFT
+		public static final Direction[] STRAIGHT_DIRECTIONS = new Direction [] {
+			Direction.DOWN, Direction.UP, Direction.RIGHT, Direction.LEFT
 		};
 
-		public static final int[] DIAGONAL_DIRECTIONS = new int[] {
-			DOWNLEFT, DOWNRIGHT, UPRIGHT, UPLEFT
+		public static final Direction[] DIAGONAL_DIRECTIONS = new Direction[] {
+			Direction.DOWNLEFT, Direction.DOWNRIGHT, Direction.UPRIGHT, Direction.UPLEFT
 		};
 
-		public static final int[] DIRECTIONS = new int[] {
-			DOWN, UP, RIGHT, LEFT, DOWNLEFT, DOWNRIGHT, UPRIGHT, UPLEFT
-		};
+		public static final Direction[] ALL_DIRECTIONS = Direction.values();
 
 		public static final int[] KNIGHT_DIRECTIONS = new int[] {
-			UP + UP + RIGHT,
-			UP + UP + LEFT,
-			DOWN + DOWN + LEFT,
-			DOWN + DOWN + RIGHT,
-			RIGHT + RIGHT + DOWN,
-			LEFT + LEFT + UP,
-			LEFT + LEFT + DOWN,
-			RIGHT + RIGHT + UP
+			Direction.sumDirections(Direction.UP, Direction.UP, Direction.RIGHT),
+			Direction.sumDirections(Direction.UP, Direction.UP, Direction.LEFT),
+			Direction.sumDirections(Direction.DOWN, Direction.DOWN, Direction.LEFT),
+			Direction.sumDirections(Direction.DOWN, Direction.DOWN, Direction.RIGHT),
+			Direction.sumDirections(Direction.RIGHT, Direction.RIGHT, Direction.DOWN),
+			Direction.sumDirections(Direction.LEFT, Direction.LEFT, Direction.UP),
+			Direction.sumDirections(Direction.LEFT, Direction.LEFT, Direction.DOWN),
+			Direction.sumDirections(Direction.RIGHT, Direction.RIGHT, Direction.UP),
 		};
 
-		public static final int[][] PAWN_ATTACK_DIRECTIONS = new int[][] {
-			new int[] {DOWNLEFT, DOWNRIGHT},		//BLACK
-			new int[] {UPRIGHT, UPLEFT}				//WHITE
+		public static final Direction[][] PAWN_ATTACK_DIRECTIONS = new Direction[][] {
+			new Direction[] {Direction.DOWNLEFT, Direction.DOWNRIGHT},		//BLACK
+			new Direction[] {Direction.UPRIGHT, Direction.UPLEFT}				//WHITE
 		};
 
 		public static final int[][] NUM_SQUARES_FROM_EDGE = new int[64][8];
@@ -108,13 +118,13 @@ public class Constants {
 		public static final int KINGSIDE = 1;
 
 		public static final int BLACK_QUEENSIDE_ROOK_POS = ORIGIN;
-		public static final int BLACK_KINGSIDE_ROOK_POS = ORIGIN + DirectionConstants.RIGHT * 7;
+		public static final int BLACK_KINGSIDE_ROOK_POS = ORIGIN + DirectionConstants.Direction.RIGHT.rawArrayValue * 7;
 
-		public static final int WHITE_QUEENSIDE_ROOK_POS = ORIGIN + DirectionConstants.DOWN * 7;
-		public static final int WHITE_KINGSIDE_ROOK_POS = WHITE_QUEENSIDE_ROOK_POS + DirectionConstants.RIGHT * 7;
+		public static final int WHITE_QUEENSIDE_ROOK_POS = ORIGIN + DirectionConstants.Direction.DOWN.rawArrayValue * 7;
+		public static final int WHITE_KINGSIDE_ROOK_POS = WHITE_QUEENSIDE_ROOK_POS + DirectionConstants.Direction.RIGHT.rawArrayValue * 7;
 
-		public static final int BLACK_KING_POS = ORIGIN + DirectionConstants.RIGHT * 4;
-		public static final int WHITE_KING_POS = BLACK_KING_POS + DirectionConstants.DOWN * 7;
+		public static final int BLACK_KING_POS = ORIGIN + DirectionConstants.Direction.RIGHT.rawArrayValue * 4;
+		public static final int WHITE_KING_POS = BLACK_KING_POS + DirectionConstants.Direction.DOWN.rawArrayValue * 7;
 
 		public static final int BLACK_PROMOTION_ROW = 7;
 		public static final int WHITE_PROMOTION_ROW = 0;

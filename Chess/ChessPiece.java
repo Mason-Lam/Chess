@@ -1,6 +1,9 @@
 package Chess;
 
 import java.util.ArrayList;
+
+import Chess.Constants.DirectionConstants.Direction;
+
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PositionConstants.*;
 import static Chess.Constants.DirectionConstants.*;
@@ -78,20 +81,20 @@ public class ChessPiece {
 		long prevTime = System.currentTimeMillis();
 
 		// Checks the two diagonals next to the pawn.
-		for (final int direction : PAWN_ATTACK_DIRECTIONS[color]) {
+		for (final Direction direction : PAWN_ATTACK_DIRECTIONS[color]) {
 			if (getNumSquaresFromEdge(direction, pos) < 1) continue;
-			final int newPos = pos + direction;
+			final int newPos = pos + direction.rawArrayValue;
 
 			board.modifyAttacks(this, newPos, remove);
 			if (!remove && board.getPiece(newPos).color == next(color)) movesCopy.add(newPos);
 		}
 
 		//Update the pawns move copy with the squares in front of it.
-		final int direction = getPawnDirection(color);
-		if (!remove && board.getPiece(pos + direction).isEmpty()) {
-			movesCopy.add(pos + direction);
+		final Direction direction = getPawnDirection(color);
+		if (!remove && board.getPiece(pos + direction.rawArrayValue).isEmpty()) {
+			movesCopy.add(pos + direction.rawArrayValue);
 			if (getRow(pos) == PAWN_STARTING_ROW[color]) {
-				if (board.getPiece(pos + direction * 2).isEmpty()) movesCopy.add(pos + direction * 2);
+				if (board.getPiece(pos + direction.rawArrayValue * 2).isEmpty()) movesCopy.add(pos + direction.rawArrayValue * 2);
 			}
 		}
 
@@ -124,9 +127,9 @@ public class ChessPiece {
 	private void slidingAttacks(boolean remove) {
 		long prevTime = System.currentTimeMillis();
 
-		final int[] directions = isQueen() ? DIRECTIONS : (isBishop() ? DIAGONAL_DIRECTIONS : STRAIGHT_DIRECTIONS);	//Directions the piece can attack in.
+		final Direction[] directions = isQueen() ? ALL_DIRECTIONS : (isBishop() ? DIAGONAL_DIRECTIONS : STRAIGHT_DIRECTIONS);	//Directions the piece can attack in.
 		// Adds or removes attacks in each direction.
-		for (final int direction : directions) {
+		for (final Direction direction : directions) {
 			if (remove) {
 				removeAttacksSliding(direction);
 				continue;
@@ -141,10 +144,10 @@ public class ChessPiece {
 	 * Same as {@link ChessPiece#addAttacks(int, int, int)} except it stores the moves in the copy.
 	 * @param direction Direction to move towards.
 	 */
-	private void addAttacksSliding(int direction) {
+	private void addAttacksSliding(Direction direction) {
 		final int distance = getNumSquaresFromEdge(direction, pos);
 		for (int i = 1; i < distance + 1; i++) {
-			final int newPos = pos + direction * i;
+			final int newPos = pos + direction.rawArrayValue * i;
 			board.addAttacker(this, newPos);
 			if (board.getPiece(newPos).color != color) movesCopy.add(newPos);
 
@@ -152,10 +155,10 @@ public class ChessPiece {
 		}
 	}
 
-	private void removeAttacksSliding(int direction) {
+	private void removeAttacksSliding(Direction direction) {
 		final int distance = getNumSquaresFromEdge(direction, pos);
 		for (int i = 1; i < distance + 1; i++) {
-			final int newPos = pos + direction * i;
+			final int newPos = pos + direction.rawArrayValue * i;
 			board.removeAttacker(this, newPos);
 
 			if (!board.getPiece(newPos).isEmpty()) break;
@@ -170,9 +173,9 @@ public class ChessPiece {
 		long prevTime = System.currentTimeMillis();
 
 		//Adds or removes attacks one square in each direction.
-		for (final int direction : DIRECTIONS) {
+		for (final Direction direction : ALL_DIRECTIONS) {
 			if (getNumSquaresFromEdge(direction, pos) < 1) continue;
-			final int newPos = pos + direction;
+			final int newPos = pos + direction.rawArrayValue;
 
 			board.modifyAttacks(this, newPos, remove);
 			if (board.getPiece(newPos).color != color && !remove) movesCopy.add(newPos);
@@ -194,10 +197,10 @@ public class ChessPiece {
 		//Comment this.
 		if (isPawn() || isKnight() || isKing()) return false;
 
-		final int enPassantDirection = board.isEnPassant(move) ? getDirection(pos, board.getEnPassant()) : 0;
+		final Direction enPassantDirection = board.isEnPassant(move) ? getDirection(pos, board.getEnPassant()) : null;
 
 		//Handles the case where a rook or queen is on the same column as the enPassant square.
-		if (enPassantDirection == 8 || enPassantDirection == -8 && isLineAttacker()) {
+		if (enPassantDirection == Direction.DOWN || enPassantDirection == Direction.UP && isLineAttacker()) {
 			final int enPassant = board.getEnPassant();
 			final boolean enPassantIsCloser = getNumSquaresFromEdge(enPassantDirection, enPassant) > getNumSquaresFromEdge(enPassantDirection, undoMove ? move.start : move.finish);
 
@@ -216,11 +219,11 @@ public class ChessPiece {
 			return true;
 		}
 
-		final int startDirection = getDirection(pos, move.start);
-		final int finishDirection = getDirection(pos, move.finish);
+		final Direction startDirection = getDirection(pos, move.start);
+		final Direction finishDirection = getDirection(pos, move.finish);
 		
 		//Each square is attacked independently of each other.
-		if (startDirection != finishDirection || (startDirection == 0 && finishDirection == 0)) {
+		if (startDirection != finishDirection || (startDirection == null && finishDirection == null)) {
 			switch (movePart) {
 				case START:
 					/** 
@@ -264,7 +267,7 @@ public class ChessPiece {
 		/**
 		 * Run when a the start and end of a move are on the same path of attack.
 		 */
-		final int attackDirection = startDirection;
+		final Direction attackDirection = startDirection;
 		final boolean startIsCloser = getNumSquaresFromEdge(startDirection, move.start) > getNumSquaresFromEdge(startDirection, move.finish);
 		//If the start of the move is closer, then you only have to add attacks.
 		if (startIsCloser) {
@@ -392,7 +395,7 @@ public class ChessPiece {
 	 * @param direction Represents the direction to add attacks along.
 	 * @param startingPos Position to start adding attacks, non inclusive.
 	 */
-	private void addAttacks(int direction, int startingPos) {
+	private void addAttacks(Direction direction, int startingPos) {
 		addAttacks(direction, startingPos, getNumSquaresFromEdge(direction, startingPos));
 	}
 
@@ -401,7 +404,7 @@ public class ChessPiece {
 	 * @param direction Represents the direction to remove attacks along.
 	 * @param startingPos Position to start removing attacks, non inclusive.
 	 */
-	private void removeAttacks(int direction, int startingPos) {
+	private void removeAttacks(Direction direction, int startingPos) {
 		removeAttacks(direction, startingPos, getNumSquaresFromEdge(direction, startingPos));
 	}
 
@@ -411,9 +414,9 @@ public class ChessPiece {
 	 * @param startingPos Position to start adding attacks, non inclusive.
 	 * @param distance Distance to add attacks along.
 	 */
-	private void addAttacks(int direction, int startingPos, int distance) {
+	private void addAttacks(Direction direction, int startingPos, int distance) {
 		for (int i = 1; i < distance + 1; i++) {
-			final int newPos = startingPos + direction * i;
+			final int newPos = startingPos + direction.rawArrayValue * i;
 			if (!board.addAttacker(this, newPos)) throw new IllegalArgumentException();
 			final ChessPiece piece = board.getPiece(newPos);
 
@@ -430,9 +433,9 @@ public class ChessPiece {
 	 * @param startingPos Position to start removing attacks, non inclusive.
 	 * @param distance Distance to remove attacks along.
 	 */
-	private void removeAttacks(int direction, int startingPos, int distance) {
+	private void removeAttacks(Direction direction, int startingPos, int distance) {
 		for (int i = 1; i < distance + 1; i++) {
-			final int newPos = startingPos + direction * i;
+			final int newPos = startingPos + direction.rawArrayValue * i;
 			if (!board.removeAttacker(this, newPos)) throw new IllegalArgumentException();
 			final ChessPiece piece = board.getPiece(newPos);
 
@@ -505,7 +508,7 @@ public class ChessPiece {
 		if (board.getEnPassant() != EMPTY) {
 			final int enPassantPos = board.getEnPassant();
 			if (onRow(enPassantPos, pos) && Math.abs(enPassantPos - pos) == 1) {
-				final int newPos = enPassantPos + getPawnDirection(color);
+				final int newPos = enPassantPos + getPawnDirection(color).rawArrayValue;
 				addMove(moves, new Move(pos, newPos, true), attacksOnly);
 			}
 		}
@@ -517,18 +520,18 @@ public class ChessPiece {
 		}
 		
 		//Move pawns forward.
-		final int direction = getPawnDirection(color);
-		if (board.getPiece(pos + direction).isEmpty()) {
-			addMove(moves, new Move(pos, pos + direction, false), attacksOnly);
+		final Direction pawnMoveDirection = getPawnDirection(color);
+		if (board.getPiece(pos + pawnMoveDirection.rawArrayValue).isEmpty()) {
+			addMove(moves, new Move(pos, pos + pawnMoveDirection.rawArrayValue, false), attacksOnly);
 			if (!hasPawnMoved(pos, color)) {
-				if (board.getPiece(pos + direction * 2).isEmpty()) addMove(moves, new Move(pos, pos + direction * 2, false), attacksOnly);
+				if (board.getPiece(pos + pawnMoveDirection.rawArrayValue * 2).isEmpty()) addMove(moves, new Move(pos, pos + pawnMoveDirection.rawArrayValue * 2, false), attacksOnly);
 			}
 		}
 
 		//Attacks.
-		for (int i = 0; i < 2; i++) {
-			if (getNumSquaresFromEdge(PAWN_ATTACK_DIRECTIONS[color][i], pos) < 1) continue;	// Checks if the pawn is at the edge of the board
-			final int newPos = pos + PAWN_ATTACK_DIRECTIONS[color][i];
+		for (final Direction pawnAttackDirection : PAWN_ATTACK_DIRECTIONS[color]) {
+			if (getNumSquaresFromEdge(pawnAttackDirection, pos) < 1) continue;	// Checks if the pawn is at the edge of the board
+			final int newPos = pos + pawnAttackDirection.rawArrayValue;
 			if (board.getPiece(newPos).color == next(color)) addMove(moves, new Move(pos, newPos, false), attacksOnly);
 		}
 	}
@@ -642,9 +645,9 @@ public class ChessPiece {
 		}
 
 		//Iterates over each square that's 1 away from the king.
-		for (int i = 0; i < DIRECTIONS.length; i++) {
-			if (getNumSquaresFromEdge(DIRECTIONS[i], pos) < 1) continue;
-			final int newPos = pos + DIRECTIONS[i];
+		for (final Direction direction : ALL_DIRECTIONS) {
+			if (getNumSquaresFromEdge(direction, pos) < 1) continue;
+			final int newPos = pos + direction.rawArrayValue;
 			if(board.getPiece(newPos).color == color) continue;
 
 			addMove(moves, new Move(pos, newPos, false), attacksOnly);
@@ -668,13 +671,26 @@ public class ChessPiece {
 			return;
 		}
 
-		final int startingIndex = isBishop() ? 4 : 0;	//If a bishop, ignore the first 4 directions which are straight.
-		final int endIndex = isRook() ? 4 : 8;			//If a rook, ignore the last 4 directions which are diagonal.
+		Direction[] moveDirections;
+		switch(type) {
+			case QUEEN:
+				moveDirections = ALL_DIRECTIONS;
+				break;
+			case BISHOP:
+				moveDirections = DIAGONAL_DIRECTIONS;
+				break;
+			case ROOK:
+				moveDirections = STRAIGHT_DIRECTIONS;
+				break;
+			default:
+				throw new IllegalArgumentException("Invalid piece type " + type +  " calling sliding moves function");
+		}
+
 		//Iterate over all sliding directions.
-		for (int i = startingIndex; i < endIndex; i++) {
+		for (final Direction direction : moveDirections) {
 			//Iterate to the edge of the board.
-			for (int j = 1; j < getNumSquaresFromEdge(DIRECTIONS[i], pos) + 1; j++) {
-				final int newPos = pos + DIRECTIONS[i] * j;
+			for (int j = 1; j < getNumSquaresFromEdge(direction, pos) + 1; j++) {
+				final int newPos = pos + direction.rawArrayValue * j;
 				final ChessPiece piece = board.getPiece(newPos);
 
 				if (piece.color == color) break;

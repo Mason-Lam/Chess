@@ -3,6 +3,9 @@ package Chess;
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.PositionConstants.*;
+
+import Chess.Constants.DirectionConstants.Direction;
+
 import static Chess.Constants.DirectionConstants.*;
 
 /**
@@ -74,16 +77,16 @@ public class BoardUtil {
 	 * @param pos The position of the square.
 	 * @return The distance between the square and the edge of the board.
 	 */
-    public static int getNumSquaresFromEdge(int direction, int pos) {
+    public static int getNumSquaresFromEdge(Direction direction, int pos) {
 		switch (direction) {
-			case(DOWNRIGHT): return NUM_SQUARES_FROM_EDGE[pos][5];
-			case(UPLEFT): return NUM_SQUARES_FROM_EDGE[pos][4];
-			case(DOWNLEFT): return NUM_SQUARES_FROM_EDGE[pos][7];
-			case(UPRIGHT): return NUM_SQUARES_FROM_EDGE[pos][6];
-			case(DOWN): return NUM_SQUARES_FROM_EDGE[pos][1];
-			case(UP): return NUM_SQUARES_FROM_EDGE[pos][0];
-			case(RIGHT): return NUM_SQUARES_FROM_EDGE[pos][3];
-			case(LEFT): return NUM_SQUARES_FROM_EDGE[pos][2];
+			case DOWNRIGHT: return NUM_SQUARES_FROM_EDGE[pos][5];
+			case UPLEFT: return NUM_SQUARES_FROM_EDGE[pos][4];
+			case DOWNLEFT: return NUM_SQUARES_FROM_EDGE[pos][7];
+			case UPRIGHT: return NUM_SQUARES_FROM_EDGE[pos][6];
+			case DOWN: return NUM_SQUARES_FROM_EDGE[pos][1];
+			case UP: return NUM_SQUARES_FROM_EDGE[pos][0];
+			case RIGHT: return NUM_SQUARES_FROM_EDGE[pos][3];
+			case LEFT: return NUM_SQUARES_FROM_EDGE[pos][2];
 			default:
 				throw new IllegalArgumentException("Invalid direction");
 		}
@@ -94,24 +97,24 @@ public class BoardUtil {
 	 * @param color The color of the pawn.
 	 * @return The direction the pawns move.
 	 */
-	public static int getPawnDirection(int color) {
-		return color == WHITE ? -8 : 8;
+	public static Direction getPawnDirection(int color) {
+		return color == WHITE ? Direction.UP : Direction.DOWN;
 	}
 
 	/**
 	 * Returns the direction to travel to get from one point to another.
 	 * @param startingPos The starting point. 
 	 * @param endPos The point to travel towards.
-	 * @return The direction to travel, returns 0 if there is none.
+	 * @return The direction to travel, returns null if there is none.
 	 */
-	public static int getDirection(int startingPos, int endPos) {
+	public static Direction getDirection(int startingPos, int endPos) {
 		if (onDiagonal(startingPos, endPos)) {
 			return getDiagonalDirection(startingPos, endPos);
 		}
 		if (onLine(startingPos, endPos)) {
 			return getHorizontalDirection(startingPos, endPos);
 		}
-		return 0;
+		return null;
 	}
 
 	/**
@@ -120,10 +123,22 @@ public class BoardUtil {
 	 * @param endPos The point to travel towards.
 	 * @return The direction to travel.
 	 */
-	public static int getDiagonalDirection(int startingPos, int endPos) {
+	public static Direction getDiagonalDirection(int startingPos, int endPos) {
 		final int offset = startingPos - endPos;
-		final int direction = (offset) % 9 == 0 ? 9 : 7;
-		return direction * (offset > 0 ? -1 : 1);
+		final int absoluteRawDirection = (offset) % 9 == 0 ? 9 : 7;
+		final int rawDirection = absoluteRawDirection * (offset > 0 ? -1 : 1);
+		switch (rawDirection) {
+			case 9:
+				return Direction.DOWNRIGHT;
+			case 7:
+				return Direction.DOWNLEFT;
+			case -9:
+				return Direction.UPLEFT;
+			case -7:
+				return Direction.UPRIGHT;
+			default:
+				throw new IllegalArgumentException("Diagonal direction method failed");
+		}
 	}
 
 	/**
@@ -132,9 +147,22 @@ public class BoardUtil {
 	 * @param endPos The point to travel towards.
 	 * @return The direction to travel.
 	 */
-	public static int getHorizontalDirection(int startingPos, int endPos) {
-		final int direction = onColumn(startingPos, endPos) ? 8 : 1;
-		return direction * (startingPos - endPos > 0 ? -1 : 1);
+	public static Direction getHorizontalDirection(int startingPos, int endPos) {
+		final int offset = startingPos - endPos;
+		final int rawAbsoluteDirection = onColumn(startingPos, endPos) ? 8 : 1;
+		final int rawDirection = rawAbsoluteDirection * (offset > 0 ? -1 : 1);
+		switch (rawDirection) {
+			case 8:
+				return Direction.DOWN;
+			case 1:
+				return Direction.RIGHT;
+			case -8:
+				return Direction.UP;
+			case -1:
+				return Direction.LEFT;
+			default:
+				throw new IllegalArgumentException("Horizontal direction method failed");
+		}
 	}
 
 	public static boolean hasPawnMoved(int pos, int color) {
