@@ -38,7 +38,7 @@ public class Computer {
 			for (final ChessPiece piece : pieces) {
 				final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.getType()]);
 				piece.pieceMoves(moves);
-				if (moves.size() > 0 && piece.isPawn() && getRow(moves.get(0).finish) == PROMOTION_ROW[board.getTurn()]){
+				if (moves.size() > 0 && piece.isPawn() && getRow(moves.get(0).finish) == PROMOTION_ROW[board.getTurn().arrayIndex]){
 					count += moves.size() * 4;
 					continue;
 				}

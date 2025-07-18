@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import javax.swing.*;
 
 import Chess.ChessBoard.BoardStorage;
+import Chess.Constants.PieceConstants.PieceColor;
 
 import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
@@ -19,7 +20,7 @@ public class ChessGame {
 	private final JPanel panel = new JPanel();	//Panel to display the Chess Squares
 	private final ChessSquare[] GUI;	//An array to store the Chess Squares
 	private final ChessBoard board;		//A ChessBoard object to handle the logic of the Chess Game
-	private final int computerTurn;			//int to store the computer
+	private final PieceColor computerTurn;			//int to store the computer
 	private final Computer computer;
 	private final int difficulty;
 	private final ArrayList<Move> legal;	//A list to store the legal moves of a chess piece
@@ -46,7 +47,7 @@ public class ChessGame {
 	public static long timeDebug = 0;
 	public static long copyCount = 0;
 
-	public ChessGame(int computerTurn, int difficulty){
+	public ChessGame(PieceColor computerTurn, int difficulty){
 		this.difficulty = difficulty;
 		this.computerTurn = computerTurn;
 		legal = new ArrayList<Move>(QUEEN);
@@ -170,7 +171,7 @@ public class ChessGame {
 			else {
 				address += "G";
 			}
-			if(board.getPiece(count).color == WHITE) {
+			if(board.getPiece(count).color == PieceColor.WHITE) {
 				address += "W";
 			}
 			address += letter +".png";
@@ -280,7 +281,7 @@ public class ChessGame {
 		final String[] colors = {"White","Black"};	//Colors
 		//Checks for a win
 		if(win == WIN) {
-			l2 = new JLabel(colors[board.getTurn()] + " is the winner!");	//Displays winner
+			l2 = new JLabel(colors[board.getTurn().arrayIndex] + " is the winner!");	//Displays winner
 		}
 		//Checks for a draw
 		else{

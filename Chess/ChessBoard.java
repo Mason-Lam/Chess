@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import Chess.Constants.DirectionConstants.Direction;
+import Chess.Constants.PieceConstants.PieceColor;
 
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PositionConstants.*;
@@ -71,7 +72,7 @@ public class ChessBoard {
 	/** Variable used to store the piece that is currently attacking the king. */
 	private ChessPiece kingAttacker = ChessPiece.empty();
 
-	private int turn;
+	private PieceColor turn;
 	private int enPassant;
 	private int promotingPawn;
 	public int halfMove;
@@ -89,28 +90,28 @@ public class ChessBoard {
 	 * @param fen String that specifies the starting position using FEN {@link https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation}
 	 */
 	public ChessBoard (String fen) {
-		turn = BLACK;
+		turn = PieceColor.BLACK;
 		halfMove = 0;
 		fullMove = 1;
 		
 		attacks = new PieceSet[2][];
-		attacks[BLACK] = new PieceSet[64];
-		attacks[WHITE] = new PieceSet[64];
+		attacks[PieceColor.BLACK.arrayIndex] = new PieceSet[64];
+		attacks[PieceColor.WHITE.arrayIndex] = new PieceSet[64];
 
 		pieces = new PieceSet[2];
-		pieces[BLACK] = new PieceSet();
-		pieces[WHITE] = new PieceSet();
+		pieces[PieceColor.BLACK.arrayIndex] = new PieceSet();
+		pieces[PieceColor.WHITE.arrayIndex] = new PieceSet();
 		
 		kingPos = new int[2];
 		pieceCount = new int[2][5];
-		pieceCount[BLACK] = new int[5];
-		pieceCount[WHITE] = new int[5];
+		pieceCount[PieceColor.BLACK.arrayIndex] = new int[5];
+		pieceCount[PieceColor.WHITE.arrayIndex] = new int[5];
 		Arrays.fill(pieceCount[0], 0);
 		Arrays.fill(pieceCount[1], 0);
 		board = new ChessPiece[64];
 		castling = new boolean[2][2]; //Black: Queenside, Kingside, White: Queenside, Kingside
-		Arrays.fill(castling[BLACK], false);
-		Arrays.fill(castling[WHITE], false);
+		Arrays.fill(castling[PieceColor.BLACK.arrayIndex], false);
+		Arrays.fill(castling[PieceColor.WHITE.arrayIndex], false);
 		enPassant = -1;
 		promotingPawn = -1;
 		fen_to_board(fen);
@@ -147,26 +148,26 @@ public class ChessBoard {
 			if (row != 7) fen += "/";
 		}
 		
-		fen = (turn == WHITE) ? fen + " w" : fen + " b";	//Store whose turn it is.
+		fen = (turn == PieceColor.WHITE) ? fen + " w" : fen + " b";	//Store whose turn it is.
 
 		boolean whiteCanCastle = true;
 
 		//If white can't castle at all, add a "-".
-		if (!castling[WHITE][QUEENSIDE] && !castling[WHITE][KINGSIDE]) {
+		if (!castling[PieceColor.WHITE.arrayIndex][QUEENSIDE] && !castling[PieceColor.WHITE.arrayIndex][KINGSIDE]) {
 			fen += " -";
 			whiteCanCastle = false;
 		}
 
 		//Add capital letters based on white's castling ability.
-		if (castling[WHITE][KINGSIDE]) fen += " K";
-		if (castling[WHITE][QUEENSIDE]) fen += "Q";
+		if (castling[PieceColor.WHITE.arrayIndex][KINGSIDE]) fen += " K";
+		if (castling[PieceColor.WHITE.arrayIndex][QUEENSIDE]) fen += "Q";
 		
 		//If Black can't castle at all but white can, add a "-".
-		if (!castling[BLACK][QUEENSIDE] && !castling[BLACK][KINGSIDE] && whiteCanCastle) fen += " -";
+		if (!castling[PieceColor.BLACK.arrayIndex][QUEENSIDE] && !castling[PieceColor.BLACK.arrayIndex][KINGSIDE] && whiteCanCastle) fen += " -";
 
 		//Add lowercase letter based on black's castling ability.
-		if (castling[BLACK][KINGSIDE]) fen += "k";
-		if (castling[BLACK][QUEENSIDE]) fen += "q";
+		if (castling[PieceColor.BLACK.arrayIndex][KINGSIDE]) fen += "k";
+		if (castling[PieceColor.BLACK.arrayIndex][QUEENSIDE]) fen += "q";
 		
 		//Handle enPassant
 		if (enPassant == EMPTY) fen += " -";
@@ -200,27 +201,27 @@ public class ChessBoard {
 				
 				//Turn.
 				if (letter == 'w') {
-					turn = WHITE;
+					turn = PieceColor.WHITE;
 				}
 				
 				//Castling.
 				else if (letter == 'K') {
-					castling[WHITE][KINGSIDE] = true;
+					castling[PieceColor.WHITE.arrayIndex][KINGSIDE] = true;
 				}
 				else if (letter == 'Q') {
-					castling[WHITE][QUEENSIDE] = true;
+					castling[PieceColor.WHITE.arrayIndex][QUEENSIDE] = true;
 				}
 				else if (letter == 'k') {
-					castling[BLACK][KINGSIDE] = true;
+					castling[PieceColor.BLACK.arrayIndex][KINGSIDE] = true;
 				}
 				else if (letter == 'q') {
-					castling[BLACK][QUEENSIDE] = true;
+					castling[PieceColor.BLACK.arrayIndex][QUEENSIDE] = true;
 				}
 				
 				//enPassant; it's garbage but I can't be bothered to clean it up.
 				else if ((int) letter <= 104 && (int) letter >= 97 && Character.isDigit(fen.charAt(index + 1))) {
 					enPassant = squareToIndex(Character.toString(letter) + fen.charAt(index + 1));
-					enPassant = (turn == BLACK) ? enPassant - 8 : enPassant + 8;
+					enPassant = (turn == PieceColor.BLACK) ? enPassant - 8 : enPassant + 8;
 					index++;
 				}
 
@@ -259,11 +260,11 @@ public class ChessBoard {
 			//Create and store the piece.
 			final ChessPiece piece = charToPiece(letter, pos, this, pieceIDs);
 			board[pos] = piece;
-			pieces[piece.color].add(piece);
+			pieces[piece.color.arrayIndex].add(piece);
 			
 			//Keep track of the piece.
-			if (piece.isKing()) kingPos[piece.color] = pos;
-			else pieceCount[piece.color][piece.getType()] ++;
+			if (piece.isKing()) kingPos[piece.color.arrayIndex] = pos;
+			else pieceCount[piece.color.arrayIndex][piece.getType()] ++;
 
 			pos++;
 		}
@@ -302,7 +303,7 @@ public class ChessBoard {
 		
 		//Handles king moves.
 		if (movingPiece.isKing()) {
-			Arrays.fill(castling[movingPiece.color], false);		//King can no longer castle.
+			Arrays.fill(castling[movingPiece.color.arrayIndex], false);		//King can no longer castle.
 			//Handle castling.
 			if (move.SPECIAL) {
 				castledRookPos = makeCastleMove(move);
@@ -323,7 +324,7 @@ public class ChessBoard {
 		//Move on to the next turn if a promotion isn't happenning.
 		if (!is_promote()) {
 			halfMove ++;
-			if (turn == BLACK) fullMove ++;
+			if (turn == PieceColor.BLACK) fullMove ++;
 			next_turn();
 		}
 		
@@ -347,7 +348,7 @@ public class ChessBoard {
 			return move.finish;
 		}
 		//Pawn is promoting.
-		if (getRow(move.finish) == PROMOTION_ROW[turn]) {
+		if (getRow(move.finish) == PROMOTION_ROW[turn.arrayIndex]) {
 			promotingPawn = move.finish;
 		}
 		return EMPTY;
@@ -358,13 +359,13 @@ public class ChessBoard {
 	 * @param startingPos Position where the rook moved from.
 	 * @param color The color of the rook that moved.
 	 */
-	private void updateCastlingRookMove(int startingPos, int color) {
+	private void updateCastlingRookMove(int startingPos, PieceColor color) {
 		//Queenside
-		if (startingPos == ROOK_POSITIONS[color][QUEENSIDE])
-			castling[color][QUEENSIDE] = false;
+		if (startingPos == ROOK_POSITIONS[color.arrayIndex][QUEENSIDE])
+			castling[color.arrayIndex][QUEENSIDE] = false;
 		//Kingside
-		if (startingPos == ROOK_POSITIONS[color][KINGSIDE])
-			castling[color][KINGSIDE] = false;
+		if (startingPos == ROOK_POSITIONS[color.arrayIndex][KINGSIDE])
+			castling[color.arrayIndex][KINGSIDE] = false;
 	}
 
 	/**
@@ -374,7 +375,7 @@ public class ChessBoard {
 	 */
 	private int makeCastleMove(Move move) {
 		final int side = move.finish > move.start ? KINGSIDE : QUEENSIDE;
-		final int currentRookPos = ROOK_POSITIONS[turn][side];
+		final int currentRookPos = ROOK_POSITIONS[turn.arrayIndex][side];
 		board[currentRookPos].pieceAttacks(true);
 		final int newRookPos = move.finish + (side == KINGSIDE ? Direction.LEFT : Direction.RIGHT).rawArrayValue; 
 		updatePosition(board[currentRookPos], newRookPos, false);
@@ -394,12 +395,12 @@ public class ChessBoard {
 		//Back up a turn if a promotion isn't happenning.
 		if (!is_promote()) {
 			halfMove = store.halfMove;
-			if (turn == WHITE) fullMove --;
+			if (turn == PieceColor.WHITE) fullMove --;
 			next_turn();
 		}
 
 		//Reset castling data and enPassant data.
-		castling[turn] = store.getCastling();
+		castling[turn.arrayIndex] = store.getCastling();
 		enPassant = store.enPassant;
 
 		kingAttacker = ChessPiece.empty();
@@ -448,9 +449,9 @@ public class ChessBoard {
 		final int side = invertedMove.start > invertedMove.finish ? KINGSIDE : QUEENSIDE;
 		final int castledRookPos = invertedMove.start + (side == KINGSIDE ? Direction.LEFT : Direction.RIGHT).rawArrayValue;
 		board[castledRookPos].pieceAttacks(true);		//Update the squares the rook currently attacks.
-		updatePosition(board[castledRookPos], ROOK_POSITIONS[turn][side], false);		//Move the rook to the new position.
+		updatePosition(board[castledRookPos], ROOK_POSITIONS[turn.arrayIndex][side], false);		//Move the rook to the new position.
 		board[castledRookPos] = ChessPiece.empty();			//Empty the square the rook used to occupy.
-		return ROOK_POSITIONS[turn][side];
+		return ROOK_POSITIONS[turn.arrayIndex][side];
 	}
 
 	/**
@@ -462,8 +463,8 @@ public class ChessBoard {
 	private void updatePosition(ChessPiece piece, int pos, boolean remove) {
 		//Remove the piece from the board and updates the tracking variables.
 		if (remove) {
-			pieces[piece.color].remove(piece);
-			pieceCount[piece.color][piece.getType()] -= 1;
+			pieces[piece.color.arrayIndex].remove(piece);
+			pieceCount[piece.color.arrayIndex][piece.getType()] -= 1;
 			board[pos] = ChessPiece.empty();
 			return;
 		}
@@ -471,10 +472,10 @@ public class ChessBoard {
 		//Add the piece to the board and update the tracking variables.
 		board[pos] = piece;
 		piece.setPos(pos);
-		if (pieces[piece.color].add(piece)) pieceCount[piece.color][piece.getType()] += 1;
+		if (pieces[piece.color.arrayIndex].add(piece)) pieceCount[piece.color.arrayIndex][piece.getType()] += 1;
 		
 		//Update the king position variable if the king moves.
-		if (piece.isKing()) kingPos[piece.color] = pos;
+		if (piece.isKing()) kingPos[piece.color.arrayIndex] = pos;
 	}
 
 	/**
@@ -489,14 +490,14 @@ public class ChessBoard {
 		updatePosition(promotingPiece, promotingPawn, false);
 
 		//Update tracking variables.
-		pieceCount[turn][type] += 1;
-		pieceCount[turn][PAWN] -= 1;
+		pieceCount[turn.arrayIndex][type] += 1;
+		pieceCount[turn.arrayIndex][PAWN] -= 1;
 
 		promotingPiece.pieceAttacks(false);	//Update the squares the promoted piece now attacks.
 
 		//Next turn.
 		halfMove ++;
-		if (turn == BLACK) fullMove ++;
+		if (turn == PieceColor.BLACK) fullMove ++;
 		next_turn();
 
 		promotingPawn = EMPTY;
@@ -511,12 +512,12 @@ public class ChessBoard {
 
 		//Backup a turn.
 		halfMove --;
-		if (turn == WHITE) fullMove --;
+		if (turn == PieceColor.WHITE) fullMove --;
 		next_turn();
 
 		//Update tracking variables.
-		pieceCount[turn][unpromotingPiece.getType()] --;
-		pieceCount[turn][PAWN] ++;
+		pieceCount[turn.arrayIndex][unpromotingPiece.getType()] --;
+		pieceCount[turn.arrayIndex][PAWN] ++;
 
 		//Update the squares the unpromoting piece used to attack.
 		unpromotingPiece.pieceAttacks(true);
@@ -541,7 +542,7 @@ public class ChessBoard {
 
 		final int[] modifiedSquares = isEnPassant(move) ? new int[] {move.start, move.finish, enPassant} : new int[] {move.start, move.finish};
 		//Check each square that the move affects.
-		for (int color = 0; color < 2; color++) {
+		for (final PieceColor color : PIECE_COLORS) {
 			//Go through black and white pieces potentially affected.
 			final PieceSet softAttackPieces = new PieceSet();
 			for (int movePart = 0; movePart < modifiedSquares.length; movePart++) {
@@ -599,7 +600,7 @@ public class ChessBoard {
 		}
 
 		//Update both black and white pawns.
-		for (int color = 0; color < 2; color++) {
+		for (final PieceColor color : PIECE_COLORS) {
 			final Direction pawnDirection = getPawnDirection(color);
 
 			//Check every square involved in the move made.
@@ -615,7 +616,7 @@ public class ChessBoard {
 				if (pieceOneSquareAhead.isPawn() && pieceOneSquareAhead.color == color) {
 					pieceOneSquareAhead.updateCopy(!isEmpty, pos);
 					//Check for double move forward.
-					if (getRow(oneSquareAhead) == PAWN_STARTING_ROW[color]) {
+					if (getRow(oneSquareAhead) == PAWN_STARTING_ROW[color.arrayIndex]) {
 						//Check the square behind the involved square.
 						final int oneSquareBehind = pos + pawnDirection.rawArrayValue;
 						if (board[oneSquareBehind].isEmpty() && !move.contains(oneSquareBehind)) pieceOneSquareAhead.updateCopy(!isEmpty, oneSquareBehind);
@@ -630,7 +631,7 @@ public class ChessBoard {
 				final ChessPiece pieceTwoSquaresAhead = board[twoSquaresAhead];
 
 				//Check if it's a pawn that would be influenced by the move.
-				if (pieceTwoSquaresAhead.isPawn() && pieceTwoSquaresAhead.color == color && getRow(twoSquaresAhead) == PAWN_STARTING_ROW[color]) {
+				if (pieceTwoSquaresAhead.isPawn() && pieceTwoSquaresAhead.color == color && getRow(twoSquaresAhead) == PAWN_STARTING_ROW[color.arrayIndex]) {
 					pieceTwoSquaresAhead.updateCopy(!isEmpty, pos);
 				}
 			}
@@ -667,7 +668,7 @@ public class ChessBoard {
 		if (hasInsufficientMaterial()) return DRAW;
 
 		//Check to see if any piece has a legal move.
-		for(final ChessPiece piece : pieces[turn]) {
+		for(final ChessPiece piece : pieces[turn.arrayIndex]) {
 			final ArrayList<Move> moves = new ArrayList<Move>();
 			piece.pieceMoves(moves);
 			if(moves.size() > 0) {
@@ -712,7 +713,7 @@ public class ChessBoard {
 	 * @param pos The square being attacked.
 	 */
 	public boolean addAttacker(ChessPiece piece, int pos) {
-		return attacks[piece.color][pos].add(piece);
+		return attacks[piece.color.arrayIndex][pos].add(piece);
 	}
 
 	/**
@@ -721,14 +722,14 @@ public class ChessBoard {
 	 * @param pos The square being attacked.
 	 */
 	public boolean removeAttacker(ChessPiece piece, int pos) {
-		return attacks[piece.color][pos].remove(piece);
+		return attacks[piece.color.arrayIndex][pos].remove(piece);
 	}
 
 	/**
 	 * Moves on to the next turn.
 	 */
 	public void next_turn() {
-		turn = next(turn);
+		turn = flipColor(turn);
 	}
 
 	/**
@@ -736,8 +737,8 @@ public class ChessBoard {
 	 * @param color The color of the king.
 	 * @return True if the king can castle in the future, false if it can't.
 	 */
-	public boolean[] getCastlingPotential(int color) {
-		return castling[color];
+	public boolean[] getCastlingPotential(PieceColor color) {
+		return castling[color.arrayIndex];
 	}
 
 	/**
@@ -745,8 +746,8 @@ public class ChessBoard {
 	 * @param color The color of the king.
 	 * @return The king's position from 0 to 63.
 	 */
-	public int getKingPos(int color) {
-		return kingPos[color];
+	public int getKingPos(PieceColor color) {
+		return kingPos[color.arrayIndex];
 	}
 
 	/**
@@ -772,8 +773,8 @@ public class ChessBoard {
 	 * @param color The color of the king being attacked.
 	 * @return True if the king is in double check, false if it isn't.
 	 */
-	public boolean doubleCheck(int color) {
-		return numAttacks(kingPos[color], color) >= 2;
+	public boolean doubleCheck(PieceColor color) {
+		return numAttacks(kingPos[color.arrayIndex], color) >= 2;
 	}
 	
 	/**
@@ -781,8 +782,8 @@ public class ChessBoard {
 	 * @param color The color of the king being attacked.
 	 * @return True if the king is in check, false if it isn't.
 	 */
-	public boolean isChecked(int color) {
-		return isAttacked(board[kingPos[color]]);
+	public boolean isChecked(PieceColor color) {
+		return isAttacked(board[kingPos[color.arrayIndex]]);
 	}
 	
 	/**
@@ -791,7 +792,7 @@ public class ChessBoard {
 	 * @param color The color of pieces that are attacking the square.
 	 * @return True if the square is attacked, false if it isn't.
 	 */
-	public boolean isAttacked(int pos, int color) {
+	public boolean isAttacked(int pos, PieceColor color) {
 		return numAttacks(pos,color) >= 1;
 	}
 
@@ -810,7 +811,7 @@ public class ChessBoard {
 	 * @param color The color of the square (If white is inputted, the method returns the number of black attackers).
 	 * @return The number of attackers.
 	 */
-	private int numAttacks(int pos, int color) {
+	private int numAttacks(int pos, PieceColor color) {
 		return getAttackers(pos, color).size();
 	}
 
@@ -829,8 +830,8 @@ public class ChessBoard {
 	 * @param color The color of the square (If white is inputted, the method returns the number of black attackers).
 	 * @return The Chess pieces attacking.
 	 */
-	public PieceSet getAttackers(int pos, int color)  {
-		return attacks[next(color)][pos];
+	public PieceSet getAttackers(int pos, PieceColor color)  {
+		return attacks[flipColor(color).arrayIndex][pos];
 	}
 
 	/**
@@ -853,7 +854,7 @@ public class ChessBoard {
 	 * Returns whose turn it is on the board.
 	 * @return BLACK: 0, WHITE: 1.
 	 */
-	public int getTurn() {
+	public PieceColor getTurn() {
 		return turn;
 	}
 
@@ -871,8 +872,8 @@ public class ChessBoard {
 	 * @param color The color of the pieces.
 	 * @return A piece set object, use enhanced for loop.
 	 */
-	public PieceSet getPieces(int color) {
-		return pieces[color];
+	public PieceSet getPieces(PieceColor color) {
+		return pieces[color.arrayIndex];
 	}
 
 	/**
@@ -897,7 +898,7 @@ public class ChessBoard {
 	 */
 	public ChessPiece getKingAttacker() {
 		if (kingAttacker.isEmpty()) {
-			for (final ChessPiece piece : getAttackers(board[kingPos[turn]])) kingAttacker = piece;
+			for (final ChessPiece piece : getAttackers(board[kingPos[turn.arrayIndex]])) kingAttacker = piece;
 		}
 		return kingAttacker;
 	}
@@ -928,15 +929,15 @@ public class ChessBoard {
 	 * @param color The color of the king.
 	 * @return True if the king can castle, false if it can't.
 	 */
-	public boolean canCastle(int side, int color) {
+	public boolean canCastle(int side, PieceColor color) {
 		//If the king is checked, it can't castle.
 		if (isChecked(color)) return false;
 
 		//If the king or associated rook have already moved, it can't castle.
-		if (!castling[turn][side]) return false;
+		if (!castling[turn.arrayIndex][side]) return false;
 
 		//If the piece on the side is not a rook, it can't castle.
-		final int rookPos = ROOK_POSITIONS[color][side];
+		final int rookPos = ROOK_POSITIONS[color.arrayIndex][side];
 		if (!getPiece(rookPos).isRook()) return false;
 		
 		//There must be a clear path between the king and rook.

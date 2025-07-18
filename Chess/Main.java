@@ -1,10 +1,12 @@
 package Chess;
 
+import Chess.Constants.PieceConstants.PieceColor;
+
 public class Main {
 	
 	public static void main(String[] args) {
 		// Tests.runTests();
 		@SuppressWarnings("unused")
-		final ChessGame game = new ChessGame(-1,0);
+		final ChessGame game = new ChessGame(PieceColor.COLORLESS,0);
 	}
 }

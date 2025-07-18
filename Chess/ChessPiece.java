@@ -14,7 +14,7 @@ import static Chess.BoardUtil.*;
  * Class representing an individual chess piece.
  */
 public class ChessPiece {
-	private static final ChessPiece emptySquare = new ChessPiece(EMPTY, EMPTY, EMPTY, null, EMPTY);
+	private static final ChessPiece emptySquare = new ChessPiece(EMPTY, PieceColor.COLORLESS, EMPTY, null, EMPTY);
 
 	private byte type;
 	private int pos;
@@ -22,7 +22,7 @@ public class ChessPiece {
 	private ChessPiece pinPiece;
 	public ArrayList<Integer> movesCopy;
 	
-	public final byte color;
+	public final PieceColor color;
 	public final int pieceID;
 	private final ChessBoard board;
 	
@@ -43,7 +43,7 @@ public class ChessPiece {
 	 * @param board ChessBoard object the piece occupies.
 	 * @param pieceID Unique identifier for the chess piece.
 	 */
-	public ChessPiece(byte type, byte color, int pos, ChessBoard board, int pieceID) {
+	public ChessPiece(byte type, PieceColor color, int pos, ChessBoard board, int pieceID) {
 		this.type = type;
 		this.pos = pos;
 		this.color = color;
@@ -81,19 +81,19 @@ public class ChessPiece {
 		long prevTime = System.currentTimeMillis();
 
 		// Checks the two diagonals next to the pawn.
-		for (final Direction direction : PAWN_ATTACK_DIRECTIONS[color]) {
+		for (final Direction direction : PAWN_ATTACK_DIRECTIONS[color.arrayIndex]) {
 			if (getNumSquaresFromEdge(direction, pos) < 1) continue;
 			final int newPos = pos + direction.rawArrayValue;
 
 			board.modifyAttacks(this, newPos, remove);
-			if (!remove && board.getPiece(newPos).color == next(color)) movesCopy.add(newPos);
+			if (!remove && board.getPiece(newPos).color == flipColor(color)) movesCopy.add(newPos);
 		}
 
 		//Update the pawns move copy with the squares in front of it.
 		final Direction direction = getPawnDirection(color);
 		if (!remove && board.getPiece(pos + direction.rawArrayValue).isEmpty()) {
 			movesCopy.add(pos + direction.rawArrayValue);
-			if (getRow(pos) == PAWN_STARTING_ROW[color]) {
+			if (getRow(pos) == PAWN_STARTING_ROW[color.arrayIndex]) {
 				if (board.getPiece(pos + direction.rawArrayValue * 2).isEmpty()) movesCopy.add(pos + direction.rawArrayValue * 2);
 			}
 		}
@@ -305,7 +305,7 @@ public class ChessPiece {
 	 * @param undoMove Whether or not the move is being undone.
 	 */
 	public void pieceReset(int square, int movePart, boolean isAttack, boolean undoMove) {
-		final int turn = board.getTurn();
+		final PieceColor turn = board.getTurn();
 		//Comments made from white's perspective
 		switch (type) {
 			case PAWN:
@@ -529,10 +529,10 @@ public class ChessPiece {
 		}
 
 		//Attacks.
-		for (final Direction pawnAttackDirection : PAWN_ATTACK_DIRECTIONS[color]) {
+		for (final Direction pawnAttackDirection : PAWN_ATTACK_DIRECTIONS[color.arrayIndex]) {
 			if (getNumSquaresFromEdge(pawnAttackDirection, pos) < 1) continue;	// Checks if the pawn is at the edge of the board
 			final int newPos = pos + pawnAttackDirection.rawArrayValue;
-			if (board.getPiece(newPos).color == next(color)) addMove(moves, new Move(pos, newPos, false), attacksOnly);
+			if (board.getPiece(newPos).color == flipColor(color)) addMove(moves, new Move(pos, newPos, false), attacksOnly);
 		}
 	}
 
@@ -630,12 +630,12 @@ public class ChessPiece {
 	private void kingMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		//Check for castling king side/shorter side.
 		if (board.canCastle(KINGSIDE, color)) {
-			addMove(moves, new Move(pos, ROOK_POSITIONS[color][KINGSIDE] - 1, true), attacksOnly);
+			addMove(moves, new Move(pos, ROOK_POSITIONS[color.arrayIndex][KINGSIDE] - 1, true), attacksOnly);
 		}
 
 		//Check for castling queen side/longer side.
 		if (board.canCastle(QUEENSIDE, color)) {
-			addMove(moves, new Move(pos, ROOK_POSITIONS[color][QUEENSIDE] + 2, true), attacksOnly);
+			addMove(moves, new Move(pos, ROOK_POSITIONS[color.arrayIndex][QUEENSIDE] + 2, true), attacksOnly);
 		}
 
 		//Skips regenerating moves if a stored copy is available.

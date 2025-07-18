@@ -147,6 +147,22 @@ public class Constants {
 	}
 
 	public static class PieceConstants {
+		enum PieceColor {
+			COLORLESS(-1),
+			BLACK(0),
+			WHITE(1);
+
+			public final int arrayIndex;
+
+			private PieceColor(int arrayIndex) {
+				this.arrayIndex = arrayIndex;
+			}
+		}
+
+		public static final PieceColor[] PIECE_COLORS = new PieceColor[] {
+			PieceColor.BLACK, PieceColor.WHITE
+		};
+
 		//Pieces
 		public static final byte EMPTY = -1;
 		public static final byte PAWN = 0;
@@ -173,10 +189,6 @@ public class Constants {
 			3,
 			4
 		};
-		
-		//Teams
-		public static final byte BLACK = 0;
-		public static final byte WHITE = 1;
 
 		public static final char[][] PIECES = new char[][] {
 			new char[] {'p','n','b','r','q','k'}, //Black

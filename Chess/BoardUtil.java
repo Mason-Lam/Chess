@@ -1,10 +1,10 @@
 package Chess;
 
-import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.PositionConstants.*;
 
 import Chess.Constants.DirectionConstants.Direction;
+import Chess.Constants.PieceConstants.PieceColor;
 
 import static Chess.Constants.DirectionConstants.*;
 
@@ -42,12 +42,12 @@ public class BoardUtil {
 	 * @return A new ChessPiece object.
 	 */
 	public static ChessPiece charToPiece(char letter, int pos, ChessBoard board, int[] pieceIDs) {
-		final byte color = Character.isLowerCase(letter) ? BLACK : WHITE;
-		final char[] pieces = PIECES[color];
+		final PieceColor color = Character.isLowerCase(letter) ? PieceColor.BLACK : PieceColor.WHITE;
+		final char[] pieces = PIECES[color.arrayIndex];
 		for (byte i = 0; i < pieces.length; i++) {
 			if (letter == pieces[i]) {
-				pieceIDs[color] ++;
-				return new ChessPiece(i, color, pos, board, pieceIDs[color] - 1);
+				pieceIDs[color.arrayIndex] ++;
+				return new ChessPiece(i, color, pos, board, pieceIDs[color.arrayIndex] - 1);
 			}
 		}
 		throw new IllegalArgumentException("Invalid piece character");
@@ -59,7 +59,7 @@ public class BoardUtil {
 	 * @return A character representing the chess piece.
 	 */
 	public static char pieceToChar(ChessPiece piece) {
-		return PIECES[piece.color][piece.getType()];
+		return PIECES[piece.color.arrayIndex][piece.getType()];
 	}
 
 	/**
@@ -67,8 +67,8 @@ public class BoardUtil {
 	 * @param color The current color.
 	 * @return The opposite color.
 	 */
-    public static int next(int color) {
-		return (color + 1) & 1;
+    public static PieceColor flipColor(PieceColor color) {
+		return color == PieceColor.BLACK ? PieceColor.WHITE : PieceColor.BLACK;
 	}
     
 	/**
@@ -97,8 +97,8 @@ public class BoardUtil {
 	 * @param color The color of the pawn.
 	 * @return The direction the pawns move.
 	 */
-	public static Direction getPawnDirection(int color) {
-		return color == WHITE ? Direction.UP : Direction.DOWN;
+	public static Direction getPawnDirection(PieceColor color) {
+		return color == PieceColor.WHITE ? Direction.UP : Direction.DOWN;
 	}
 
 	/**
@@ -165,8 +165,8 @@ public class BoardUtil {
 		}
 	}
 
-	public static boolean hasPawnMoved(int pos, int color) {
-		return getRow(pos) != PAWN_STARTING_ROW[color];
+	public static boolean hasPawnMoved(int pos, PieceColor color) {
+		return getRow(pos) != PAWN_STARTING_ROW[color.arrayIndex];
 	}
 
 	/**
