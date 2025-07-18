@@ -113,6 +113,7 @@ public class Constants {
 	public static class PositionConstants {
 		//Grid has (0,0) at the top left with right being the positive x-axis and down being the positive y-axis.
 		public static final int ORIGIN = 0;
+		public static final byte EMPTY = -1;
 
 		public static final int QUEENSIDE = 0;
 		public static final int KINGSIDE = 1;
@@ -189,8 +190,6 @@ public class Constants {
 			PieceType.KNIGHT, PieceType.BISHOP, PieceType.ROOK, PieceType.QUEEN
 		};
 
-		//Pieces
-		public static final byte EMPTY = -1;
 		
 		public static final char[] COLUMNS = new char[] {
 			'a',

@@ -98,7 +98,7 @@ public class ChessPiece {
 			}
 		}
 
-		ChessGame.timePawnAttack += System.currentTimeMillis() - prevTime;
+		Tests.timePawnAttack += System.currentTimeMillis() - prevTime;
 	}
 	
 	/**
@@ -117,7 +117,7 @@ public class ChessPiece {
 			if (board.getPiece(newPos).color != color && !remove) movesCopy.add(newPos);
 		}
 
-		ChessGame.timeKnightAttack += System.currentTimeMillis() - prevTime;
+		Tests.timeKnightAttack += System.currentTimeMillis() - prevTime;
 	}
 
 	/**
@@ -137,7 +137,7 @@ public class ChessPiece {
 			addAttacksSliding(direction);
 		}
 
-		ChessGame.timeSlidingAttack += System.currentTimeMillis() - prevTime;
+		Tests.timeSlidingAttack += System.currentTimeMillis() - prevTime;
 	}
 
 	/**
@@ -181,7 +181,7 @@ public class ChessPiece {
 			if (board.getPiece(newPos).color != color && !remove) movesCopy.add(newPos);
 		}
 
-		ChessGame.timeKingAttack += System.currentTimeMillis() - prevTime;
+		Tests.timeKingAttack += System.currentTimeMillis() - prevTime;
 	}
 
 	/**
@@ -471,31 +471,31 @@ public class ChessPiece {
 			case PAWN: 
 				pawnMoves(moves, attacksOnly);
 
-				ChessGame.timePawnGen += System.currentTimeMillis() - prevTime2;
+				Tests.timePawnGen += System.currentTimeMillis() - prevTime2;
 
 				break;
 			case KNIGHT: 
 				knightMoves(moves, attacksOnly);
 
-				ChessGame.timeKnightGen += System.currentTimeMillis() - prevTime2;
+				Tests.timeKnightGen += System.currentTimeMillis() - prevTime2;
 
 				break;
 			case KING:
 				kingMoves(moves, attacksOnly);
 
-				ChessGame.timeKingGen += System.currentTimeMillis() - prevTime;
+				Tests.timeKingGen += System.currentTimeMillis() - prevTime;
 
 				break;
 			default: 
 				slidingMoves(moves, attacksOnly);
 
-				ChessGame.timeSlidingGen += System.currentTimeMillis() - prevTime2;
+				Tests.timeSlidingGen += System.currentTimeMillis() - prevTime2;
 
 				break;
 		}
 		pinPiece = null;
 
-		ChessGame.timeMoveGen += System.currentTimeMillis() - prevTime;
+		Tests.timeMoveGen += System.currentTimeMillis() - prevTime;
 	}
 	
 	/**
@@ -574,7 +574,7 @@ public class ChessPiece {
 		if (onColumn(pinPiece.pos, pos)) {
 			if (attacksOnly) return;
 			for (final Integer finish : movesCopy) {
-				ChessGame.copyCount ++;
+				Tests.copyCount ++;
 				if (onColumn(pos, finish)) moves.add(new Move(pos, finish));
 			}
 			return;
@@ -582,7 +582,7 @@ public class ChessPiece {
 
 		//Runs if the pinning piece is on the same diagonal.
 		for (final Integer finish : movesCopy) {
-			ChessGame.copyCount ++;
+			Tests.copyCount ++;
 			//If a pawn is pinned on a diagonal, its only legal move would be to capture the piece.
 			if (finish == pinPiece.pos) {
 				moves.add(new Move(pos, finish));
@@ -709,7 +709,7 @@ public class ChessPiece {
 	 */
 	private void copyMoves(ArrayList<Move> moves, boolean attacksOnly) {
 		for (final Integer finish : movesCopy) {
-			ChessGame.copyCount ++;
+			Tests.copyCount ++;
 			if (attacksOnly && board.getPiece(finish).isEmpty()) continue;
 			moves.add(new Move(pos, finish));
 		}
@@ -722,7 +722,7 @@ public class ChessPiece {
 	 */
 	private void copyMovesInCheck(ArrayList<Move> moves, boolean attacksOnly) {
 		for (final Integer finish : movesCopy) {
-			ChessGame.copyCount ++;
+			Tests.copyCount ++;
 			addMove(moves, new Move(pos, finish), attacksOnly);
 		}
 	}
@@ -744,16 +744,16 @@ public class ChessPiece {
 		//Adds the move if it is legal.
 		if (!CHECKS || isLegalMove(move)) {
 
-			ChessGame.timeValidMove += System.currentTimeMillis() - prevTime;
+			Tests.timeValidMove += System.currentTimeMillis() - prevTime;
 			prevTime = System.currentTimeMillis();
 
 			moves.add(move);
 
-			ChessGame.timeValidPart += System.currentTimeMillis() - prevTime;
+			Tests.timeValidPart += System.currentTimeMillis() - prevTime;
 
 			return;
 		}
-		ChessGame.timeValidMove += System.currentTimeMillis() - prevTime;
+		Tests.timeValidMove += System.currentTimeMillis() - prevTime;
 	}
 
 	/**

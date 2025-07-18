@@ -3,6 +3,7 @@ package Chess;
 import java.util.ArrayList;
 
 public class Tests {
+	
 	private static final ArrayList<Test> tests = new ArrayList<Test>();
 	
 	public static class Test {
@@ -19,21 +20,21 @@ public class Tests {
 			tests.add(this);
 		}
 		
-		public boolean runTest() {
-			System.out.println(fen);
+		public boolean runTest(boolean verbose) {
+			if (verbose) System.out.println(fen);
 			final long prevTime = System.currentTimeMillis();
 			for (int i = 1; i < depth; i++) {
-				System.out.println("Depth: " + i + ", Total Possible Moves: " + computer.totalMoves(i));
+				if (verbose) System.out.println("Depth: " + i + ", Total Possible Moves: " + computer.totalMoves(i));
 			}
 			final int totalMoves = computer.totalMoves(depth);
-			System.out.println("Depth: " + depth + ", Total Possible Moves: " + totalMoves);
+			if (verbose) System.out.println("Depth: " + depth + ", Total Possible Moves: " + totalMoves);
 			if (totalMoves == nodes) {
-				System.out.println("TEST PASSED");
+				if (verbose) System.out.println("TEST PASSED");
 			}
 			else {
-				System.out.println("TEST FAILED, Expected: " + nodes);
+				if (verbose) System.out.println("TEST FAILED, Expected: " + nodes);
 			}
-			System.out.println(System.currentTimeMillis() - prevTime + "\n");
+			if (verbose) System.out.println(System.currentTimeMillis() - prevTime + "\n");
 			return totalMoves == nodes;
 		}
 	}
@@ -89,19 +90,106 @@ public class Tests {
 	public static final Test test25 = new Test(7, 625511, "8/8/P6k/8/8/7K/8/8 w - - 0 1");
 
 	public static final Test test26 = new Test(4, 232252, "3Q4/8/8/8/6q1/8/P4K2/k7 w - - 0 1");
-	
-	public static void runTests() {
+
+	public static void runTestsShallow(boolean verbose, boolean displayTimeStats) {
+		resetTimeStats();
+		long prevTime = System.currentTimeMillis();
 		System.out.println("----------------------------------------");
-		boolean passed = true;
+		ArrayList<Integer> failedTests = new ArrayList<>();
 		for (int i = 0; i < tests.size(); i++) {
-			System.out.println("Test " + (i + 1) + ":");
-			if(!tests.get(i).runTest()) passed = false;
+			if (verbose) System.out.println("Test " + (i + 1) + ":");
+			if(!tests.get(i).runTest(verbose)) failedTests.add(i + 1);
 		}
-		if (!passed) System.out.println("ENGINE FAULT: Test has failed");
+		if (!failedTests.isEmpty()) {
+			for (int testNum : failedTests) {
+				System.out.println("Test " + testNum + " failed.");
+			}
+		}
 		else System.out.println("ALL TESTS PASSED!");
+		if (displayTimeStats) {
+			System.out.println(System.currentTimeMillis() - prevTime);
+			displayTimeStats();
+		}
 		System.out.println("----------------------------------------");
 	}
+	
+	public static void runTestsDeep(boolean verbose, boolean displayTimeStats) {
+		runTestsShallow(false, false);
+		runTestsShallow(verbose, displayTimeStats);
+	}
+
+	public static void timeCheckBoard(ChessBoard board, int depth) {
+		System.out.println("----------------------------------------");
+		System.out.println(board.getFenString());
+		resetTimeStats();
+		long prevTime;
+		Computer computer = board.getComputer();
+		for (int i = 1; i < depth + 1; i++) {
+			prevTime = System.currentTimeMillis();
+			System.out.println("Depth: " + i + ", Total Possible Moves: " + computer.totalMoves(i));
+			System.out.println("Time Taken: " + (System.currentTimeMillis() - prevTime));	
+		}
+		displayTimeStats();
+		System.out.println("----------------------------------------");
+	}
+
+	public static long timeMoveGen = 0;
+	public static long timePawnGen = 0;
+	public static long timeKnightGen = 0;
+	public static long timeSlidingGen = 0;
+	public static long timeKingGen = 0;
+	public static long timeValidMove = 0;
+	public static long timeValidPart = 0;
+	public static long timeMakeMove = 0;
+	public static long timeUndoMove = 0;
+	public static long timePawnAttack = 0;
+	public static long timeKnightAttack = 0;
+	public static long timeSlidingAttack = 0;
+	public static long timeKingAttack = 0;
+	public static long timeSoftAttack = 0;
+	public static long timePieceUpdate = 0;
+	public static long timeMisc = 0;
+	public static long timeDebug = 0;
+	public static long copyCount = 0;
+
+	private static void displayTimeStats() {
+		System.out.println("Move Generation: " + timeMoveGen);
+		System.out.println("Pawn Move: " + timePawnGen);
+		System.out.println("Knight Move: " + timeKnightGen);
+		System.out.println("Sliding Move: " + timeSlidingGen);
+		System.out.println("King Move: " + timeKingGen);
+		System.out.println("Valid Move: " + timeValidMove);
+		System.out.println("Valid Part: " + timeValidPart);
+		System.out.println("Make Move: " + timeMakeMove);
+		System.out.println("Undo Move: " + timeUndoMove);
+		System.out.println("Pawn Attack: " + timePawnAttack);
+		System.out.println("Knight Attack: " + timeKnightAttack);
+		System.out.println("Sliding Attack: " + timeSlidingAttack);
+		System.out.println("King Attack: " + timeKingAttack);
+		System.out.println("Soft Attack: " + timeSoftAttack);
+		System.out.println("Piece Update: " + timePieceUpdate);
+		System.out.println("Misc: " + timeMisc);
+		System.out.println("Debug: " + timeDebug);
+		System.out.println("Moves Copied: " + copyCount);
+	}
+
+	private static void resetTimeStats() {
+		timeMoveGen = 0;
+		timePawnGen = 0;
+		timeKnightGen = 0;
+		timeSlidingGen = 0;
+		timeKingGen = 0;
+		timeValidMove = 0;
+		timeValidPart = 0;
+		timeMakeMove = 0;
+		timeUndoMove = 0;
+		timePawnAttack = 0;
+		timeKnightAttack = 0;
+		timeSlidingAttack = 0;
+		timeKingAttack = 0;
+		timeSoftAttack = 0;
+		timePieceUpdate = 0;
+		timeMisc = 0;
+		timeDebug = 0;
+	}
 }
-
-
-//a2a4,a2a3

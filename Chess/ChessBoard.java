@@ -328,7 +328,7 @@ public class ChessBoard {
 			next_turn();
 		}
 		
-		ChessGame.timeMakeMove += System.currentTimeMillis() - prevTime;
+		Tests.timeMakeMove += System.currentTimeMillis() - prevTime;
 	}
 
 	/**
@@ -437,7 +437,7 @@ public class ChessBoard {
 		
 		promotingPawn = EMPTY;
 
-		ChessGame.timeUndoMove += System.currentTimeMillis() - prevTime;
+		Tests.timeUndoMove += System.currentTimeMillis() - prevTime;
 	}
 
 	/**
@@ -562,7 +562,7 @@ public class ChessBoard {
 					}
 					else continue;
 
-					ChessGame.timeSoftAttack += System.currentTimeMillis() - prevTime2;
+					Tests.timeSoftAttack += System.currentTimeMillis() - prevTime2;
 
 					//Reset the moves copy in pieces affected by the move.
 					if (!isCastle) piece.pieceReset(pos, movePart, isAttack, undoMove);
@@ -583,7 +583,7 @@ public class ChessBoard {
 			}
 		}
 
-		ChessGame.timePieceUpdate += System.currentTimeMillis() - prevTime;
+		Tests.timePieceUpdate += System.currentTimeMillis() - prevTime;
 	}
 
 	/**
