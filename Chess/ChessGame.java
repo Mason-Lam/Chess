@@ -8,11 +8,9 @@ import java.util.ArrayList;
 
 import javax.swing.*;
 
-import Chess.ChessBoard.BoardStorage;
 import Chess.Constants.PieceConstants.PieceColor;
 import Chess.Constants.PieceConstants.PieceType;
 
-import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
 
 public class ChessGame {
@@ -24,43 +22,31 @@ public class ChessGame {
 	private final PieceColor computerTurn;			//int to store the computer
 	private final Computer computer;
 	private final int difficulty;
+	private final PieceColor perspective;
 	private final ArrayList<Move> legal;	//A list to store the legal moves of a chess piece
 
 	private boolean winner;
 	private int click1;			//Stores the user first input
 
-	public ChessGame(PieceColor computerTurn, int difficulty){
-		this.difficulty = difficulty;
+	public ChessGame(PieceColor computerTurn, int difficulty) {
+		this(computerTurn, difficulty, PieceColor.WHITE);
+	}
+
+	public ChessGame(PieceColor computerTurn, int difficulty, PieceColor perspective){
 		this.computerTurn = computerTurn;
+		this.difficulty = difficulty;
+		this.perspective = perspective;
+
 		legal = new ArrayList<Move>();
 		winner = false;
 		click1 = -1;		//sets var as no clicks
 		
-
-		// Tests.test15.runTest();
-
 		board = new ChessBoard();	//Creates a new ChessBoard object
 		this.computer = board.getComputer();
 
-		// BoardStorage store = board.copyData();
-		// board.makeMove(new Move(55, 28, false));
-		// board.makeMove(new Move(0, 56, false));
-		// store = board.copyData();
-		// ChessPiece piece = board.getPiece(56);
-		// board.makeMove(new Move(28, 56, false));
-		// board.undoMove(new Move (28, 56), piece, store);
-		// board.makeMove(new Move(60, 52, false));
-		// board.promote((byte) 1);
-		// board.unPromote(2);
-		// board.undoMove(new Move(11, 2, false), piece, store);
-		// board.makeMove(new Move(11, 2, false));
-		// board.promote((byte) 2);
-
-		Tests.timeCheckBoard(board, 6);
-		// long prevTime = System.currentTimeMillis();
-		// //Current (3, 33), (4, 145), (5, 1203), (6, 17052)
+		// Tests.timeCheckBoard(board, 6);
+		// //Current (3, 0), (4, 16), (5, 316), (6, 8018)
 		// System.out.println(computer.totalMoves(6)); //Goal: (3, 0), (4, 11), (5, 259), (6, 6502)
-		// System.out.println(System.currentTimeMillis() - prevTime);
 		
 		panel.setBorder(BorderFactory.createEmptyBorder(30,30,10,30));	//Creates a border
 		panel.setLayout(new GridLayout(8,8));		//Creates an 8*8 grid for the squares
@@ -104,7 +90,7 @@ public class ChessGame {
 					else {
 						address += "G";
 					}
-					GUI[count].setIcon(resizeImage(new ImageIcon(address + ".png")));
+					GUI[perspective == PieceColor.BLACK ? 63 - count : count].setIcon(resizeImage(new ImageIcon(address + ".png")));
 					count += 1;
 				}
 				continue;
@@ -122,7 +108,7 @@ public class ChessGame {
 				address += "W";
 			}
 			address += letter +".png";
-			GUI[count].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
+			GUI[perspective == PieceColor.BLACK ? 63 - count : count].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
 			count += 1;
 		}
 		if(click1 != -1) {
@@ -141,7 +127,7 @@ public class ChessGame {
 						address += "G";
 					}
 					address += "D.png";
-					GUI[move.finish].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
+					GUI[perspective == PieceColor.BLACK ? 63 - move.finish : move.finish].setIcon(resizeImage(new ImageIcon(address)));	//Changes the image of the square
 				}
 			}
 			System.out.println();
@@ -165,6 +151,7 @@ public class ChessGame {
 		/*ChessGame.get_click(int pos) - > None
 		 * Function that runs when a ChessSquare is clicked
 		 * processes the users click and selects a ChessPiece/Square*/
+		pos = perspective == PieceColor.BLACK ? 63 - pos : pos;
 		//Checks if a promotion is happening
 		if(board.is_promote() || board.getTurn() == computerTurn) {
 			return;	//Nope

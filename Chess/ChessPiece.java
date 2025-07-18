@@ -936,7 +936,7 @@ public class ChessPiece {
 
 	/**
 	 * Gets the type of the piece.
-	 * @return A byte from -1 to 5 representing the type of the piece.
+	 * @return An enum object representing the type of the piece.
 	 */
 	public PieceType getType() {
 		return type;

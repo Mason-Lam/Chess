@@ -27,28 +27,6 @@ public class Move {
 		return new Move(finish, start, SPECIAL);
 	}
 
-	// public int getFinish() {
-	// 	return finish;
-	// 	//return moveID >> 7;
-	// }
-
-	// public int getStart () {
-	// 	return start;
-	// 	//return 63 & (moveID >> 1);
-	// }
-
-	// public Type getType() {
-	// 	return type;
-	// 	// final int typeID = 1 & moveID;
-	// 	// if (typeID == 2) {
-	// 	// 	return Type.SPECIAL;
-	// 	// }
-	// 	// if (typeID == 1) {
-	// 	// 	return Type.ATTACK;
-	// 	// }
-	// 	// return Type.MOVE;
-	// }
-
 	@Override
 	public String toString() {
 		return start + ":" + finish + ":" + SPECIAL;
@@ -59,7 +37,6 @@ public class Move {
 		if (this == anObject) return true;
 		if (anObject instanceof Move) {
 			final Move aMove = (Move) anObject;
-			//return (aMove.start == start && aMove.finish == finish && aMove.type == type);
 			return aMove.moveID == moveID;
 		}
 		return false;
