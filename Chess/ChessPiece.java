@@ -14,9 +14,9 @@ import static Chess.BoardUtil.*;
  * Class representing an individual chess piece.
  */
 public class ChessPiece {
-	private static final ChessPiece emptySquare = new ChessPiece(EMPTY, PieceColor.COLORLESS, EMPTY, null, EMPTY);
+	private static final ChessPiece emptySquare = new ChessPiece(PieceType.EMPTY, PieceColor.COLORLESS, EMPTY, null, EMPTY);
 
-	private byte type;
+	private PieceType type;
 	private int pos;
 	private boolean updatingCopy;
 	private ChessPiece pinPiece;
@@ -43,7 +43,7 @@ public class ChessPiece {
 	 * @param board ChessBoard object the piece occupies.
 	 * @param pieceID Unique identifier for the chess piece.
 	 */
-	public ChessPiece(byte type, PieceColor color, int pos, ChessBoard board, int pieceID) {
+	public ChessPiece(PieceType type, PieceColor color, int pos, ChessBoard board, int pieceID) {
 		this.type = type;
 		this.pos = pos;
 		this.color = color;
@@ -51,7 +51,7 @@ public class ChessPiece {
 		this.pieceID = pieceID;
 
 		updatingCopy = false;
-		movesCopy = !isEmpty() ? new ArrayList<Integer>(MAX_MOVES[type]) : null;
+		movesCopy = !isEmpty() ? new ArrayList<Integer>(MAX_MOVES[type.arrayIndex]) : null;
 		pinPiece = null;
 	}
 
@@ -62,11 +62,11 @@ public class ChessPiece {
 	public void pieceAttacks(boolean remove) {
 		resetMoveCopy();									//Piece has moved or been captured, thus reset the stored copy of moves.
 		switch(type) {
-			case (PAWN): pawnAttacks(remove);
+			case PieceType.PAWN: pawnAttacks(remove);
 				break;
-			case (KNIGHT): knightAttacks(remove);
+			case PieceType.KNIGHT: knightAttacks(remove);
 				break;
-			case (KING): kingAttacks(remove);
+			case PieceType.KING: kingAttacks(remove);
 				break;
 			default: slidingAttacks(remove);
 				break;
@@ -923,14 +923,14 @@ public class ChessPiece {
 	 * Reset the move copy list, use when a piece moves or one of its moves becomes illegal.
 	 */
 	public void resetMoveCopy() {
-		movesCopy = new ArrayList<Integer>(MAX_MOVES[type]);
+		movesCopy = new ArrayList<Integer>(MAX_MOVES[type.arrayIndex]);
 	}
 
 	/**
 	 * Change the type of the piece.
 	 * @param newPos The new position of the piece.
 	 */
-	public void setType(byte newType) {
+	public void setType(PieceType newType) {
 		type = newType;
 	}
 
@@ -938,7 +938,7 @@ public class ChessPiece {
 	 * Gets the type of the piece.
 	 * @return A byte from -1 to 5 representing the type of the piece.
 	 */
-	public byte getType() {
+	public PieceType getType() {
 		return type;
 	}
 
@@ -963,7 +963,7 @@ public class ChessPiece {
 	 * @return True if the square is empty, false otherwise.
 	 */
 	public boolean isEmpty() {
-		return type == EMPTY;
+		return type == PieceType.EMPTY;
 	}
 
 	/**
@@ -971,7 +971,7 @@ public class ChessPiece {
 	 * @return True if the piece is a pawn, false otherwise.
 	 */
 	public boolean isPawn() {
-		return type == PAWN;
+		return type == PieceType.PAWN;
 	}
 
 	/**
@@ -979,7 +979,7 @@ public class ChessPiece {
 	 * @return True if the piece is a knight, false otherwise.
 	 */
 	public boolean isKnight() {
-		return type == KNIGHT;
+		return type == PieceType.KNIGHT;
 	}
 
 	/**
@@ -987,7 +987,7 @@ public class ChessPiece {
 	 * @return True if the piece is a bishop, false otherwise.
 	 */
 	public boolean isBishop() {
-		return type == BISHOP;
+		return type == PieceType.BISHOP;
 	}
 
 	/**
@@ -995,7 +995,7 @@ public class ChessPiece {
 	 * @return True if the piece is a rook, false otherwise.
 	 */
 	public boolean isRook() {
-		return type == ROOK;
+		return type == PieceType.ROOK;
 	}
 
 	/**
@@ -1003,7 +1003,7 @@ public class ChessPiece {
 	 * @return True if the piece is a queen, false otherwise.
 	 */
 	public boolean isQueen() {
-		return type == QUEEN;
+		return type == PieceType.QUEEN;
 	}
 
 	/**
@@ -1011,7 +1011,7 @@ public class ChessPiece {
 	 * @return True if the piece is a king, false otherwise.
 	 */
 	public boolean isKing() {
-		return type == KING;
+		return type == PieceType.KING;
 	}
 
 	/**

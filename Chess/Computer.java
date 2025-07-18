@@ -3,6 +3,7 @@ package Chess;
 import java.util.ArrayList;
 
 import Chess.ChessBoard.BoardStorage;
+import Chess.Constants.PieceConstants.PieceType;
 
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PieceConstants.*;
@@ -36,7 +37,7 @@ public class Computer {
 		//Base case.
 		if (depth == 1) {
 			for (final ChessPiece piece : pieces) {
-				final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.getType()]);
+				final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.getType().arrayIndex]);
 				piece.pieceMoves(moves);
 				if (moves.size() > 0 && piece.isPawn() && getRow(moves.get(0).finish) == PROMOTION_ROW[board.getTurn().arrayIndex]){
 					count += moves.size() * 4;
@@ -61,7 +62,7 @@ public class Computer {
 				board.makeMove(move);
 
 				if (board.is_promote()) {
-					for (final byte type : PROMOTION_PIECES) {
+					for (final PieceType type : PROMOTION_PIECES) {
 						board.promote(type);
 						count += totalMoves(depth - 1);
 						board.unPromote(move.finish);

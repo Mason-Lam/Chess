@@ -163,14 +163,34 @@ public class Constants {
 			PieceColor.BLACK, PieceColor.WHITE
 		};
 
+		enum PieceType {
+			EMPTY(-1, ' '),
+			PAWN(0, 'p'),
+			KNIGHT(1, 'n'),
+			BISHOP(2, 'b'),
+			ROOK(3, 'r'),
+			QUEEN(4, 'q'),
+			KING(5, 'k');
+			
+			public final int arrayIndex;
+			public final char characterRepresentation;
+
+			private PieceType(int arrayIndex, char characterRepresentation) {
+				this.arrayIndex = arrayIndex;
+				this.characterRepresentation = characterRepresentation;
+			}
+		}
+
+		public static final PieceType[] PIECE_TYPES = new PieceType[] {
+			PieceType.PAWN, PieceType.KNIGHT, PieceType.BISHOP, PieceType.ROOK, PieceType.QUEEN, PieceType.KING
+		};
+
+		public static final PieceType[] PROMOTION_PIECES = new PieceType[] {
+			PieceType.KNIGHT, PieceType.BISHOP, PieceType.ROOK, PieceType.QUEEN
+		};
+
 		//Pieces
 		public static final byte EMPTY = -1;
-		public static final byte PAWN = 0;
-		public static final byte KNIGHT = 1;
-		public static final byte BISHOP = 2;
-		public static final byte ROOK = 3;
-		public static final byte QUEEN = 4;
-		public static final byte KING = 5;
 		
 		public static final char[] COLUMNS = new char[] {
 			'a',
@@ -182,18 +202,7 @@ public class Constants {
 			'g',
 			'h'
 		};
-		
-		public static final byte[] PROMOTION_PIECES = new byte[] {
-			1,
-			2,
-			3,
-			4
-		};
 
-		public static final char[][] PIECES = new char[][] {
-			new char[] {'p','n','b','r','q','k'}, //Black
-			new char[] {'P','N','B','R','Q','K'} // White
-		};
 	}
 
 	public static class EvaluateConstants {

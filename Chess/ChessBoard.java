@@ -264,7 +264,7 @@ public class ChessBoard {
 			
 			//Keep track of the piece.
 			if (piece.isKing()) kingPos[piece.color.arrayIndex] = pos;
-			else pieceCount[piece.color.arrayIndex][piece.getType()] ++;
+			else pieceCount[piece.color.arrayIndex][piece.getType().arrayIndex] ++;
 
 			pos++;
 		}
@@ -464,7 +464,7 @@ public class ChessBoard {
 		//Remove the piece from the board and updates the tracking variables.
 		if (remove) {
 			pieces[piece.color.arrayIndex].remove(piece);
-			pieceCount[piece.color.arrayIndex][piece.getType()] -= 1;
+			pieceCount[piece.color.arrayIndex][piece.getType().arrayIndex] -= 1;
 			board[pos] = ChessPiece.empty();
 			return;
 		}
@@ -472,7 +472,7 @@ public class ChessBoard {
 		//Add the piece to the board and update the tracking variables.
 		board[pos] = piece;
 		piece.setPos(pos);
-		if (pieces[piece.color.arrayIndex].add(piece)) pieceCount[piece.color.arrayIndex][piece.getType()] += 1;
+		if (pieces[piece.color.arrayIndex].add(piece)) pieceCount[piece.color.arrayIndex][piece.getType().arrayIndex] += 1;
 		
 		//Update the king position variable if the king moves.
 		if (piece.isKing()) kingPos[piece.color.arrayIndex] = pos;
@@ -482,7 +482,7 @@ public class ChessBoard {
 	 * Promotes the pawn.
 	 * @param type The new type of the promoted piece.
 	 */
-	public void promote(byte type) {
+	public void promote(PieceType type) {
 		final ChessPiece promotingPiece = board[promotingPawn];
 		
 		//Add the promoted piece to the board.
@@ -490,8 +490,8 @@ public class ChessBoard {
 		updatePosition(promotingPiece, promotingPawn, false);
 
 		//Update tracking variables.
-		pieceCount[turn.arrayIndex][type] += 1;
-		pieceCount[turn.arrayIndex][PAWN] -= 1;
+		pieceCount[turn.arrayIndex][type.arrayIndex] += 1;
+		pieceCount[turn.arrayIndex][PieceType.PAWN.arrayIndex] -= 1;
 
 		promotingPiece.pieceAttacks(false);	//Update the squares the promoted piece now attacks.
 
@@ -516,14 +516,14 @@ public class ChessBoard {
 		next_turn();
 
 		//Update tracking variables.
-		pieceCount[turn.arrayIndex][unpromotingPiece.getType()] --;
-		pieceCount[turn.arrayIndex][PAWN] ++;
+		pieceCount[turn.arrayIndex][unpromotingPiece.getType().arrayIndex] --;
+		pieceCount[turn.arrayIndex][PieceType.PAWN.arrayIndex] ++;
 
 		//Update the squares the unpromoting piece used to attack.
 		unpromotingPiece.pieceAttacks(true);
 
 		//Reset the piece to a pawn.
-		unpromotingPiece.setType(PAWN);
+		unpromotingPiece.setType(PieceType.PAWN);
 		updatePosition(board[pos], pos, false);
 
 		promotingPawn = pos;
@@ -578,7 +578,7 @@ public class ChessBoard {
 				final PieceSet coloredPieces = pieces[color];
 				for (final ChessPiece piece : coloredPieces) {
 					piece.resetMoveCopy();
-					piece.pieceMoves(new ArrayList<Move>(MAX_MOVES[piece.getType()]));
+					piece.pieceMoves(new ArrayList<Move>(MAX_MOVES[piece.getType().arrayIndex]));
 				}
 			}
 		}
@@ -686,9 +686,9 @@ public class ChessBoard {
 	private boolean hasInsufficientMaterial() {
 		//Check each side to see if there's enough pieces.
 		for (int color = 0; color < 2; color++) {
-			if (pieceCount[color][PAWN] > 0 || pieceCount[color][KNIGHT] > 2 
-				|| pieceCount[color][BISHOP] > 1 || pieceCount[color][ROOK] > 0 
-				|| pieceCount[color][QUEEN] > 0) return false;
+			if (pieceCount[color][PieceType.PAWN.arrayIndex] > 0 || pieceCount[color][PieceType.KNIGHT.arrayIndex] > 2 
+				|| pieceCount[color][PieceType.BISHOP.arrayIndex] > 1 || pieceCount[color][PieceType.ROOK.arrayIndex] > 0 
+				|| pieceCount[color][PieceType.QUEEN.arrayIndex] > 0) return false;
 		}
 		return true;
 	}

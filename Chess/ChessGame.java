@@ -10,6 +10,7 @@ import javax.swing.*;
 
 import Chess.ChessBoard.BoardStorage;
 import Chess.Constants.PieceConstants.PieceColor;
+import Chess.Constants.PieceConstants.PieceType;
 
 import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
@@ -50,7 +51,7 @@ public class ChessGame {
 	public ChessGame(PieceColor computerTurn, int difficulty){
 		this.difficulty = difficulty;
 		this.computerTurn = computerTurn;
-		legal = new ArrayList<Move>(QUEEN);
+		legal = new ArrayList<Move>();
 		winner = false;
 		click1 = -1;		//sets var as no clicks
 		long prevTime;
@@ -123,7 +124,7 @@ public class ChessGame {
 			GUI[i] = new ChessSquare(i, (Integer pos) -> get_click(pos));
 			panel.add(GUI[i]);
 		}
-		frame.addKeyListener(new KeyListener((Byte type)-> promotion(type)));	//Adds a key listner for promotion
+		frame.addKeyListener(new KeyListener((PieceType type)-> promotion(type)));	//Adds a key listner for promotion
 		frame.add(panel,BorderLayout.CENTER);		//Adds the panel to the frame
 		frame.setSize(300,300);						//Sets the size of the new frame
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);	//Allows the frame to commit seppuku
@@ -255,7 +256,7 @@ public class ChessGame {
 			}
 		}
 	}
-	private void promotion(byte type) {
+	private void promotion(PieceType type) {
 		/*ChessBoard.promotion(int type) -> Void
 		 * function that checks if a promotion is happening
 		 * then takes the users input and promotes a pawn*/

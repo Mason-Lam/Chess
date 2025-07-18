@@ -43,11 +43,10 @@ public class BoardUtil {
 	 */
 	public static ChessPiece charToPiece(char letter, int pos, ChessBoard board, int[] pieceIDs) {
 		final PieceColor color = Character.isLowerCase(letter) ? PieceColor.BLACK : PieceColor.WHITE;
-		final char[] pieces = PIECES[color.arrayIndex];
-		for (byte i = 0; i < pieces.length; i++) {
-			if (letter == pieces[i]) {
+		for (final PieceType pieceType : PIECE_TYPES) {
+			if (Character.toLowerCase(letter) == pieceType.characterRepresentation) {
 				pieceIDs[color.arrayIndex] ++;
-				return new ChessPiece(i, color, pos, board, pieceIDs[color.arrayIndex] - 1);
+				return new ChessPiece(pieceType, color, pos, board, pieceIDs[color.arrayIndex] - 1);
 			}
 		}
 		throw new IllegalArgumentException("Invalid piece character");
@@ -59,7 +58,7 @@ public class BoardUtil {
 	 * @return A character representing the chess piece.
 	 */
 	public static char pieceToChar(ChessPiece piece) {
-		return PIECES[piece.color.arrayIndex][piece.getType()];
+		return piece.getType().characterRepresentation;
 	}
 
 	/**
