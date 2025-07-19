@@ -1012,8 +1012,7 @@ public class ChessBoard {
 		return false;
 	}
 
-	@Override
-	public int hashCode() {
-		return Long.hashCode(hashing.getHash());
+	public long hash() {
+		return hashing.getHash();
 	}
 }

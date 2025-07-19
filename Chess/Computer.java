@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import Chess.ChessBoard.BoardStorage;
 import Chess.Constants.PieceConstants.PieceType;
+import Chess.TranspositionTable.TTEntry;
 
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PieceConstants.*;
@@ -16,6 +17,7 @@ import static Chess.BoardUtil.*;
 public class Computer {
 
 	public final ChessBoard board;
+	public final TranspositionTable table;
 	
 	/**
 	 * Creates a new computer player with the specified board.
@@ -23,6 +25,7 @@ public class Computer {
 	 */
 	public Computer(ChessBoard board) {
 		this.board = board;
+		table = new TranspositionTable(20);
 	}
 
 	/**
@@ -31,6 +34,23 @@ public class Computer {
 	 * @return The total number of possible moves.
 	 */
 	public int totalMoves(int depth) {
+		return totalMoves(depth, false);
+	}
+
+	/**
+	 * Returns the total number of possible moves at the specified depth.
+	 * @param depth The depth to search to.
+	 * @param useZobristHashing Whether or not to use hashing optimization: Warning can result in wrong answers.
+	 * @return The total number of possible moves.
+	 */
+	public int totalMoves(int depth, boolean useZobristHashing) {
+		if (useZobristHashing) {
+			TTEntry entry = table.lookup(board.hash());
+			if (entry != null && entry.depth == depth) {
+				return entry.score;
+			}
+		}
+
 		int count = 0;
 		final PieceSet pieces = board.getPieces(board.getTurn());
 
@@ -46,6 +66,7 @@ public class Computer {
 				count += moves.size();
 				continue;
 			}
+			if (useZobristHashing) table.store(board.hash(), 1, count, 0, 0);
 			return count;
 		}
 
@@ -64,16 +85,17 @@ public class Computer {
 			if (board.is_promote()) {
 				for (final PieceType type : PROMOTION_PIECES) {
 					board.promote(type);
-					count += totalMoves(depth - 1);
+					count += totalMoves(depth - 1, useZobristHashing);
 					board.unPromote(move.getFinish());
 				}
 			}
 			else {
-				count += totalMoves(depth - 1);
+				count += totalMoves(depth - 1, useZobristHashing);
 			}
 			if (depth == 1) logMove(move, count - prevCount);
 			board.undoMove(move, capturedPiece, store);
 		}
+		if (useZobristHashing) table.store(board.hash(), depth, count, 0, 0);
 		return count;
 	}
 
