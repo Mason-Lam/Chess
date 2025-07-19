@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 import Chess.Constants.DirectionConstants.Direction;
 import Chess.Constants.PieceConstants.PieceColor;
+import Chess.Constants.PieceConstants.PieceType;
 
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PositionConstants.*;
@@ -77,6 +78,8 @@ public class ChessBoard {
 	private int promotingPawn;
 	public int halfMove;
 	public int fullMove;
+
+	public final ZobristHashing hashing;
 	
 	/**
 	 * Creates a new Chessboard object with the default starting position.
@@ -116,6 +119,8 @@ public class ChessBoard {
 		promotingPawn = -1;
 		fen_to_board(fen);
 		hardAttackUpdate();
+
+		hashing = new ZobristHashing(this);
 	}
 	
 	/**
@@ -277,7 +282,8 @@ public class ChessBoard {
 	public void makeMove(Move move) {
 		long prevTime = System.currentTimeMillis();
 
-		final ChessPiece movingPiece = board[move.getStart()];		
+		final ChessPiece movingPiece = board[move.getStart()];
+
 		final boolean isAttack = !board[move.getFinish()].isEmpty();
 		kingAttacker = ChessPiece.empty();
 		int castledRookPos = EMPTY;
@@ -298,17 +304,20 @@ public class ChessBoard {
 		
 		//Removes castling rights when a rook moves.
 		if (movingPiece.isRook()) {
-			updateCastlingRookMove(move.getStart(), movingPiece.color);
+			updateCastlingOnRookMove(move.getStart(), movingPiece.color);
 		}
 		
 		//Handles king moves.
 		if (movingPiece.isKing()) {
 			Arrays.fill(castling[movingPiece.color.arrayIndex], false);		//King can no longer castle.
+			hashing.setCastlingRights(turn, new boolean[] {false, false});
 			//Handle castling.
 			if (move.isSpecial()) {
 				castledRookPos = makeCastleMove(move);
 			}
 		}
+
+		hashing.flipPiece(move.getStart(), movingPiece);
 		board[move.getStart()] = ChessPiece.empty();	//Empty the square the moving piece used to occupy.
 		
 		updatePosition(movingPiece, move.getFinish(), false);		//Move the moving piece to the new position.
@@ -320,6 +329,7 @@ public class ChessBoard {
 		if (castledRookPos != EMPTY) board[castledRookPos].pieceAttacks(false);	//Update the squares the castled rook attacks in its new position.
 
 		enPassant = newEnPassant;			//Store the pawn that moved two squares.
+		hashing.setEnPassantFile(enPassant != EMPTY ? getColumn(enPassant) : enPassant);
 
 		//Move on to the next turn if a promotion isn't happenning.
 		if (!is_promote()) {
@@ -359,13 +369,17 @@ public class ChessBoard {
 	 * @param startingPos Position where the rook moved from.
 	 * @param color The color of the rook that moved.
 	 */
-	private void updateCastlingRookMove(int startingPos, PieceColor color) {
+	private void updateCastlingOnRookMove(int startingPos, PieceColor color) {
 		//Queenside
-		if (startingPos == ROOK_POSITIONS[color.arrayIndex][QUEENSIDE])
+		if (startingPos == ROOK_POSITIONS[color.arrayIndex][QUEENSIDE]) {
 			castling[color.arrayIndex][QUEENSIDE] = false;
+			hashing.setCastlingRights(color, QUEENSIDE, false);
+		}
 		//Kingside
-		if (startingPos == ROOK_POSITIONS[color.arrayIndex][KINGSIDE])
+		if (startingPos == ROOK_POSITIONS[color.arrayIndex][KINGSIDE]) {
 			castling[color.arrayIndex][KINGSIDE] = false;
+			hashing.setCastlingRights(color, KINGSIDE, false);
+		}
 	}
 
 	/**
@@ -379,7 +393,10 @@ public class ChessBoard {
 		board[currentRookPos].pieceAttacks(true);
 		final int newRookPos = move.getFinish() + (side == KINGSIDE ? Direction.LEFT : Direction.RIGHT).rawArrayValue; 
 		updatePosition(board[currentRookPos], newRookPos, false);
+
 		board[currentRookPos] = ChessPiece.empty();
+		hashing.flipPiece(currentRookPos, board[newRookPos]);
+
 		return newRookPos;
 	}
 
@@ -403,6 +420,9 @@ public class ChessBoard {
 		castling[turn.arrayIndex] = store.getCastling();
 		enPassant = store.enPassant;
 
+		hashing.setCastlingRights(turn, castling[turn.arrayIndex]);
+		hashing.setEnPassantFile(enPassant != EMPTY ? getColumn(enPassant) : enPassant);
+
 		kingAttacker = ChessPiece.empty();
 		final Move invertedMove = move.invert();
 		final boolean isAttack = !capturedPiece.isEmpty() && !move.isSpecial();
@@ -417,6 +437,7 @@ public class ChessBoard {
 		}
 
 		board[invertedMove.getStart()] = ChessPiece.empty();		//Empty the square the piece used to occupy.
+		hashing.flipPiece(invertedMove.getStart(), movingPiece);
 		updatePosition(movingPiece, invertedMove.getFinish(), false);			//Move the moving piece to the new position.
 
 		//Add the captured piece back onto the board.
@@ -448,9 +469,11 @@ public class ChessBoard {
 	private int undoCastleMove(Move invertedMove) {
 		final int side = invertedMove.getStart() > invertedMove.getFinish() ? KINGSIDE : QUEENSIDE;
 		final int castledRookPos = invertedMove.getStart() + (side == KINGSIDE ? Direction.LEFT : Direction.RIGHT).rawArrayValue;
-		board[castledRookPos].pieceAttacks(true);		//Update the squares the rook currently attacks.
-		updatePosition(board[castledRookPos], ROOK_POSITIONS[turn.arrayIndex][side], false);		//Move the rook to the new position.
+		final ChessPiece castledRook = board[castledRookPos];
+		castledRook.pieceAttacks(true);		//Update the squares the rook currently attacks.
+		updatePosition(castledRook, ROOK_POSITIONS[turn.arrayIndex][side], false);		//Move the rook to the new position.
 		board[castledRookPos] = ChessPiece.empty();			//Empty the square the rook used to occupy.
+		hashing.flipPiece(castledRookPos, castledRook);
 		return ROOK_POSITIONS[turn.arrayIndex][side];
 	}
 
@@ -461,6 +484,8 @@ public class ChessBoard {
 	 * @param remove Whether or not the piece is getting removed or added.
 	 */
 	private void updatePosition(ChessPiece piece, int pos, boolean remove) {
+		hashing.flipPiece(pos, piece);
+
 		//Remove the piece from the board and updates the tracking variables.
 		if (remove) {
 			pieces[piece.color.arrayIndex].remove(piece);
@@ -486,6 +511,7 @@ public class ChessBoard {
 		final ChessPiece promotingPiece = board[promotingPawn];
 		
 		//Add the promoted piece to the board.
+		hashing.flipPiece(promotingPawn, promotingPiece);
 		promotingPiece.setType(type);
 		updatePosition(promotingPiece, promotingPawn, false);
 
@@ -501,6 +527,7 @@ public class ChessBoard {
 		next_turn();
 
 		promotingPawn = EMPTY;
+
 	}
 
 	/**
@@ -509,6 +536,7 @@ public class ChessBoard {
 	 */
 	public void unPromote(int pos) {
 		final ChessPiece unpromotingPiece = board[pos];
+		hashing.flipPiece(pos, unpromotingPiece);
 
 		//Backup a turn.
 		halfMove --;
@@ -730,6 +758,7 @@ public class ChessBoard {
 	 */
 	public void next_turn() {
 		turn = flipColor(turn);
+		hashing.toggleSideToMove();
 	}
 
 	/**
@@ -971,5 +1000,20 @@ public class ChessBoard {
 		System.out.println(isChecked(turn));
 		System.out.println(getFenString());
 		if (!valid) System.out.println("ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR");
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o instanceof Move) {
+			final ChessBoard aBoard = (ChessBoard) o;
+			return aBoard.hashing.getHash() == hashing.getHash();
+		}
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return Long.hashCode(hashing.getHash());
 	}
 }
