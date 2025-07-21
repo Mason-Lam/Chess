@@ -41,16 +41,22 @@ public class Constants {
 
 
 			public final int rawArrayValue;
+			public final int absoluteArrayValue;
 			private Direction(int rawArrayValue) {
 				this.rawArrayValue = rawArrayValue;
+				this.absoluteArrayValue = Math.abs(rawArrayValue);
 			}
 
 			public static int sumDirections(Direction... directions) {
 				int sum = 0;
-				for (Direction direction : directions) {
+				for (final Direction direction : directions) {
 					sum += direction.rawArrayValue;
 				}
 				return sum;
+			}
+
+			public static int sumDirectionsAbsolute(Direction... directions) {
+				return Math.abs(sumDirections(directions));
 			}
 		}
 
