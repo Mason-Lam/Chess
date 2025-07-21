@@ -107,15 +107,15 @@ public class Bitboard {
             long attacks = 0;
             if (color == PieceColor.WHITE) {
                 moves |= b >>> UP.absoluteArrayValue;
-                moves |= b & RANKS[PAWN_STARTING_ROW[color.arrayIndex]] >>> UP.absoluteArrayValue * 2;
-                attacks |= b & ~FILE_A >>> UPLEFT.absoluteArrayValue;
-                attacks |= b & ~FILE_H >>> UPRIGHT.absoluteArrayValue;
+                moves |= (b & RANKS[PAWN_STARTING_ROW[color.arrayIndex]]) >>> UP.absoluteArrayValue * 2;
+                attacks |= (b & ~FILE_A) >>> UPLEFT.absoluteArrayValue;
+                attacks |= (b & ~FILE_H) >>> UPRIGHT.absoluteArrayValue;
             }
             else {
-                moves |= b >>> DOWN.absoluteArrayValue;
-                moves |= b & RANKS[PAWN_STARTING_ROW[color.arrayIndex]] >>> DOWN.absoluteArrayValue * 2;
-                attacks |= b & ~FILE_A >>> DOWNLEFT.absoluteArrayValue;
-                attacks |= b & ~FILE_H >>> DOWNRIGHT.absoluteArrayValue;
+                moves |= b << DOWN.absoluteArrayValue;
+                moves |= (b & RANKS[PAWN_STARTING_ROW[color.arrayIndex]]) << DOWN.absoluteArrayValue * 2;
+                attacks |= (b & ~FILE_A) << DOWNLEFT.absoluteArrayValue;
+                attacks |= (b & ~FILE_H) << DOWNRIGHT.absoluteArrayValue;
             }
             PRECOMPUTED_PAWN_MOVES[color.arrayIndex][square] = moves;
             PRECOMPUTED_PAWN_ATTACKS[color.arrayIndex][square] = attacks;
@@ -350,18 +350,19 @@ public class Bitboard {
 
 
 
-    public static void setBit(long bitboard, int index) {
+    public static long setBit(long bitboard, int index) {
         if (index < 0 || index >= 64) {
             throw new IllegalArgumentException("Index must be between 0 and 63.");
         }
-        bitboard |= (1L << index);
+        return bitboard |= (1L << index);
     }
 
-    public static void clearBit(long bitboard, int index) {
+    public static long clearBit(long bitboard, int index) {
         if (index < 0 || index >= 64) {
             throw new IllegalArgumentException("Index must be between 0 and 63.");
         }
         bitboard &= ~(1L << index);
+        return bitboard;
     }
 
     public static boolean isBitSet(long bitboard, int index) {
@@ -402,21 +403,22 @@ public class Bitboard {
             }
             System.out.println();
         }
+        System.out.println();
     }
 
-    private final long[] PIECES;
+    public final long[] PIECES;
 
-    private final long[] ALL_PIECES;
+    public final long[] ALL_PIECES;
 
     private final PieceType[] TYPES;
 
     private final PieceColor[] COLORS;
 
-    private long OCCUPIED;
+    public long OCCUPIED;
 
     private int enPassantSquare;
 
-    public Bitboard() {
+    public Bitboard(String fen) {
         PIECES = new long[12];
         ALL_PIECES = new long[2];
         TYPES = new PieceType[64];
@@ -428,6 +430,8 @@ public class Bitboard {
         Arrays.fill(ALL_PIECES, 0L);
         Arrays.fill(TYPES, PieceType.EMPTY);
         Arrays.fill(COLORS, PieceColor.COLORLESS);
+
+        initializeFromFen(fen);
     }
 
 
@@ -435,48 +439,35 @@ public class Bitboard {
         int pos = 0;
 		//Iterate over each character in the FEN String.
 		for (int index = 0; index < fen.length(); index++) {
-			final char letter = fen.charAt(index);
-			if (letter == ' ') continue;
-			
-			//Turn, Castling, enPassant.
-			
-			if (letter == '/') continue;
+            if (pos < 64) {
+                final char letter = fen.charAt(index);
+                if (letter == ' ') continue;
+                
+                //Turn, Castling, enPassant.
+                
+                if (letter == '/') continue;
 
-			//Filling board with pieces.
-			final int pieceValue = Character.getNumericValue(letter);
-			//Empty squares.
-			if (pieceValue <= 8 && pieceValue > 0) {
-				for (int square = 0; square < pieceValue; square++) {
-					pos ++;
-				}
-				continue;
-			}
+                //Filling board with pieces.
+                final int pieceValue = Character.getNumericValue(letter);
+                //Empty squares.
+                if (pieceValue <= 8 && pieceValue > 0) {
+                    for (int square = 0; square < pieceValue; square++) {
+                        pos ++;
+                    }
+                    continue;
+                }
 
-			//Create and store the piece.
-			final PieceType type = charToPieceType(letter);
-            final PieceColor color = Character.isLowerCase(letter) ? PieceColor.BLACK : PieceColor.WHITE;
+                //Create and store the piece.
+                final PieceType type = charToPieceType(letter);
+                final PieceColor color = Character.isLowerCase(letter) ? PieceColor.BLACK : PieceColor.WHITE;
 
-            setPiece(pos, type, color);
+                setPiece(pos, type, color);
 
-			pos++;
+                pos++;
+            }
 		}
 
     }
-
-    public static int[][] pawnIndexOffsets = {
-        {
-            UP.rawArrayValue,
-            UP.rawArrayValue * 2,
-            UPRIGHT.rawArrayValue,
-            UPLEFT.rawArrayValue
-        },
-        {
-            DOWN.rawArrayValue,
-            DOWN.rawArrayValue * 2,
-            DOWNRIGHT.rawArrayValue,
-            DOWNLEFT.rawArrayValue, 
-        }
-    };
 
     public void generatePawnMoves(ArrayList<Move> moves, PieceColor color, int square, boolean attacksOnly) {
         final long pawnBitboard = generatePawnBitboard(color, square, attacksOnly);
@@ -511,7 +502,13 @@ public class Bitboard {
     public long generatePawnBitboard(PieceColor color, int square, boolean attacksOnly) {
         final long pawnAttacks = PRECOMPUTED_PAWN_ATTACKS[color.arrayIndex][square] & ALL_PIECES[flipColor(color).arrayIndex];
         if (attacksOnly) return pawnAttacks;
-        final long pawnMoves = PRECOMPUTED_PAWN_MOVES[color.arrayIndex][square] & ~OCCUPIED;
+        long pawnMoves = PRECOMPUTED_PAWN_MOVES[color.arrayIndex][square] & ~OCCUPIED;
+        if (getRow(square) == PAWN_STARTING_ROW[color.arrayIndex]) {
+            final int numMoves = Long.bitCount(pawnMoves);
+            if (numMoves == 1) {
+                pawnMoves &= ~(color == PieceColor.WHITE ? RANK6 : RANK4);
+            }
+        }
         return pawnAttacks | pawnMoves;
     }
 
@@ -548,6 +545,21 @@ public class Bitboard {
         final long viableSquares = ALL_PIECES[flipColor(color).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
         return kingMoves & viableSquares;
     }
+
+    public static int[][] pawnIndexOffsets = {
+        {
+            UP.rawArrayValue,
+            UP.rawArrayValue * 2,
+            UPRIGHT.rawArrayValue,
+            UPLEFT.rawArrayValue
+        },
+        {
+            DOWN.rawArrayValue,
+            DOWN.rawArrayValue * 2,
+            DOWNRIGHT.rawArrayValue,
+            DOWNLEFT.rawArrayValue, 
+        }
+    };
 
     public void generateAllPawnMoves(ArrayList<Move> moves, PieceColor color) {
         final long pawnBitboardOneSquare = generatePawnBitboardOneSquare(color);
@@ -626,9 +638,9 @@ public class Bitboard {
         TYPES[index] = type;
         COLORS[index] = color;
 
-        setBit(PIECES[type.arrayIndex + color.arrayIndex * 6], index);
-        setBit(ALL_PIECES[color.arrayIndex], index);
-        setBit(OCCUPIED, index);
+        PIECES[type.arrayIndex + color.arrayIndex * 6] = setBit(PIECES[type.arrayIndex + color.arrayIndex * 6], index);
+        ALL_PIECES[color.arrayIndex] = setBit(ALL_PIECES[color.arrayIndex], index);
+        OCCUPIED = setBit(OCCUPIED, index);
     }
 
     public void clearPiece(int index) {
@@ -647,6 +659,10 @@ public class Bitboard {
             TYPES[index] = PieceType.EMPTY;
             COLORS[index] = PieceColor.COLORLESS;
         }
+    }
+
+    public void setEnPassant(int square) {
+        enPassantSquare = square;
     }
 
 }

@@ -76,10 +76,14 @@ public class ChessBoard {
 	private PieceColor turn;
 	private int enPassant;
 	private int promotingPawn;
-	public int halfMove;
-	public int fullMove;
+	private int halfMove;
+	private int fullMove;
 
-	public final ZobristHashing hashing;
+	private final ZobristHashing hashing;
+
+	public final Bitboard bitboard;
+
+
 	
 	/**
 	 * Creates a new Chessboard object with the default starting position.
@@ -115,11 +119,14 @@ public class ChessBoard {
 		castling = new boolean[2][2]; //Black: Queenside, Kingside, White: Queenside, Kingside
 		Arrays.fill(castling[PieceColor.BLACK.arrayIndex], false);
 		Arrays.fill(castling[PieceColor.WHITE.arrayIndex], false);
-		enPassant = -1;
-		promotingPawn = -1;
+		enPassant = EMPTY;
+		promotingPawn = EMPTY;
+
+		bitboard = new Bitboard(fen);
 		fen_to_board(fen);
 		hardAttackUpdate();
 
+		bitboard.setEnPassant(enPassant);
 		hashing = new ZobristHashing(this);
 	}
 	
