@@ -74,7 +74,6 @@ public class ChessBoard {
 	private ChessPiece kingAttacker = ChessPiece.empty();
 
 	private PieceColor turn;
-	private int enPassant;
 	private int promotingPawn;
 	private int halfMove;
 	private int fullMove;
@@ -119,14 +118,12 @@ public class ChessBoard {
 		castling = new boolean[2][2]; //Black: Queenside, Kingside, White: Queenside, Kingside
 		Arrays.fill(castling[PieceColor.BLACK.arrayIndex], false);
 		Arrays.fill(castling[PieceColor.WHITE.arrayIndex], false);
-		enPassant = EMPTY;
 		promotingPawn = EMPTY;
 
 		bitboard = new Bitboard(fen);
 		fen_to_board(fen);
 		hardAttackUpdate();
-
-		bitboard.setEnPassant(enPassant);
+		
 		hashing = new ZobristHashing(this);
 	}
 	
@@ -182,9 +179,9 @@ public class ChessBoard {
 		if (castling[PieceColor.BLACK.arrayIndex][QUEENSIDE]) fen += "q";
 		
 		//Handle enPassant
-		if (enPassant == EMPTY) fen += " -";
+		if (bitboard.getEnPassant() == EMPTY) fen += " -";
 		else {
-			final int passant = enPassant + getPawnDirection(turn).rawArrayValue;
+			final int passant = bitboard.getEnPassant() + getPawnDirection(turn).rawArrayValue;
 			fen += " " + indexToSquare(getColumn(passant), 8 - getRow(passant));
 		}
 
@@ -232,8 +229,9 @@ public class ChessBoard {
 				
 				//enPassant; it's garbage but I can't be bothered to clean it up.
 				else if ((int) letter <= 104 && (int) letter >= 97 && Character.isDigit(fen.charAt(index + 1))) {
-					enPassant = squareToIndex(Character.toString(letter) + fen.charAt(index + 1));
+					int enPassant = squareToIndex(Character.toString(letter) + fen.charAt(index + 1));
 					enPassant = (turn == PieceColor.BLACK) ? enPassant - 8 : enPassant + 8;
+					bitboard.setEnPassant(enPassant);
 					index++;
 				}
 
@@ -335,8 +333,8 @@ public class ChessBoard {
 		if (promotingPawn == EMPTY) movingPiece.pieceAttacks(false);		//Update the squares the moving piece attacks in its new position.
 		if (castledRookPos != EMPTY) board[castledRookPos].pieceAttacks(false);	//Update the squares the castled rook attacks in its new position.
 
-		enPassant = newEnPassant;			//Store the pawn that moved two squares.
-		hashing.setEnPassantFile(enPassant != EMPTY ? getColumn(enPassant) : enPassant);
+		bitboard.setEnPassant(newEnPassant);
+		hashing.setEnPassantFile(newEnPassant != EMPTY ? getColumn(newEnPassant) : newEnPassant);
 
 		//Move on to the next turn if a promotion isn't happenning.
 		if (!is_promote()) {
@@ -357,8 +355,8 @@ public class ChessBoard {
 		halfMove = EMPTY;
 		//Captures enPassant.
 		if (move.isSpecial()) {
-			board[enPassant].pieceAttacks(true);		//Update the squares the enPassant pawn used to attack.
-			updatePosition(board[enPassant], enPassant, true);	//Remove the enPassant pawn from the board.
+			board[bitboard.getEnPassant()].pieceAttacks(true);		//Update the squares the enPassant pawn used to attack.
+			updatePosition(board[bitboard.getEnPassant()], bitboard.getEnPassant(), true);	//Remove the enPassant pawn from the board.
 		}
 		//Pawn moves two squares forward.
 		if (getRowDistance(move.getStart(), move.getFinish()) == 2) {
@@ -425,10 +423,10 @@ public class ChessBoard {
 
 		//Reset castling data and enPassant data.
 		castling[turn.arrayIndex] = store.getCastling();
-		enPassant = store.enPassant;
+		bitboard.setEnPassant(store.enPassant);
 
 		hashing.setCastlingRights(turn, castling[turn.arrayIndex]);
-		hashing.setEnPassantFile(enPassant != EMPTY ? getColumn(enPassant) : enPassant);
+		hashing.setEnPassantFile(bitboard.getEnPassant() != EMPTY ? getColumn(bitboard.getEnPassant()) : bitboard.getEnPassant());
 
 		kingAttacker = ChessPiece.empty();
 		final Move invertedMove = move.invert();
@@ -575,7 +573,7 @@ public class ChessBoard {
 
 		final boolean isCastle = isCastle(move);
 
-		final int[] modifiedSquares = isEnPassant(move) ? new int[] {move.getStart(), move.getFinish(), enPassant} : new int[] {move.getStart(), move.getFinish()};
+		final int[] modifiedSquares = isEnPassant(move) ? new int[] {move.getStart(), move.getFinish(), bitboard.getEnPassant()} : new int[] {move.getStart(), move.getFinish()};
 		//Check each square that the move affects.
 		for (final PieceColor color : PIECE_COLORS) {
 			//Go through black and white pieces potentially affected.
@@ -628,10 +626,10 @@ public class ChessBoard {
 	private void pawnReset(Move move, boolean isAttack) {
 		final int[] squares;
 		if (isAttack) {
-			squares = isEnPassant(move) ? new int[] {move.getStart(), enPassant} : new int[] {move.getStart()};
+			squares = isEnPassant(move) ? new int[] {move.getStart(), bitboard.getEnPassant()} : new int[] {move.getStart()};
 		}
 		else {
-			squares = isEnPassant(move) ? new int[] {move.getStart(), move.getFinish(), enPassant} : new int[] {move.getStart(), move.getFinish()};
+			squares = isEnPassant(move) ? new int[] {move.getStart(), move.getFinish(), bitboard.getEnPassant()} : new int[] {move.getStart(), move.getFinish()};
 		}
 
 		//Update both black and white pawns.
@@ -883,7 +881,7 @@ public class ChessBoard {
 	 * @return The enPassant pawn, returns EMPTY:-1 if there is none.
 	 */
 	public int getEnPassant() {
-		return enPassant;
+		return bitboard.getEnPassant();
 	}
 
 	/**

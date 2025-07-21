@@ -661,8 +661,13 @@ public class Bitboard {
         }
     }
 
+    public int getEnPassant() {
+        return enPassantSquare;
+    }
+
     public void setEnPassant(int square) {
         enPassantSquare = square;
     }
+
 
 }
