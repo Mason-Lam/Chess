@@ -635,6 +635,8 @@ public class Bitboard {
             throw new IllegalArgumentException("Invalid piece type or color.");
         }
 
+        if (isOccupied(index)) clearPiece(index);
+
         TYPES[index] = type;
         COLORS[index] = color;
 
@@ -652,13 +654,17 @@ public class Bitboard {
         final PieceColor color = COLORS[index];
 
         if (type != PieceType.EMPTY && color != PieceColor.COLORLESS) {
-            clearBit(PIECES[type.arrayIndex + color.arrayIndex * 6], index);
-            clearBit(ALL_PIECES[color.arrayIndex], index);
-            clearBit(OCCUPIED, index);
+            PIECES[type.arrayIndex + color.arrayIndex * 6] = clearBit(PIECES[type.arrayIndex + color.arrayIndex * 6], index);
+            ALL_PIECES[color.arrayIndex] = clearBit(ALL_PIECES[color.arrayIndex], index);
+            OCCUPIED = clearBit(OCCUPIED, index);
 
             TYPES[index] = PieceType.EMPTY;
             COLORS[index] = PieceColor.COLORLESS;
         }
+    }
+
+    public boolean isOccupied(int index) {
+        return (OCCUPIED & (1L << index)) != 0;
     }
 
     public int getEnPassant() {
