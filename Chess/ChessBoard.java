@@ -67,9 +67,6 @@ public class ChessBoard {
 	/** ChessPiece array representing the board.*/
 	private final ChessPiece[] board;
 
-	/** 2d boolean array storing castling ability of both sides, 0 refers to BLACK, 1 for WHITE; 0 refers to Queenside, 1 to Kingside*/
-	private final boolean[][] castling;
-
 	/** Variable used to store the piece that is currently attacking the king. */
 	private ChessPiece kingAttacker = ChessPiece.empty();
 
@@ -115,9 +112,6 @@ public class ChessBoard {
 		Arrays.fill(pieceCount[0], 0);
 		Arrays.fill(pieceCount[1], 0);
 		board = new ChessPiece[64];
-		castling = new boolean[2][2]; //Black: Queenside, Kingside, White: Queenside, Kingside
-		Arrays.fill(castling[PieceColor.BLACK.arrayIndex], false);
-		Arrays.fill(castling[PieceColor.WHITE.arrayIndex], false);
 		promotingPawn = EMPTY;
 
 		bitboard = new Bitboard(fen);
@@ -162,22 +156,22 @@ public class ChessBoard {
 		boolean whiteCanCastle = true;
 
 		//If white can't castle at all, add a "-".
-		if (!castling[PieceColor.WHITE.arrayIndex][QUEENSIDE] && !castling[PieceColor.WHITE.arrayIndex][KINGSIDE]) {
+		if (!bitboard.getCastlingRights(PieceColor.WHITE, KINGSIDE) && !bitboard.getCastlingRights(PieceColor.WHITE, QUEENSIDE)) {
 			fen += " -";
 			whiteCanCastle = false;
 		}
 
 		//Add capital letters based on white's castling ability.
-		if (castling[PieceColor.WHITE.arrayIndex][KINGSIDE]) fen += " K";
-		if (castling[PieceColor.WHITE.arrayIndex][QUEENSIDE]) fen += "Q";
+		if (bitboard.getCastlingRights(PieceColor.WHITE, KINGSIDE)) fen += " K";
+		if (bitboard.getCastlingRights(PieceColor.WHITE, QUEENSIDE)) fen += "Q";
 		
 		//If Black can't castle at all but white can, add a "-".
-		if (!castling[PieceColor.BLACK.arrayIndex][QUEENSIDE] && !castling[PieceColor.BLACK.arrayIndex][KINGSIDE] && whiteCanCastle) fen += " -";
+		if (!bitboard.getCastlingRights(PieceColor.BLACK, QUEENSIDE) && !bitboard.getCastlingRights(PieceColor.BLACK, KINGSIDE) && whiteCanCastle) fen += " -";
 
 		//Add lowercase letter based on black's castling ability.
-		if (castling[PieceColor.BLACK.arrayIndex][KINGSIDE]) fen += "k";
-		if (castling[PieceColor.BLACK.arrayIndex][QUEENSIDE]) fen += "q";
-		
+		if (bitboard.getCastlingRights(PieceColor.BLACK, KINGSIDE)) fen += "k";
+		if (bitboard.getCastlingRights(PieceColor.BLACK, QUEENSIDE)) fen += "q";
+
 		//Handle enPassant
 		if (bitboard.getEnPassant() == EMPTY) fen += " -";
 		else {
@@ -215,16 +209,16 @@ public class ChessBoard {
 				
 				//Castling.
 				else if (letter == 'K') {
-					castling[PieceColor.WHITE.arrayIndex][KINGSIDE] = true;
+					bitboard.setCastlingRights(PieceColor.WHITE, KINGSIDE, true);
 				}
 				else if (letter == 'Q') {
-					castling[PieceColor.WHITE.arrayIndex][QUEENSIDE] = true;
+					bitboard.setCastlingRights(PieceColor.WHITE, QUEENSIDE, true);
 				}
 				else if (letter == 'k') {
-					castling[PieceColor.BLACK.arrayIndex][KINGSIDE] = true;
+					bitboard.setCastlingRights(PieceColor.BLACK, KINGSIDE, true);
 				}
 				else if (letter == 'q') {
-					castling[PieceColor.BLACK.arrayIndex][QUEENSIDE] = true;
+					bitboard.setCastlingRights(PieceColor.BLACK, QUEENSIDE, true);
 				}
 				
 				//enPassant; it's garbage but I can't be bothered to clean it up.
@@ -316,7 +310,7 @@ public class ChessBoard {
 		
 		//Handles king moves.
 		if (movingPiece.isKing()) {
-			Arrays.fill(castling[movingPiece.color.arrayIndex], false);		//King can no longer castle.
+			bitboard.clearCastlingRights(movingPiece.color);             //King can no longer castle.
 			hashing.setCastlingRights(turn, new boolean[] {false, false});
 			//Handle castling.
 			if (move.isSpecial()) {
@@ -379,12 +373,12 @@ public class ChessBoard {
 	private void updateCastlingOnRookMove(int startingPos, PieceColor color) {
 		//Queenside
 		if (startingPos == ROOK_POSITIONS[color.arrayIndex][QUEENSIDE]) {
-			castling[color.arrayIndex][QUEENSIDE] = false;
+			bitboard.setCastlingRights(color, QUEENSIDE, false);
 			hashing.setCastlingRights(color, QUEENSIDE, false);
 		}
 		//Kingside
 		if (startingPos == ROOK_POSITIONS[color.arrayIndex][KINGSIDE]) {
-			castling[color.arrayIndex][KINGSIDE] = false;
+			bitboard.setCastlingRights(color, KINGSIDE, false);
 			hashing.setCastlingRights(color, KINGSIDE, false);
 		}
 	}
@@ -425,10 +419,10 @@ public class ChessBoard {
 		}
 
 		//Reset castling data and enPassant data.
-		castling[turn.arrayIndex] = store.getCastling();
+		bitboard.setCastlingRights(turn, store.getCastling());
 		bitboard.setEnPassant(store.enPassant);
 
-		hashing.setCastlingRights(turn, castling[turn.arrayIndex]);
+		hashing.setCastlingRights(turn, bitboard.getCastlingRights(turn));
 		hashing.setEnPassantFile(bitboard.getEnPassant() != EMPTY ? getColumn(bitboard.getEnPassant()) : bitboard.getEnPassant());
 
 		kingAttacker = ChessPiece.empty();
@@ -781,7 +775,7 @@ public class ChessBoard {
 	 * @return True if the king can castle in the future, false if it can't.
 	 */
 	public boolean[] getCastlingPotential(PieceColor color) {
-		return castling[color.arrayIndex];
+		return bitboard.getCastlingRights(color);
 	}
 
 	/**
@@ -977,7 +971,7 @@ public class ChessBoard {
 		if (isChecked(color)) return false;
 
 		//If the king or associated rook have already moved, it can't castle.
-		if (!castling[turn.arrayIndex][side]) return false;
+		if (!bitboard.getCastlingRights(turn, side)) return false;
 
 		//If the piece on the side is not a rook, it can't castle.
 		final int rookPos = ROOK_POSITIONS[color.arrayIndex][side];
