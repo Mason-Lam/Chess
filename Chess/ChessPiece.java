@@ -22,7 +22,7 @@ public class ChessPiece {
 	private ChessPiece pinPiece;
 	public ArrayList<Move> movesCopy;
 	
-	public final PieceColor color;
+	public PieceColor color;
 	public final int pieceID;
 	private final ChessBoard board;
 	
@@ -934,12 +934,20 @@ public class ChessPiece {
 		type = newType;
 	}
 
+	public void setColor(PieceColor newColor) {
+		color = newColor;
+	}
+
 	/**
 	 * Gets the type of the piece.
 	 * @return An enum object representing the type of the piece.
 	 */
 	public PieceType getType() {
 		return type;
+	}
+
+	public PieceColor getColor() {
+		return color;
 	}
 
 	/**
@@ -1028,6 +1036,11 @@ public class ChessPiece {
 	 */
 	public boolean isLineAttacker() {
 		return (isRook() || isQueen());
+	}
+
+	@Override
+	public String toString() {
+		return Character.toString(pieceToChar(this));
 	}
 	
 	@Override

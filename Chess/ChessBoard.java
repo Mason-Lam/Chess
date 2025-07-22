@@ -288,8 +288,10 @@ public class ChessBoard {
 		long prevTime = System.currentTimeMillis();
 
 		final ChessPiece movingPiece = board[move.getStart()];
+		bitboard.clearPiece(move.getStart());
 
-		final boolean isAttack = !board[move.getFinish()].isEmpty();
+		final boolean isAttack = bitboard.isOccupied(move.getFinish());
+
 		kingAttacker = ChessPiece.empty();
 		int castledRookPos = EMPTY;
 		movingPiece.pieceAttacks(true);		//Update the squares the moving piece currently attacks.
@@ -401,6 +403,7 @@ public class ChessBoard {
 
 		board[currentRookPos] = ChessPiece.empty();
 		hashing.flipPiece(currentRookPos, board[newRookPos]);
+		bitboard.clearPiece(currentRookPos);
 
 		return newRookPos;
 	}
@@ -442,6 +445,7 @@ public class ChessBoard {
 		}
 
 		board[invertedMove.getStart()] = ChessPiece.empty();		//Empty the square the piece used to occupy.
+		bitboard.clearPiece(invertedMove.getStart());
 		hashing.flipPiece(invertedMove.getStart(), movingPiece);
 		updatePosition(movingPiece, invertedMove.getFinish(), false);			//Move the moving piece to the new position.
 
@@ -478,6 +482,7 @@ public class ChessBoard {
 		castledRook.pieceAttacks(true);		//Update the squares the rook currently attacks.
 		updatePosition(castledRook, ROOK_POSITIONS[turn.arrayIndex][side], false);		//Move the rook to the new position.
 		board[castledRookPos] = ChessPiece.empty();			//Empty the square the rook used to occupy.
+		bitboard.clearPiece(castledRookPos);
 		hashing.flipPiece(castledRookPos, castledRook);
 		return ROOK_POSITIONS[turn.arrayIndex][side];
 	}
@@ -496,11 +501,13 @@ public class ChessBoard {
 			pieces[piece.color.arrayIndex].remove(piece);
 			pieceCount[piece.color.arrayIndex][piece.getType().arrayIndex] -= 1;
 			board[pos] = ChessPiece.empty();
+			bitboard.clearPiece(pos);
 			return;
 		}
 
 		//Add the piece to the board and update the tracking variables.
 		board[pos] = piece;
+		bitboard.setPiece(pos, piece.getType(), piece.color);
 		piece.setPos(pos);
 		if (pieces[piece.color.arrayIndex].add(piece)) pieceCount[piece.color.arrayIndex][piece.getType().arrayIndex] += 1;
 		
@@ -517,6 +524,7 @@ public class ChessBoard {
 		
 		//Add the promoted piece to the board.
 		hashing.flipPiece(promotingPawn, promotingPiece);
+		bitboard.setPiece(promotingPawn, type, promotingPiece.color);
 		promotingPiece.setType(type);
 		updatePosition(promotingPiece, promotingPawn, false);
 
@@ -542,6 +550,7 @@ public class ChessBoard {
 	public void unPromote(int pos) {
 		final ChessPiece unpromotingPiece = board[pos];
 		hashing.flipPiece(pos, unpromotingPiece);
+		bitboard.setPiece(pos, PieceType.PAWN, unpromotingPiece.color);
 
 		//Backup a turn.
 		halfMove --;
@@ -1015,6 +1024,10 @@ public class ChessBoard {
 			return aBoard.hashing.getHash() == hashing.getHash();
 		}
 		return false;
+	}
+
+	public Bitboard getBitboard() {
+		return bitboard;
 	}
 
 	public long hash() {

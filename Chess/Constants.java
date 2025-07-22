@@ -5,7 +5,7 @@ public class Constants {
 	public static class MoveConstants {
 		public static final int HALF_MOVE_TIMER = 50;
 
-		public static final boolean shouldCopyOptimize = true;
+		public static final boolean shouldCopyOptimize = false;
 
 		public static final int START = 0;
 
