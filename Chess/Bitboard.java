@@ -2,7 +2,6 @@ package Chess;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import static Chess.Constants.DirectionConstants.Direction.*;
 import static Chess.Constants.PieceConstants.PIECE_COLORS;
 import static Chess.BitboardHelper.*;
@@ -10,8 +9,7 @@ import static Chess.BitboardHelper.*;
 import Chess.Constants.PieceConstants.PieceColor;
 import Chess.Constants.PieceConstants.PieceType;
 
-import static Chess.Constants.PositionConstants.EMPTY;
-import static Chess.Constants.PositionConstants.PAWN_STARTING_ROW;
+import static Chess.Constants.PositionConstants.*;
 import static Chess.BoardUtil.*;
 
 public class Bitboard {
@@ -132,9 +130,9 @@ public class Bitboard {
     }
 
     public long generatePawnBitboard(PieceColor color, int square, boolean attacksOnly) {
-        final long pawnAttacks = PRECOMPUTED_PAWN_ATTACKS[color.arrayIndex][square] & ALL_PIECES[flipColor(color).arrayIndex];
+        final long pawnAttacks = PAWN_ATTACKS[color.arrayIndex][square] & ALL_PIECES[flipColor(color).arrayIndex];
         if (attacksOnly) return pawnAttacks;
-        long pawnMoves = PRECOMPUTED_PAWN_MOVES[color.arrayIndex][square] & ~OCCUPIED;
+        long pawnMoves = PAWN_MOVES[color.arrayIndex][square] & ~OCCUPIED;
         if (getRow(square) == PAWN_STARTING_ROW[color.arrayIndex]) {
             final int numMoves = Long.bitCount(pawnMoves);
             if (numMoves == 1) {
@@ -145,25 +143,25 @@ public class Bitboard {
     }
 
     public long generateKnightBitboard(PieceColor color, int square, boolean attacksOnly) {
-        final long knightMoves = PRECOMPUTED_KNIGHT_MOVES[square];
+        final long knightMoves = KNIGHT_MOVES[square];
         final long viableSquares = ALL_PIECES[flipColor(color).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
         return knightMoves & viableSquares;
     }
 
     public long generateBishopBitboard(PieceColor color, int square, boolean attacksOnly) {
-        final long bishopMask = PRECOMPUTED_BISHOP_MASKS[square];
+        final long bishopMask = BISHOP_MASKS[square];
         final long blockers = bishopMask & OCCUPIED;
-        final long bishopMagicNumber = PRECOMPUTED_BISHOP_MAGIC_NUMBERS[square];
-        final long bishopMoves = PRECOMPUTED_BISHOP_MOVES[square][(int) ((blockers * bishopMagicNumber) >>> (64 - Long.bitCount(bishopMask)))];
+        final long bishopMagicNumber = BISHOP_MAGIC_NUMBERS[square];
+        final long bishopMoves = BISHOP_MOVES[square][(int) ((blockers * bishopMagicNumber) >>> (64 - Long.bitCount(bishopMask)))];
         final long viableSquares = ALL_PIECES[flipColor(color).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
         return bishopMoves & viableSquares;
     }
 
     public long generateRookBitboard(PieceColor color, int square, boolean attacksOnly) {
-        final long rookMask = PRECOMPUTED_ROOK_MASKS[square];
+        final long rookMask = ROOK_MASKS[square];
         final long blockers = rookMask & OCCUPIED;
-        final long rookMagicNumber = PRECOMPUTED_ROOK_MAGIC_NUMBERS[square];
-        final long rookMoves = PRECOMPUTED_ROOK_MOVES[square][(int) ((blockers * rookMagicNumber) >>> (64 - Long.bitCount(rookMask)))];
+        final long rookMagicNumber = ROOK_MAGIC_NUMBERS[square];
+        final long rookMoves = ROOK_MOVES[square][(int) ((blockers * rookMagicNumber) >>> (64 - Long.bitCount(rookMask)))];
         final long viableSquares = ALL_PIECES[flipColor(color).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
         return rookMoves & viableSquares;
     }
@@ -173,9 +171,29 @@ public class Bitboard {
     }
 
     public long generateKingBitboard(PieceColor color, int square, boolean attacksOnly) {
-        final long kingMoves = PRECOMPUTED_KING_MOVES[square];
+        final long possibleKingMoves = KING_MOVES[square];
         final long viableSquares = ALL_PIECES[flipColor(color).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
-        return kingMoves & viableSquares;
+        long kingMoves = possibleKingMoves & viableSquares;
+
+        if (attacksOnly) return kingMoves;
+
+        if (canCastle(color, square, QUEENSIDE)) kingMoves |= KING_CASTLE_MOVES[color.arrayIndex][QUEENSIDE];
+        if (canCastle(color, square, KINGSIDE)) kingMoves |= KING_CASTLE_MOVES[color.arrayIndex][KINGSIDE];
+
+        return kingMoves;
+    }
+
+    private boolean canCastle(PieceColor color, int square, int side) {
+        if (!castlingRights[color.arrayIndex][side]) return false;
+
+        final ChessPiece castlingRook = board[ROOK_POSITIONS[color.arrayIndex][side]];
+        if (!castlingRook.isRook() || castlingRook.getColor() != color) return false;
+
+        if ((KING_CASTLE_EMPTY_SQUARES[color.arrayIndex][side] & OCCUPIED) != 0) return false;
+
+        if ((KING_CASTLE_ATTACK_SQUARES[color.arrayIndex][side] & ATTACKS[flipColor(color).arrayIndex]) != 0) return false;
+
+        return true;
     }
 
     public static int[][] pawnIndexOffsets = {
@@ -283,25 +301,25 @@ public class Bitboard {
     private void updateAttacks(ChessPiece piece, boolean remove, long occupiedBitboard) {
         long bitboard = 0;
         if (piece.getType() == PieceType.PAWN) {
-            bitboard = PRECOMPUTED_PAWN_ATTACKS[piece.getColor().arrayIndex][piece.getPos()];
+            bitboard = PAWN_ATTACKS[piece.getColor().arrayIndex][piece.getPos()];
         }
         if (piece.getType() == PieceType.KNIGHT) {
-            bitboard = PRECOMPUTED_KNIGHT_MOVES[piece.getPos()];
+            bitboard = KNIGHT_MOVES[piece.getPos()];
         }
         if (piece.getType() == PieceType.KING) {
-            bitboard = PRECOMPUTED_KING_MOVES[piece.getPos()];
+            bitboard = KING_MOVES[piece.getPos()];
         }
         if (piece.getType() == PieceType.BISHOP || piece.getType() == PieceType.QUEEN) {
-            final long mask = PRECOMPUTED_BISHOP_MASKS[piece.getPos()];
+            final long mask = BISHOP_MASKS[piece.getPos()];
             final long blockers = mask & occupiedBitboard;
-            final long magicNumber = PRECOMPUTED_BISHOP_MAGIC_NUMBERS[piece.getPos()];
-            bitboard |= PRECOMPUTED_BISHOP_MOVES[piece.getPos()][(int) ((blockers * magicNumber) >>> (64 - Long.bitCount(mask)))];
+            final long magicNumber = BISHOP_MAGIC_NUMBERS[piece.getPos()];
+            bitboard |= BISHOP_MOVES[piece.getPos()][(int) ((blockers * magicNumber) >>> (64 - Long.bitCount(mask)))];
         }
         if (piece.getType() == PieceType.ROOK || piece.getType() == PieceType.QUEEN) {
-            final long mask = PRECOMPUTED_ROOK_MASKS[piece.getPos()];
+            final long mask = ROOK_MASKS[piece.getPos()];
             final long blockers = mask & occupiedBitboard;
-            final long magicNumber = PRECOMPUTED_ROOK_MAGIC_NUMBERS[piece.getPos()];
-            bitboard |= PRECOMPUTED_ROOK_MOVES[piece.getPos()][(int) ((blockers * magicNumber) >>> (64 - Long.bitCount(mask)))];
+            final long magicNumber = ROOK_MAGIC_NUMBERS[piece.getPos()];
+            bitboard |= ROOK_MOVES[piece.getPos()][(int) ((blockers * magicNumber) >>> (64 - Long.bitCount(mask)))];
         }
         if (remove) applyFunctionByBitIndices(bitboard, (index) -> removeAttack(piece, index));
         else {

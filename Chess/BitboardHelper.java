@@ -1,13 +1,11 @@
 package Chess;
 
-import static Chess.BoardUtil.getColumn;
-import static Chess.BoardUtil.getNumSquaresFromEdge;
-import static Chess.BoardUtil.getRow;
+import static Chess.BoardUtil.*;
 import static Chess.Constants.DirectionConstants.*;
 import static Chess.Constants.DirectionConstants.Direction.*;
-import static Chess.Constants.PieceConstants.PIECE_COLORS;
-import static Chess.Constants.PieceConstants.PIECE_TYPES;
-import static Chess.Constants.PositionConstants.PAWN_STARTING_ROW;
+import static Chess.Constants.PieceConstants.*;
+import static Chess.Constants.PositionConstants.*;
+import static Chess.Constants.PieceConstants.PieceColor.*;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -20,10 +18,6 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.IntConsumer;
-
-import Chess.Constants.DirectionConstants.Direction;
-import Chess.Constants.PieceConstants.PieceColor;
-import Chess.Constants.PieceConstants.PieceType;
 
 public class BitboardHelper {
     public static final long RANK1 = 0x00000000000000FFL;
@@ -52,22 +46,25 @@ public class BitboardHelper {
         FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H
     };
 
-    public static final long[][] PRECOMPUTED_PAWN_MOVES = new long[2][64];
+    public static final long[][] PAWN_MOVES = new long[2][64];
 
-    public static final long[][] PRECOMPUTED_PAWN_ATTACKS = new long[2][64];
+    public static final long[][] PAWN_ATTACKS = new long[2][64];
 
-    public static final long[] PRECOMPUTED_KNIGHT_MOVES = new long[64];
+    public static final long[] KNIGHT_MOVES = new long[64];
 
-    public static final long[] PRECOMPUTED_KING_MOVES = new long[64];
+    public static final long[] KING_MOVES = new long[64];
+    public static final long[][] KING_CASTLE_MOVES = new long[2][2];
+    public static final long[][] KING_CASTLE_EMPTY_SQUARES = new long[2][2];
+    public static final long[][] KING_CASTLE_ATTACK_SQUARES = new long[2][2];
 
-    public static final long[] PRECOMPUTED_BISHOP_MASKS = new long[64];
-    public static final long[] PRECOMPUTED_ROOK_MASKS = new long[64];
+    public static final long[] BISHOP_MASKS = new long[64];
+    public static final long[] ROOK_MASKS = new long[64];
 
-    public static final long[] PRECOMPUTED_BISHOP_MAGIC_NUMBERS = new long[64];
-    public static final long[] PRECOMPUTED_ROOK_MAGIC_NUMBERS = new long[64];
+    public static final long[] BISHOP_MAGIC_NUMBERS = new long[64];
+    public static final long[] ROOK_MAGIC_NUMBERS = new long[64];
 
-    public static final long[][] PRECOMPUTED_BISHOP_MOVES = new long[64][];
-    public static final long[][] PRECOMPUTED_ROOK_MOVES = new long[64][];
+    public static final long[][] BISHOP_MOVES = new long[64][];
+    public static final long[][] ROOK_MOVES = new long[64][];
 
     public static void initializeBitBoard() {
         
@@ -86,11 +83,12 @@ public class BitboardHelper {
             initBishopMoves(square);
             initRookMoves(square);
         }
+        initKingCastleMoves();
         // final int square = 0;
         // final int blockerPermutation = 24;
-        // final long mask = PRECOMPUTED_BISHOP_MASKS[square];
+        // final long mask = BISHOP_MASKS[square];
         // final long blockers = generateBlockerPermutations(mask)[blockerPermutation];
-        // final long moves = PRECOMPUTED_BISHOP_MOVES[square][(int) ((blockers * PRECOMPUTED_BISHOP_MAGIC_NUMBERS[square]) >>> (64 - Long.bitCount(mask)))];
+        // final long moves = BISHOP_MOVES[square][(int) ((blockers * BISHOP_MAGIC_NUMBERS[square]) >>> (64 - Long.bitCount(mask)))];
         // displayBitboard(mask);
         // System.out.println();
         // displayBitboard(moves);
@@ -104,7 +102,7 @@ public class BitboardHelper {
             final long b = 1L << square;
             long moves = 0;
             long attacks = 0;
-            if (color == PieceColor.WHITE) {
+            if (color == WHITE) {
                 moves |= b >>> UP.absoluteArrayValue;
                 moves |= (b & RANKS[PAWN_STARTING_ROW[color.arrayIndex]]) >>> UP.absoluteArrayValue * 2;
                 attacks |= (b & ~FILE_A) >>> UPLEFT.absoluteArrayValue;
@@ -116,8 +114,8 @@ public class BitboardHelper {
                 attacks |= (b & ~FILE_A) << DOWNLEFT.absoluteArrayValue;
                 attacks |= (b & ~FILE_H) << DOWNRIGHT.absoluteArrayValue;
             }
-            PRECOMPUTED_PAWN_MOVES[color.arrayIndex][square] = moves;
-            PRECOMPUTED_PAWN_ATTACKS[color.arrayIndex][square] = attacks;
+            PAWN_MOVES[color.arrayIndex][square] = moves;
+            PAWN_ATTACKS[color.arrayIndex][square] = attacks;
         }
     }
 
@@ -135,7 +133,7 @@ public class BitboardHelper {
         attacks |= (b & ~FILE_H & ~ FILE_G) << sumDirectionsAbsolute(DOWN, RIGHT, RIGHT);
         attacks |= (b & ~FILE_A & ~FILE_B) << sumDirectionsAbsolute(DOWN, LEFT, LEFT);
 
-        PRECOMPUTED_KNIGHT_MOVES[square] = attacks;
+        KNIGHT_MOVES[square] = attacks;
     }
 
     private static void initKingMoves(int square) {
@@ -153,7 +151,24 @@ public class BitboardHelper {
         attacks |= b >>> UP.absoluteArrayValue;
         attacks |= b << DOWN.absoluteArrayValue;
 
-        PRECOMPUTED_KING_MOVES[square] = attacks;
+        KING_MOVES[square] = attacks;
+    }
+
+    private static void initKingCastleMoves() {
+        KING_CASTLE_MOVES[BLACK.arrayIndex][QUEENSIDE] = 1L << (BLACK_QUEENSIDE_CASTLE_SQUARE);
+        KING_CASTLE_MOVES[BLACK.arrayIndex][KINGSIDE] = 1L << (BLACK_KINGSIDE_CASTLE_SQUARE);
+        KING_CASTLE_MOVES[WHITE.arrayIndex][QUEENSIDE] = 1L << (WHITE_QUEENSIDE_CASTLE_SQUARE);
+        KING_CASTLE_MOVES[WHITE.arrayIndex][KINGSIDE] = 1L << (WHITE_KINGSIDE_CASTLE_SQUARE);
+
+        KING_CASTLE_EMPTY_SQUARES[BLACK.arrayIndex][QUEENSIDE] = (1L << BLACK_KING_POS + LEFT.rawArrayValue) | (1L << BLACK_QUEENSIDE_CASTLE_SQUARE);
+        KING_CASTLE_EMPTY_SQUARES[BLACK.arrayIndex][KINGSIDE] = (1L << BLACK_KING_POS + RIGHT.rawArrayValue) | (1L << BLACK_KINGSIDE_CASTLE_SQUARE);
+        KING_CASTLE_EMPTY_SQUARES[WHITE.arrayIndex][QUEENSIDE] = (1L << WHITE_KING_POS + LEFT.rawArrayValue) | (1L << WHITE_QUEENSIDE_CASTLE_SQUARE);
+        KING_CASTLE_EMPTY_SQUARES[WHITE.arrayIndex][KINGSIDE] = (1L << WHITE_KING_POS + RIGHT.rawArrayValue) | (1L << WHITE_KINGSIDE_CASTLE_SQUARE);
+
+        KING_CASTLE_ATTACK_SQUARES[BLACK.arrayIndex][QUEENSIDE] = KING_CASTLE_EMPTY_SQUARES[BLACK.arrayIndex][QUEENSIDE] | (1L << BLACK_KING_POS);
+        KING_CASTLE_ATTACK_SQUARES[BLACK.arrayIndex][KINGSIDE] = KING_CASTLE_EMPTY_SQUARES[BLACK.arrayIndex][KINGSIDE] | (1L << BLACK_KING_POS);
+        KING_CASTLE_ATTACK_SQUARES[WHITE.arrayIndex][QUEENSIDE] = KING_CASTLE_EMPTY_SQUARES[WHITE.arrayIndex][QUEENSIDE] | (1L << WHITE_KING_POS);
+        KING_CASTLE_ATTACK_SQUARES[WHITE.arrayIndex][KINGSIDE] = KING_CASTLE_EMPTY_SQUARES[WHITE.arrayIndex][KINGSIDE] | (1L << WHITE_KING_POS);
     }
 
     private static void initBishopMask(int square) {
@@ -165,7 +180,7 @@ public class BitboardHelper {
         for (int i = 1; i < getNumSquaresFromEdge(DOWNLEFT, square); i++) mask |= squareMask << DOWNLEFT.absoluteArrayValue * i;
         for (int i = 1; i < getNumSquaresFromEdge(DOWNRIGHT, square); i++) mask |= squareMask << DOWNRIGHT.absoluteArrayValue * i;
 
-        PRECOMPUTED_BISHOP_MASKS[square] = mask;
+        BISHOP_MASKS[square] = mask;
     }
 
     private static void initRookMask(int square) {
@@ -182,16 +197,16 @@ public class BitboardHelper {
         if (file != 7)
             mask = mask & ~FILES[7]; // Exclude file H
 
-        PRECOMPUTED_ROOK_MASKS[square] = mask;
+        ROOK_MASKS[square] = mask;
     }
 
     private static void initBishopMoves(int square) {
-        final long mask = PRECOMPUTED_BISHOP_MASKS[square];
+        final long mask = BISHOP_MASKS[square];
         final long[] blockerPermutations = generateBlockerPermutations(mask);
 
         final int numRelevantSquares = Long.bitCount(mask);
         final long[] attackTable = new long[1 << numRelevantSquares];
-        final long magicNumber = PRECOMPUTED_BISHOP_MAGIC_NUMBERS[square];
+        final long magicNumber = BISHOP_MAGIC_NUMBERS[square];
 
         final HashSet<Integer> used = new HashSet<Integer>();
 
@@ -202,16 +217,16 @@ public class BitboardHelper {
             }
             attackTable[index] = generateAttacksFrom(DIAGONAL_DIRECTIONS, blockerPermutation, square);
         }
-        PRECOMPUTED_BISHOP_MOVES[square] = attackTable;
+        BISHOP_MOVES[square] = attackTable;
     }
 
     private static void initRookMoves(int square) {
-        final long mask = PRECOMPUTED_ROOK_MASKS[square];
+        final long mask = ROOK_MASKS[square];
         final long[] blockerPermutations = generateBlockerPermutations(mask);
 
         final int numRelevantSquares = Long.bitCount(mask);
         final long[] attackTable = new long[1 << numRelevantSquares];
-        final long magicNumber = PRECOMPUTED_ROOK_MAGIC_NUMBERS[square];
+        final long magicNumber = ROOK_MAGIC_NUMBERS[square];
 
         final HashSet<Integer> used = new HashSet<Integer>();
 
@@ -222,13 +237,13 @@ public class BitboardHelper {
             }
             attackTable[index] = generateAttacksFrom(STRAIGHT_DIRECTIONS, blockerPermutation, square);
         }
-        PRECOMPUTED_ROOK_MOVES[square] = attackTable;
+        ROOK_MOVES[square] = attackTable;
     }
 
     private static void readMagicNumberFile() {
         try (DataInputStream in = new DataInputStream(new FileInputStream("Chess//BISHOP_MAGIC_NUMBERS.bin"))) {
             for (int i = 0; i < 64; i++) {
-                PRECOMPUTED_BISHOP_MAGIC_NUMBERS[i] = in.readLong();
+                BISHOP_MAGIC_NUMBERS[i] = in.readLong();
             }
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
@@ -237,11 +252,11 @@ public class BitboardHelper {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        // System.out.println(Arrays.toString(PRECOMPUTED_BISHOP_MAGIC_NUMBERS));
+        // System.out.println(Arrays.toString(BISHOP_MAGIC_NUMBERS));
 
         try (DataInputStream in = new DataInputStream(new FileInputStream("Chess//ROOK_MAGIC_NUMBERS.bin"))) {
             for (int i = 0; i < 64; i++) {
-                PRECOMPUTED_ROOK_MAGIC_NUMBERS[i] = in.readLong();
+                ROOK_MAGIC_NUMBERS[i] = in.readLong();
             }
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
@@ -250,11 +265,11 @@ public class BitboardHelper {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        // System.out.println(Arrays.toString(PRECOMPUTED_ROOK_MAGIC_NUMBERS));
+        // System.out.println(Arrays.toString(ROOK_MAGIC_NUMBERS));
     }
 
     private static void findMagicNumbers(PieceType type) {
-        final long[] MAGIC_NUMBERS = type == PieceType.BISHOP ? PRECOMPUTED_BISHOP_MAGIC_NUMBERS : PRECOMPUTED_ROOK_MAGIC_NUMBERS;
+        final long[] MAGIC_NUMBERS = type == PieceType.BISHOP ? BISHOP_MAGIC_NUMBERS : ROOK_MAGIC_NUMBERS;
         for (int square = 0; square < 64; square++) {
             if (MAGIC_NUMBERS[square] != 0) {
                 continue;
@@ -276,7 +291,7 @@ public class BitboardHelper {
     }
 
     private static long findMagicNumber(int square, PieceType type) {
-        final long masks[] = type == PieceType.BISHOP ? PRECOMPUTED_BISHOP_MASKS : PRECOMPUTED_ROOK_MASKS;
+        final long masks[] = type == PieceType.BISHOP ? BISHOP_MASKS : ROOK_MASKS;
         final long[] blockerPermutations = generateBlockerPermutations(masks[square]);
         final Random random = new Random();
         int count = 0;

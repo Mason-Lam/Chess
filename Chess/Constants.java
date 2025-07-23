@@ -1,5 +1,7 @@
 package Chess;
 
+import static Chess.Constants.DirectionConstants.Direction.*;
+
 public class Constants {
 
 	public static class MoveConstants {
@@ -125,13 +127,19 @@ public class Constants {
 		public static final int KINGSIDE = 1;
 
 		public static final int BLACK_QUEENSIDE_ROOK_POS = ORIGIN;
-		public static final int BLACK_KINGSIDE_ROOK_POS = ORIGIN + DirectionConstants.Direction.RIGHT.rawArrayValue * 7;
+		public static final int BLACK_KINGSIDE_ROOK_POS = ORIGIN + RIGHT.rawArrayValue * 7;
 
-		public static final int WHITE_QUEENSIDE_ROOK_POS = ORIGIN + DirectionConstants.Direction.DOWN.rawArrayValue * 7;
-		public static final int WHITE_KINGSIDE_ROOK_POS = WHITE_QUEENSIDE_ROOK_POS + DirectionConstants.Direction.RIGHT.rawArrayValue * 7;
+		public static final int WHITE_QUEENSIDE_ROOK_POS = ORIGIN + DOWN.rawArrayValue * 7;
+		public static final int WHITE_KINGSIDE_ROOK_POS = WHITE_QUEENSIDE_ROOK_POS + RIGHT.rawArrayValue * 7;
 
-		public static final int BLACK_KING_POS = ORIGIN + DirectionConstants.Direction.RIGHT.rawArrayValue * 4;
-		public static final int WHITE_KING_POS = BLACK_KING_POS + DirectionConstants.Direction.DOWN.rawArrayValue * 7;
+		public static final int BLACK_KING_POS = ORIGIN + RIGHT.rawArrayValue * 4;
+		public static final int WHITE_KING_POS = BLACK_KING_POS + DOWN.rawArrayValue * 7;
+
+		public static final int BLACK_QUEENSIDE_CASTLE_SQUARE = BLACK_KING_POS + LEFT.rawArrayValue * 2;
+		public static final int WHITE_QUEENSIDE_CASTLE_SQUARE = WHITE_KING_POS + LEFT.rawArrayValue * 2;
+
+		public static final int BLACK_KINGSIDE_CASTLE_SQUARE = BLACK_KING_POS + RIGHT.rawArrayValue * 2;
+		public static final int WHITE_KINGSIDE_CASTLE_SQUARE = WHITE_KING_POS + RIGHT.rawArrayValue * 2;
 
 		public static final int BLACK_PROMOTION_ROW = 7;
 		public static final int WHITE_PROMOTION_ROW = 0;

@@ -282,7 +282,6 @@ public class ChessBoard {
 		long prevTime = System.currentTimeMillis();
 
 		final ChessPiece movingPiece = board[move.getStart()];
-		bitboard.clearPiece(move.getStart());
 
 		final boolean isAttack = bitboard.isOccupied(move.getFinish());
 
@@ -320,6 +319,7 @@ public class ChessBoard {
 
 		hashing.flipPiece(move.getStart(), movingPiece);
 		board[move.getStart()] = ChessPiece.empty();	//Empty the square the moving piece used to occupy.
+		bitboard.clearPiece(move.getStart());
 		
 		updatePosition(movingPiece, move.getFinish(), false);		//Move the moving piece to the new position.
 		resetPieces(move, isAttack, false);		//Reset the move copies of pieces affected by this new position.
