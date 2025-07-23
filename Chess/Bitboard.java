@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import static Chess.Constants.DirectionConstants.Direction.*;
+import static Chess.Constants.PieceConstants.PIECE_COLORS;
 import static Chess.BitboardHelper.*;
 
 import Chess.Constants.PieceConstants.PieceColor;
@@ -21,7 +22,11 @@ public class Bitboard {
 
     private final ChessPiece[] board;
 
-    public long OCCUPIED;
+    private long OCCUPIED;
+
+    public final long[] ATTACKS;
+
+    private final PieceSet[][] allAttackers;
 
     private int enPassantSquare;
 
@@ -32,6 +37,17 @@ public class Bitboard {
         ALL_PIECES = new long[2];
         board = new ChessPiece[64];
         OCCUPIED = 0L;
+        ATTACKS = new long[2];
+
+        allAttackers = new PieceSet[2][64];
+        for (final PieceColor color : PIECE_COLORS) {
+            final PieceSet[] attackerSquares = new PieceSet[64];
+            for (int i = 0; i < 64; i ++) {
+                attackerSquares[i] = new PieceSet();
+            }
+            allAttackers[color.arrayIndex] = attackerSquares;
+        }
+
         enPassantSquare = EMPTY;
         castlingRights = new boolean[2][2]; //Black: Queenside, Kingside, White: Queenside, Kingside
 		Arrays.fill(castlingRights[PieceColor.BLACK.arrayIndex], false);
@@ -40,15 +56,17 @@ public class Bitboard {
         Arrays.fill(PIECES, 0L);
         Arrays.fill(ALL_PIECES, 0L);
         for (int i = 0; i < 64; i ++) {
-            board[i] = new ChessPiece(PieceType.EMPTY, PieceColor.COLORLESS, i, null, EMPTY);
+            board[i] = ChessPiece.empty();
         }
 
         initializeFromFen(fen);
+        hardAttackUpdate();
     }
 
 
     public void initializeFromFen(String fen) {
         int pos = 0;
+        final int[] pieceIDs = new int[] {0, 0};	//Piece IDs to be used for discount Hash map.
 		//Iterate over each character in the FEN String.
 		for (int index = 0; index < fen.length(); index++) {
             if (pos < 64) {
@@ -70,10 +88,12 @@ public class Bitboard {
                 }
 
                 //Create and store the piece.
-                final PieceType type = charToPieceType(letter);
-                final PieceColor color = Character.isLowerCase(letter) ? PieceColor.BLACK : PieceColor.WHITE;
+                // final PieceType type = charToPieceType(letter);
+                // final PieceColor color = Character.isLowerCase(letter) ? PieceColor.BLACK : PieceColor.WHITE;
+                // final ChessPiece piece = new ChessPiece(type, color, pos, null, pieceValue)
+                final ChessPiece piece = charToPiece(letter, pos, null, pieceIDs);
 
-                setPiece(pos, type, color);
+                setPiece(pos, piece);
 
                 pos++;
             }
@@ -239,7 +259,28 @@ public class Bitboard {
         return (leftPawn | rightPawn) & pawns;
     }
 
-    public void updateAttacks(List<Integer>[] attacks, ChessPiece piece, boolean remove) {
+    public void hardAttackUpdate() {
+        Arrays.fill(ATTACKS, 0L);
+
+        for (final PieceColor color : PIECE_COLORS) {
+            final PieceSet[] attackerSquares = new PieceSet[64];
+            for (int i = 0; i < 64; i ++) {
+                attackerSquares[i] = new PieceSet();
+            }
+            allAttackers[color.arrayIndex] = attackerSquares;
+        }
+
+        for (final ChessPiece piece : board) {
+            if (piece.isEmpty()) continue;
+            updateAttacks(piece, false);
+        }
+    }
+
+    public void updateAttacks(ChessPiece piece, boolean remove) {
+        updateAttacks(piece, remove, OCCUPIED);
+    }
+
+    private void updateAttacks(ChessPiece piece, boolean remove, long occupiedBitboard) {
         long bitboard = 0;
         if (piece.getType() == PieceType.PAWN) {
             bitboard = PRECOMPUTED_PAWN_ATTACKS[piece.getColor().arrayIndex][piece.getPos()];
@@ -252,52 +293,89 @@ public class Bitboard {
         }
         if (piece.getType() == PieceType.BISHOP || piece.getType() == PieceType.QUEEN) {
             final long mask = PRECOMPUTED_BISHOP_MASKS[piece.getPos()];
-            final long blockers = mask & OCCUPIED;
+            final long blockers = mask & occupiedBitboard;
             final long magicNumber = PRECOMPUTED_BISHOP_MAGIC_NUMBERS[piece.getPos()];
             bitboard |= PRECOMPUTED_BISHOP_MOVES[piece.getPos()][(int) ((blockers * magicNumber) >>> (64 - Long.bitCount(mask)))];
         }
         if (piece.getType() == PieceType.ROOK || piece.getType() == PieceType.QUEEN) {
             final long mask = PRECOMPUTED_ROOK_MASKS[piece.getPos()];
-            final long blockers = mask & OCCUPIED;
+            final long blockers = mask & occupiedBitboard;
             final long magicNumber = PRECOMPUTED_ROOK_MAGIC_NUMBERS[piece.getPos()];
             bitboard |= PRECOMPUTED_ROOK_MOVES[piece.getPos()][(int) ((blockers * magicNumber) >>> (64 - Long.bitCount(mask)))];
         }
-        if (remove) applyFunctionByBitIndices(bitboard, (index) -> attacks[index].remove((Integer) index));
-        else applyFunctionByBitIndices(bitboard, (index) -> attacks[index].add((Integer) index));
+        if (remove) applyFunctionByBitIndices(bitboard, (index) -> removeAttack(piece, index));
+        else {
+            ATTACKS[piece.getColor().arrayIndex] |= bitboard;
+            applyFunctionByBitIndices(bitboard, (index) -> allAttackers[piece.getColor().arrayIndex][index].add(piece));
+        }
     }
 
-    public void setPiece(int index, PieceType type, PieceColor color) {
+    private void removeAttack(ChessPiece piece, int index) {
+        allAttackers[piece.getColor().arrayIndex][index].remove(piece);
+        if (allAttackers[piece.getColor().arrayIndex][index].size() == 0) {
+            ATTACKS[piece.getColor().arrayIndex] &= ~(1L << index);
+        }
+    }
+
+    public void setPiece(int index, ChessPiece piece) {
         if (index < 0 || index >= 64) {
             throw new IllegalArgumentException("Index must be between 0 and 63.");
         }
-        if (type == PieceType.EMPTY || color == PieceColor.COLORLESS) {
+        if (piece.isEmpty()) {
             throw new IllegalArgumentException("Invalid piece type or color.");
         }
 
-        if (isOccupied(index)) clearPiece(index);
+        final boolean wasOccupied = isOccupied(index);
 
-        board[index].setType(type);
-        board[index].setColor(color);
+        final long prevOccupiedBitboard = OCCUPIED;
 
-        PIECES[type.arrayIndex + color.arrayIndex * 6] = setBit(PIECES[type.arrayIndex + color.arrayIndex * 6], index);
-        ALL_PIECES[color.arrayIndex] = setBit(ALL_PIECES[color.arrayIndex], index);
+        if (wasOccupied) clearPiece(index, false);
+
+        board[index] = piece;
+        piece.setPos(index);
+
+        updateAttacks(piece, false);
+
+        PIECES[piece.getType().arrayIndex + piece.getColor().arrayIndex * 6] = setBit(PIECES[piece.getType().arrayIndex + piece.getColor().arrayIndex * 6], index);
+        ALL_PIECES[piece.getColor().arrayIndex] = setBit(ALL_PIECES[piece.getColor().arrayIndex], index);
         OCCUPIED = setBit(OCCUPIED, index);
+
+        if (wasOccupied) return;
+        for (final PieceSet[] attackerSquares : allAttackers) {
+            final PieceSet attackers = attackerSquares[index];
+            for (final ChessPiece attackingPiece : attackers) {
+                if (!(attackingPiece.isBishop() || attackingPiece.isRook() || attackingPiece.isQueen())) continue;
+                updateAttacks(attackingPiece, true, prevOccupiedBitboard);
+                updateAttacks(attackingPiece, false);
+            }
+        }
     }
 
     public void clearPiece(int index) {
+        clearPiece(index, true);
+    }
+
+    public void clearPiece(int index, boolean updateAttackers) {
         if (index < 0 || index >= 64) {
             throw new IllegalArgumentException("Index must be between 0 and 63.");
         }
 
         final ChessPiece piece = board[index];
 
-        if (piece.getType() != PieceType.EMPTY && piece.getColor() != PieceColor.COLORLESS) {
-            PIECES[piece.getType().arrayIndex + piece.getColor().arrayIndex * 6] = clearBit(PIECES[piece.getType().arrayIndex + piece.getColor().arrayIndex * 6], index);
-            ALL_PIECES[piece.getColor().arrayIndex] = clearBit(ALL_PIECES[piece.getColor().arrayIndex], index);
-            OCCUPIED = clearBit(OCCUPIED, index);
+        updateAttacks(piece, true);
+        PIECES[piece.getType().arrayIndex + piece.getColor().arrayIndex * 6] = clearBit(PIECES[piece.getType().arrayIndex + piece.getColor().arrayIndex * 6], index);
+        ALL_PIECES[piece.getColor().arrayIndex] = clearBit(ALL_PIECES[piece.getColor().arrayIndex], index);
+        OCCUPIED = clearBit(OCCUPIED, index);
 
-            piece.setType(PieceType.EMPTY);
-            piece.setColor(PieceColor.COLORLESS);
+        board[index] = ChessPiece.empty();
+
+        if (!updateAttackers) return;
+        for (final PieceSet[] attackerSquares : allAttackers) {
+            final PieceSet attackers = attackerSquares[index];
+            for (final ChessPiece attackingPiece : attackers) {
+                if (!(attackingPiece.isBishop() || attackingPiece.isRook() || attackingPiece.isQueen())) continue;
+                updateAttacks(attackingPiece, false);
+            }
         }
     }
 

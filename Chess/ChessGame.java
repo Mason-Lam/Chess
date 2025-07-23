@@ -44,7 +44,7 @@ public class ChessGame {
 		board = new ChessBoard();	//Creates a new ChessBoard object
 		this.computer = board.getComputer();
 
-		Tests.timeCheckBoard(board, 6);
+		// Tests.timeCheckBoard(board, 6);
 		// //Current (3, 0), (4, 16), (5, 316), (6, 8018)
 		// System.out.println(computer.totalMoves(6)); //Goal: (3, 0), (4, 11), (5, 259), (6, 6502)
 		
@@ -238,6 +238,8 @@ public class ChessGame {
 		check_Win();		//Checks for a win
 		update_display();	//Updates the display
 		System.out.println(board.getFenString());
+		BitboardHelper.displayBitboard(board.getBitboard().ATTACKS[0]);
+		BitboardHelper.displayBitboard(board.getBitboard().ATTACKS[1]);
 		// board.displayAttacks();
 		// System.out.println(computer.totalMoves(1));
 		// count --;

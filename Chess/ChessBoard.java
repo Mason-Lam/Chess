@@ -501,7 +501,7 @@ public class ChessBoard {
 
 		//Add the piece to the board and update the tracking variables.
 		board[pos] = piece;
-		bitboard.setPiece(pos, piece.getType(), piece.color);
+		bitboard.setPiece(pos, piece);
 		piece.setPos(pos);
 		if (pieces[piece.color.arrayIndex].add(piece)) pieceCount[piece.color.arrayIndex][piece.getType().arrayIndex] += 1;
 		
@@ -518,7 +518,7 @@ public class ChessBoard {
 		
 		//Add the promoted piece to the board.
 		hashing.flipPiece(promotingPawn, promotingPiece);
-		bitboard.setPiece(promotingPawn, type, promotingPiece.color);
+		bitboard.setPiece(promotingPawn, promotingPiece);
 		promotingPiece.setType(type);
 		updatePosition(promotingPiece, promotingPawn, false);
 
@@ -544,7 +544,7 @@ public class ChessBoard {
 	public void unPromote(int pos) {
 		final ChessPiece unpromotingPiece = board[pos];
 		hashing.flipPiece(pos, unpromotingPiece);
-		bitboard.setPiece(pos, PieceType.PAWN, unpromotingPiece.color);
+		bitboard.setPiece(pos, unpromotingPiece);
 
 		//Backup a turn.
 		halfMove --;
