@@ -9,7 +9,6 @@ import Chess.Constants.PieceConstants.PieceType;
 
 import static Chess.Constants.MoveConstants.*;
 import static Chess.Constants.PositionConstants.*;
-import static Chess.Constants.PieceConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
 import static Chess.BoardUtil.*;
 
@@ -50,10 +49,7 @@ public class ChessBoard {
 			castle[1] = castling[1];
 			return castle;
 		}
-	}
-
-	/** 2d PieceSet array storing all pieces attacking a square, 0 refers to BLACK attackers, 1 for WHITE ATTACKERS.*/
-	private final PieceSet[][] attacks;		
+	}	
 	
 	/** int array storing the position of the kings, 0 refers to BLACK, 1 for WHITE.*/
 	private final int[] kingPos;
@@ -66,9 +62,6 @@ public class ChessBoard {
 	
 	/** ChessPiece array representing the board.*/
 	private final ChessPiece[] board;
-
-	/** Variable used to store the piece that is currently attacking the king. */
-	private ChessPiece kingAttacker = ChessPiece.empty();
 
 	private PieceColor turn;
 	private int promotingPawn;
@@ -96,10 +89,6 @@ public class ChessBoard {
 		turn = PieceColor.BLACK;
 		halfMove = 0;
 		fullMove = 1;
-		
-		attacks = new PieceSet[2][];
-		attacks[PieceColor.BLACK.arrayIndex] = new PieceSet[64];
-		attacks[PieceColor.WHITE.arrayIndex] = new PieceSet[64];
 
 		pieces = new PieceSet[2];
 		pieces[PieceColor.BLACK.arrayIndex] = new PieceSet();
@@ -116,7 +105,6 @@ public class ChessBoard {
 
 		bitboard = new Bitboard(fen);
 		fen_to_board(fen);
-		hardAttackUpdate();
 		
 		hashing = new ZobristHashing(this);
 	}
@@ -285,14 +273,9 @@ public class ChessBoard {
 
 		final boolean isAttack = bitboard.isOccupied(move.getFinish());
 
-		kingAttacker = ChessPiece.empty();
-		int castledRookPos = EMPTY;
-		movingPiece.pieceAttacks(true);		//Update the squares the moving piece currently attacks.
-
 		//Handle the captured piece.
 		if (isAttack) {
 			halfMove = EMPTY;
-			board[move.getFinish()].pieceAttacks(true);		//Update the squares the capture piece used to attack.
 			updatePosition(board[move.getFinish()], move.getFinish(), true);	//Remove the captured piece from the board.
 		}
 
@@ -313,7 +296,7 @@ public class ChessBoard {
 			hashing.setCastlingRights(turn, new boolean[] {false, false});
 			//Handle castling.
 			if (move.isSpecial()) {
-				castledRookPos = makeCastleMove(move);
+				makeCastleMove(move);
 			}
 		}
 
@@ -322,12 +305,6 @@ public class ChessBoard {
 		bitboard.clearPiece(move.getStart());
 		
 		updatePosition(movingPiece, move.getFinish(), false);		//Move the moving piece to the new position.
-		resetPieces(move, isAttack, false);		//Reset the move copies of pieces affected by this new position.
-
-		pawnReset(move, isAttack);
-
-		if (promotingPawn == EMPTY) movingPiece.pieceAttacks(false);		//Update the squares the moving piece attacks in its new position.
-		if (castledRookPos != EMPTY) board[castledRookPos].pieceAttacks(false);	//Update the squares the castled rook attacks in its new position.
 
 		bitboard.setEnPassant(newEnPassant);
 		hashing.setEnPassantFile(newEnPassant != EMPTY ? getColumn(newEnPassant) : newEnPassant);
@@ -351,7 +328,6 @@ public class ChessBoard {
 		halfMove = EMPTY;
 		//Captures enPassant.
 		if (move.isSpecial()) {
-			board[bitboard.getEnPassant()].pieceAttacks(true);		//Update the squares the enPassant pawn used to attack.
 			updatePosition(board[bitboard.getEnPassant()], bitboard.getEnPassant(), true);	//Remove the enPassant pawn from the board.
 		}
 		//Pawn moves two squares forward.
@@ -388,18 +364,15 @@ public class ChessBoard {
 	 * @param move The move being made by the king.
 	 * @return Position of the castled rook.
 	 */
-	private int makeCastleMove(Move move) {
+	private void makeCastleMove(Move move) {
 		final int side = move.getFinish() > move.getStart() ? KINGSIDE : QUEENSIDE;
 		final int currentRookPos = ROOK_POSITIONS[turn.arrayIndex][side];
-		board[currentRookPos].pieceAttacks(true);
 		bitboard.clearPiece(currentRookPos);
 		final int newRookPos = move.getFinish() + (side == KINGSIDE ? Direction.LEFT : Direction.RIGHT).rawArrayValue; 
 		updatePosition(board[currentRookPos], newRookPos, false);
 
 		board[currentRookPos] = ChessPiece.empty();
 		hashing.flipPiece(currentRookPos, board[newRookPos]);
-
-		return newRookPos;
 	}
 
 	/**
@@ -425,17 +398,13 @@ public class ChessBoard {
 		hashing.setCastlingRights(turn, bitboard.getCastlingRights(turn));
 		hashing.setEnPassantFile(bitboard.getEnPassant() != EMPTY ? getColumn(bitboard.getEnPassant()) : bitboard.getEnPassant());
 
-		kingAttacker = ChessPiece.empty();
 		final Move invertedMove = move.invert();
-		final boolean isAttack = !capturedPiece.isEmpty() && !move.isSpecial();
 
 		final ChessPiece movingPiece = board[invertedMove.getStart()];
-		int castledRookPos = EMPTY;
-		movingPiece.pieceAttacks(true);		//Update the squares the moving piece currently attacks.
 
 		//Check for castling
 		if (isCastle(invertedMove)) {
-			castledRookPos = undoCastleMove(invertedMove);
+			undoCastleMove(invertedMove);
 		}
 
 		board[invertedMove.getStart()] = ChessPiece.empty();		//Empty the square the piece used to occupy.
@@ -446,18 +415,8 @@ public class ChessBoard {
 		//Add the captured piece back onto the board.
 		// if (!capturedPiece.isEmpty() && !move.isSpecial()) updatePosition(capturedPiece, capturedPiece.getPos(), false);
 
-		resetPieces(invertedMove, isAttack, true);
-
 		//Finnicky thing happens when you undo enPassant before calling softAttack on pieces.
 		if (!capturedPiece.isEmpty()) updatePosition(capturedPiece, capturedPiece.getPos(), false);
-
-		pawnReset(move, isAttack);
-		
-		movingPiece.pieceAttacks(false);		//Update the squares the moving piece attacks in its new position.
-
-		if (!capturedPiece.isEmpty()) capturedPiece.pieceAttacks(false);		//Update the squares the captured piece now attacks.
-		
-		if (castledRookPos != EMPTY) board[castledRookPos].pieceAttacks(false);			//Update the squares the castled rook now attacks.
 		
 		promotingPawn = EMPTY;
 
@@ -469,16 +428,14 @@ public class ChessBoard {
 	 * @param invertedMove The move being made by the king.
 	 * @return Position of the castled rook.
 	 */
-	private int undoCastleMove(Move invertedMove) {
+	private void undoCastleMove(Move invertedMove) {
 		final int side = invertedMove.getStart() > invertedMove.getFinish() ? KINGSIDE : QUEENSIDE;
 		final int castledRookPos = invertedMove.getStart() + (side == KINGSIDE ? Direction.LEFT : Direction.RIGHT).rawArrayValue;
 		final ChessPiece castledRook = board[castledRookPos];
 		bitboard.clearPiece(castledRookPos);
-		castledRook.pieceAttacks(true);		//Update the squares the rook currently attacks.
 		updatePosition(castledRook, ROOK_POSITIONS[turn.arrayIndex][side], false);		//Move the rook to the new position.
 		board[castledRookPos] = ChessPiece.empty();			//Empty the square the rook used to occupy.
 		hashing.flipPiece(castledRookPos, castledRook);
-		return ROOK_POSITIONS[turn.arrayIndex][side];
 	}
 
 	/**
@@ -526,8 +483,6 @@ public class ChessBoard {
 		pieceCount[turn.arrayIndex][type.arrayIndex] += 1;
 		pieceCount[turn.arrayIndex][PieceType.PAWN.arrayIndex] -= 1;
 
-		promotingPiece.pieceAttacks(false);	//Update the squares the promoted piece now attacks.
-
 		//Next turn.
 		halfMove ++;
 		if (turn == PieceColor.BLACK) fullMove ++;
@@ -555,141 +510,11 @@ public class ChessBoard {
 		pieceCount[turn.arrayIndex][unpromotingPiece.getType().arrayIndex] --;
 		pieceCount[turn.arrayIndex][PieceType.PAWN.arrayIndex] ++;
 
-		//Update the squares the unpromoting piece used to attack.
-		unpromotingPiece.pieceAttacks(true);
-
 		//Reset the piece to a pawn.
 		unpromotingPiece.setType(PieceType.PAWN);
 		updatePosition(board[pos], pos, false);
 
 		promotingPawn = pos;
-	}
-
-	/**
-	 * Reset the moves copy and updates squares attacked by pieces affected by a move.
-	 * @param move The Move being made.
-	 * @param isAttack	Whether or not the move is a capture.
-	 * @param undoMove	Whether or not the move is being undone.
-	 */
-	private void resetPieces(Move move, boolean isAttack, boolean undoMove) {
-		final long prevTime = System.currentTimeMillis();
-
-		final boolean isCastle = isCastle(move);
-
-		final int[] modifiedSquares = isEnPassant(move) ? new int[] {move.getStart(), move.getFinish(), bitboard.getEnPassant()} : new int[] {move.getStart(), move.getFinish()};
-		//Check each square that the move affects.
-		for (final PieceColor color : PIECE_COLORS) {
-			//Go through black and white pieces potentially affected.
-			final PieceSet softAttackPieces = new PieceSet();
-			for (int movePart = 0; movePart < modifiedSquares.length; movePart++) {
-				final int pos = modifiedSquares[movePart];
-				//Check each piece attacking the square.
-				final PieceSet attacks = getAttackers(pos, color);
-				for (final ChessPiece piece : attacks) {
-					long prevTime2 = System.currentTimeMillis();
-
-					//Update straight line and diagonal attackers.
-					if (!softAttackPieces.contains(piece)) {
-						final boolean updated = piece.softAttack(pos, movePart, move, isAttack, undoMove);
-						if (updated) {
-							softAttackPieces.add(piece);
-							continue;
-						}
-					}
-					else continue;
-
-					Tests.timeSoftAttack += System.currentTimeMillis() - prevTime2;
-
-					//Reset the moves copy in pieces affected by the move.
-					if (!isCastle) piece.pieceReset(pos, movePart, isAttack, undoMove);
-
-				}
-			}
-		}
-
-		if (isCastle) {
-			//Can't be bothered to handle castling because it happens at max twice in a game.
-			//Nope u have to fix this.
-			for (int color = 0; color < 2; color ++) {
-				final PieceSet coloredPieces = pieces[color];
-				for (final ChessPiece piece : coloredPieces) {
-					piece.resetMoveCopy();
-					piece.pieceMoves(new ArrayList<Move>(MAX_MOVES[piece.getType().arrayIndex]));
-				}
-			}
-		}
-
-		Tests.timePieceUpdate += System.currentTimeMillis() - prevTime;
-	}
-
-	/**
-	 * Removes or adds straight line moves to a pawn's move copy based on a move made.
-	 * @param move The move being made, make sure it is uninverted when undoing a move.
-	 */
-	private void pawnReset(Move move, boolean isAttack) {
-		final int[] squares;
-		if (isAttack) {
-			squares = isEnPassant(move) ? new int[] {move.getStart(), bitboard.getEnPassant()} : new int[] {move.getStart()};
-		}
-		else {
-			squares = isEnPassant(move) ? new int[] {move.getStart(), move.getFinish(), bitboard.getEnPassant()} : new int[] {move.getStart(), move.getFinish()};
-		}
-
-		//Update both black and white pawns.
-		for (final PieceColor color : PIECE_COLORS) {
-			final Direction pawnDirection = getPawnDirection(color);
-
-			//Check every square involved in the move made.
-			for (final int pos : squares) {
-				final boolean isEmpty = board[pos].isEmpty();		//Checks if the square is empty, if so the pawn can make the move forward.
-				
-				//Go one square ahead of the involved square.
-				final int oneSquareAhead = pos - pawnDirection.rawArrayValue;
-				if (!onBoard(oneSquareAhead) || move.contains(oneSquareAhead)) continue;
-				final ChessPiece pieceOneSquareAhead = board[oneSquareAhead];
-
-				//Check if it's a pawn that would be influneced by the move.
-				if (pieceOneSquareAhead.isPawn() && pieceOneSquareAhead.color == color) {
-					pieceOneSquareAhead.updateCopy(!isEmpty, pos);
-					//Check for double move forward.
-					if (getRow(oneSquareAhead) == PAWN_STARTING_ROW[color.arrayIndex]) {
-						//Check the square behind the involved square.
-						final int oneSquareBehind = pos + pawnDirection.rawArrayValue;
-						if (board[oneSquareBehind].isEmpty() && !move.contains(oneSquareBehind)) pieceOneSquareAhead.updateCopy(!isEmpty, oneSquareBehind);
-					}
-					continue;
-				}
-				else if (!pieceOneSquareAhead.isEmpty()) continue;
-
-				//Go two squares ahead if the first is empty.
-				final int twoSquaresAhead = oneSquareAhead - pawnDirection.rawArrayValue;
-				if (!onBoard(twoSquaresAhead) || move.contains(twoSquaresAhead)) continue;
-				final ChessPiece pieceTwoSquaresAhead = board[twoSquaresAhead];
-
-				//Check if it's a pawn that would be influenced by the move.
-				if (pieceTwoSquaresAhead.isPawn() && pieceTwoSquaresAhead.color == color && getRow(twoSquaresAhead) == PAWN_STARTING_ROW[color.arrayIndex]) {
-					pieceTwoSquaresAhead.updateCopy(!isEmpty, pos);
-				}
-			}
-		}
-	}
-
-	/**
-	 * Initialize and store attacks each piece has, use when first loading a position.
-	 */
-	private void hardAttackUpdate() {
-		//Iterate over each color.
-		for (int color = 0; color < 2; color ++) {
-			//Reset the attacks currently stored.
-			for (int square = 0;  square < attacks[color].length; square++) {
-				attacks[color][square] = new PieceSet();
-			}
-
-			//Generate attacks for each of the pieces.
-			for (final ChessPiece piece : pieces[color]) {
-				piece.pieceAttacks(false);
-			}
-		}
 	}
 
 	/**
@@ -706,13 +531,13 @@ public class ChessBoard {
 		//Check to see if any piece has a legal move.
 		for(final ChessPiece piece : pieces[turn.arrayIndex]) {
 			final ArrayList<Move> moves = new ArrayList<Move>();
-			piece.pieceMoves(moves);
+			bitboard.generatePieceMoves(moves, piece.getPos(), false);
 			if(moves.size() > 0) {
 				return CONTINUE;
 			}
 		}
 		//If the king is in check, it's checkmate, if not draw. 
-		return isChecked(turn) ? WIN : DRAW;
+		return bitboard.kingInCheck(turn) ? WIN : DRAW;
 	}
 	
 	/**
@@ -727,38 +552,6 @@ public class ChessBoard {
 				|| pieceCount[color][PieceType.QUEEN.arrayIndex] > 0) return false;
 		}
 		return true;
-	}
-
-	/**
-	 * Modify the attack storage by adding or removing an attacker of a square.
-	 * @param piece The piece being added or removed as an attacker.
-	 * @param pos The square being attacked.
-	 * @param remove Whether or not to remove or add an attacker. 
-	 */
-	public void modifyAttacks(ChessPiece piece, int pos, boolean remove) {
-		if (remove) {
-			removeAttacker(piece, pos);
-			return;
-		}
-		addAttacker(piece, pos);
-	}
-
-	/**
-	 * Add an attacker to the attack storage of a square.
-	 * @param piece The piece being added as an attacker.
-	 * @param pos The square being attacked.
-	 */
-	public boolean addAttacker(ChessPiece piece, int pos) {
-		return attacks[piece.color.arrayIndex][pos].add(piece);
-	}
-
-	/**
-	 * Remove an attacker from the attack storage of a square.
-	 * @param piece The piece being removed as an attacker.
-	 * @param pos The square being attacked.
-	 */
-	public boolean removeAttacker(ChessPiece piece, int pos) {
-		return attacks[piece.color.arrayIndex][pos].remove(piece);
 	}
 
 	/**
@@ -803,72 +596,6 @@ public class ChessBoard {
 	 */
 	public boolean isEnPassant(Move move) {
 		return move.isSpecial() && (board[move.getStart()].isPawn() || board[move.getFinish()].isPawn());
-	}
-	
-	/**
-	 * Checks if a king is in double check; two pieces attacking.
-	 * @param color The color of the king being attacked.
-	 * @return True if the king is in double check, false if it isn't.
-	 */
-	public boolean doubleCheck(PieceColor color) {
-		return numAttacks(kingPos[color.arrayIndex], color) >= 2;
-	}
-	
-	/**
-	 * Checks if a king is in check; at least one piece attacking.
-	 * @param color The color of the king being attacked.
-	 * @return True if the king is in check, false if it isn't.
-	 */
-	public boolean isChecked(PieceColor color) {
-		return isAttacked(board[kingPos[color.arrayIndex]]);
-	}
-	
-	/**
-	 * Checks if a square is attacked; at least one piece attacking.
-	 * @param pos The position of the square being attacked.
-	 * @param color The color of pieces that are attacking the square.
-	 * @return True if the square is attacked, false if it isn't.
-	 */
-	public boolean isAttacked(int pos, PieceColor color) {
-		return numAttacks(pos,color) >= 1;
-	}
-
-	/**
-	 * Checks if a piece is attacked; at least one piece attacking.
-	 * @param piece The ChessPiece that is being attacked.
-	 * @return True if the piece is attacked, false if it isn't.
-	 */
-	public boolean isAttacked(ChessPiece piece) {
-		return numAttacks(piece.getPos(), piece.color) >= 1;
-	}
-
-	/**
-	 * Returns the number of pieces attacking a specific square.
-	 * @param pos The position of the square.
-	 * @param color The color of the square (If white is inputted, the method returns the number of black attackers).
-	 * @return The number of attackers.
-	 */
-	private int numAttacks(int pos, PieceColor color) {
-		return getAttackers(pos, color).size();
-	}
-
-	/**
-	 * Returns the pieces attacking another piece.
-	 * @param piece The ChessPiece being attacked.
-	 * @return The Chess pieces attacking.
-	 */
-	public PieceSet getAttackers(ChessPiece piece) {
-		return getAttackers(piece.getPos(), piece.color);
-	}
-
-	/**
-	 * Returns the pieces attacking a specific square.
-	 * @param pos The position of the square.
-	 * @param color The color of the square (If white is inputted, the method returns the number of black attackers).
-	 * @return The Chess pieces attacking.
-	 */
-	public PieceSet getAttackers(int pos, PieceColor color)  {
-		return attacks[flipColor(color).arrayIndex][pos];
 	}
 
 	/**
@@ -930,17 +657,6 @@ public class ChessBoard {
 	}
 
 	/**
-	 * Returns the piece that is currently attacking the king.
-	 * @return The ChessPiece attacking the king.
-	 */
-	public ChessPiece getKingAttacker() {
-		if (kingAttacker.isEmpty()) {
-			for (final ChessPiece piece : getAttackers(board[kingPos[turn.arrayIndex]])) kingAttacker = piece;
-		}
-		return kingAttacker;
-	}
-
-	/**
 	 * Returns whether a clear path exists between two points meaning all empty spaces in between.
 	 * @param pos1 The first position.
 	 * @param pos2 The second position.
@@ -961,34 +677,6 @@ public class ChessBoard {
 	}
 
 	/**
-	 * Returns whether or not the king can castle queenside or kingside.
-	 * @param side Whether or not to check for kingside or queenside.
-	 * @param color The color of the king.
-	 * @return True if the king can castle, false if it can't.
-	 */
-	public boolean canCastle(int side, PieceColor color) {
-		//If the king is checked, it can't castle.
-		if (isChecked(color)) return false;
-
-		//If the king or associated rook have already moved, it can't castle.
-		if (!bitboard.getCastlingRights(turn, side)) return false;
-
-		//If the piece on the side is not a rook, it can't castle.
-		final int rookPos = ROOK_POSITIONS[color.arrayIndex][side];
-		if (!getPiece(rookPos).isRook()) return false;
-		
-		//There must be a clear path between the king and rook.
-		if (!clearPath(getKingPos(color), rookPos)) return false;
-
-		//Each square must not be attacked, except on the queenside with square next to the rook.
-		for (int distance = 1; distance < 3; distance++) {
-			if (isAttacked(side == KINGSIDE ? getKingPos(color) + distance : getKingPos(color) - distance, color)) return false;
-		}
-
-		return true;
-	}
-	
-	/**
 	 * Debugging tool to display the attacks of each piece, checks for negative attacks.
 	 */
 	public void displayAttacks(PieceSet[][] temp) {
@@ -1005,7 +693,6 @@ public class ChessBoard {
 			}
 			System.out.println();
 		}
-		System.out.println(isChecked(turn));
 		System.out.println(getFenString());
 		if (!valid) System.out.println("ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR");
 	}

@@ -41,10 +41,10 @@ public class ChessGame {
 		winner = false;
 		click1 = -1;		//sets var as no clicks
 
-		board = new ChessBoard(Tests.test15.fen);	//Creates a new ChessBoard object
+		board = new ChessBoard();	//Creates a new ChessBoard object
 		this.computer = board.getComputer();
 
-		// Tests.timeCheckBoard(board, 6);
+		Tests.timeCheckBoard(board, 6);
 		// //Current (3, 0), (4, 16), (5, 316), (6, 8018)
 		// System.out.println(computer.totalMoves(6)); //Goal: (3, 0), (4, 11), (5, 259), (6, 6502)
 		

@@ -18,20 +18,20 @@ public class PieceSet implements Iterable<ChessPiece> {
     }
 
     public boolean contains(ChessPiece piece) {
-        return map[piece.pieceID] != null;
+        return map[piece.hashCode()] != null;
     }
 
     public boolean add(ChessPiece piece) {
-        final boolean isEmpty = map[piece.pieceID] == null;
+        final boolean isEmpty = map[piece.hashCode()] == null;
         if (isEmpty) size ++;
-        map[piece.pieceID] = piece;
+        map[piece.hashCode()] = piece;
         return isEmpty;
     }
 
     public boolean remove(ChessPiece piece) {
-        final boolean piecePresent = map[piece.pieceID] != null;
+        final boolean piecePresent = map[piece.hashCode()] != null;
         if (piecePresent) size --;
-        map[piece.pieceID] = null;
+        map[piece.hashCode()] = null;
         return piecePresent;
     }
 
