@@ -273,7 +273,7 @@ public class ChessBoard {
 			pos++;
 		}
 	}
-	
+
 	/**
 	 * Make a move on the board.
 	 * @param move The move to be made.
@@ -392,12 +392,12 @@ public class ChessBoard {
 		final int side = move.getFinish() > move.getStart() ? KINGSIDE : QUEENSIDE;
 		final int currentRookPos = ROOK_POSITIONS[turn.arrayIndex][side];
 		board[currentRookPos].pieceAttacks(true);
+		bitboard.clearPiece(currentRookPos);
 		final int newRookPos = move.getFinish() + (side == KINGSIDE ? Direction.LEFT : Direction.RIGHT).rawArrayValue; 
 		updatePosition(board[currentRookPos], newRookPos, false);
 
 		board[currentRookPos] = ChessPiece.empty();
 		hashing.flipPiece(currentRookPos, board[newRookPos]);
-		bitboard.clearPiece(currentRookPos);
 
 		return newRookPos;
 	}
@@ -473,10 +473,10 @@ public class ChessBoard {
 		final int side = invertedMove.getStart() > invertedMove.getFinish() ? KINGSIDE : QUEENSIDE;
 		final int castledRookPos = invertedMove.getStart() + (side == KINGSIDE ? Direction.LEFT : Direction.RIGHT).rawArrayValue;
 		final ChessPiece castledRook = board[castledRookPos];
+		bitboard.clearPiece(castledRookPos);
 		castledRook.pieceAttacks(true);		//Update the squares the rook currently attacks.
 		updatePosition(castledRook, ROOK_POSITIONS[turn.arrayIndex][side], false);		//Move the rook to the new position.
 		board[castledRookPos] = ChessPiece.empty();			//Empty the square the rook used to occupy.
-		bitboard.clearPiece(castledRookPos);
 		hashing.flipPiece(castledRookPos, castledRook);
 		return ROOK_POSITIONS[turn.arrayIndex][side];
 	}
@@ -544,7 +544,7 @@ public class ChessBoard {
 	public void unPromote(int pos) {
 		final ChessPiece unpromotingPiece = board[pos];
 		hashing.flipPiece(pos, unpromotingPiece);
-		bitboard.setPiece(pos, unpromotingPiece);
+		bitboard.clearPiece(pos, false);
 
 		//Backup a turn.
 		halfMove --;
@@ -991,10 +991,10 @@ public class ChessBoard {
 	/**
 	 * Debugging tool to display the attacks of each piece, checks for negative attacks.
 	 */
-	public void displayAttacks() {
+	public void displayAttacks(PieceSet[][] temp) {
 		boolean valid = true;
 		for (int color = 0; color < 2; color++) {
-			final var colorAttacks = attacks[color];
+			final var colorAttacks = temp[color];
 			for (int i = 0; i < 8; i++) {
 				for (int j = 0; j < 8; j++) {
 					int attacks = colorAttacks[i * 8 + j].size();

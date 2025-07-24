@@ -40,8 +40,8 @@ public class ChessGame {
 		legal = new ArrayList<Move>();
 		winner = false;
 		click1 = -1;		//sets var as no clicks
-		
-		board = new ChessBoard();	//Creates a new ChessBoard object
+
+		board = new ChessBoard(Tests.test15.fen);	//Creates a new ChessBoard object
 		this.computer = board.getComputer();
 
 		// Tests.timeCheckBoard(board, 6);
@@ -115,7 +115,7 @@ public class ChessGame {
 			for(int j = 0; j < legal.size(); j++) {
 				final Move move = legal.get(j);
 				System.out.print(move.getFinish() +" : ");
-				System.out.println(board.getPiece(move.getFinish()).getType());
+				System.out.println(board.getPiece(move.getFinish()).getType() + " : " + move.isSpecial());
 				//Checks if the square is a legal move
 				if(board.getPiece(move.getFinish()).isEmpty()) {
                     address = "Chess/Elements/";
@@ -160,7 +160,8 @@ public class ChessGame {
 		if(board.getPiece(pos).color == board.getTurn() && !board.getPiece(pos).isEmpty()) {
 			click1 = pos;		//Stores the users first click
 			legal.clear();
-			board.getPiece(click1).pieceMoves(legal); //Generates all the legal moves for a player
+			board.getBitboard().generatePieceMoves(legal, pos, false);
+			// board.getPiece(click1).pieceMoves(legal); //Generates all the legal moves for a player
 			//System.out.println(legal.size());
 			update_display();	//Updates the display
 			return;		//The return on your Bitcoin investment

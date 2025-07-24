@@ -151,6 +151,11 @@ public class Constants {
 			new int[] {BLACK_QUEENSIDE_ROOK_POS, BLACK_KINGSIDE_ROOK_POS},
 			new int[] {WHITE_QUEENSIDE_ROOK_POS, WHITE_KINGSIDE_ROOK_POS}
 		};
+
+		public static final int[][] KING_CASTLE_MOVES = new int[][] {
+			new int[] {BLACK_QUEENSIDE_CASTLE_SQUARE, BLACK_KINGSIDE_CASTLE_SQUARE},
+			new int[] {WHITE_QUEENSIDE_CASTLE_SQUARE, WHITE_KINGSIDE_CASTLE_SQUARE}
+		};
 		
 		public static final int[] PROMOTION_ROW = new int[] {
 			BLACK_PROMOTION_ROW, WHITE_PROMOTION_ROW
@@ -179,7 +184,7 @@ public class Constants {
 		};
 
 		enum PieceType {
-			EMPTY(-1, ' '),
+			EMPTY(-1, '.'),
 			PAWN(0, 'p'),
 			KNIGHT(1, 'n'),
 			BISHOP(2, 'b'),

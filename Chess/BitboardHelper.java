@@ -53,7 +53,6 @@ public class BitboardHelper {
     public static final long[] KNIGHT_MOVES = new long[64];
 
     public static final long[] KING_MOVES = new long[64];
-    public static final long[][] KING_CASTLE_MOVES = new long[2][2];
     public static final long[][] KING_CASTLE_EMPTY_SQUARES = new long[2][2];
     public static final long[][] KING_CASTLE_ATTACK_SQUARES = new long[2][2];
 
@@ -140,13 +139,13 @@ public class BitboardHelper {
         final long b = 1L << square;
         long attacks = 0;
 
-        attacks |= (b & ~FILE_H) >>> UPLEFT.absoluteArrayValue;
-        attacks |= (b & ~FILE_H) >>> LEFT.absoluteArrayValue;
-        attacks |= (b & ~FILE_H) << DOWNLEFT.absoluteArrayValue;
+        attacks |= (b & ~FILE_A) >>> UPLEFT.absoluteArrayValue;
+        attacks |= (b & ~FILE_A) >>> LEFT.absoluteArrayValue;
+        attacks |= (b & ~FILE_A) << DOWNLEFT.absoluteArrayValue;
 
-        attacks |= (b & ~FILE_A) >>> UPRIGHT.absoluteArrayValue;
-        attacks |= (b & ~FILE_A) << RIGHT.absoluteArrayValue;
-        attacks |= (b & ~FILE_A) << DOWNRIGHT.absoluteArrayValue;
+        attacks |= (b & ~FILE_H) >>> UPRIGHT.absoluteArrayValue;
+        attacks |= (b & ~FILE_H) << RIGHT.absoluteArrayValue;
+        attacks |= (b & ~FILE_H) << DOWNRIGHT.absoluteArrayValue;
 
         attacks |= b >>> UP.absoluteArrayValue;
         attacks |= b << DOWN.absoluteArrayValue;
@@ -155,10 +154,6 @@ public class BitboardHelper {
     }
 
     private static void initKingCastleMoves() {
-        KING_CASTLE_MOVES[BLACK.arrayIndex][QUEENSIDE] = 1L << (BLACK_QUEENSIDE_CASTLE_SQUARE);
-        KING_CASTLE_MOVES[BLACK.arrayIndex][KINGSIDE] = 1L << (BLACK_KINGSIDE_CASTLE_SQUARE);
-        KING_CASTLE_MOVES[WHITE.arrayIndex][QUEENSIDE] = 1L << (WHITE_QUEENSIDE_CASTLE_SQUARE);
-        KING_CASTLE_MOVES[WHITE.arrayIndex][KINGSIDE] = 1L << (WHITE_KINGSIDE_CASTLE_SQUARE);
 
         KING_CASTLE_EMPTY_SQUARES[BLACK.arrayIndex][QUEENSIDE] = (1L << BLACK_KING_POS + LEFT.rawArrayValue) | (1L << BLACK_QUEENSIDE_CASTLE_SQUARE);
         KING_CASTLE_EMPTY_SQUARES[BLACK.arrayIndex][KINGSIDE] = (1L << BLACK_KING_POS + RIGHT.rawArrayValue) | (1L << BLACK_KINGSIDE_CASTLE_SQUARE);
@@ -169,6 +164,9 @@ public class BitboardHelper {
         KING_CASTLE_ATTACK_SQUARES[BLACK.arrayIndex][KINGSIDE] = KING_CASTLE_EMPTY_SQUARES[BLACK.arrayIndex][KINGSIDE] | (1L << BLACK_KING_POS);
         KING_CASTLE_ATTACK_SQUARES[WHITE.arrayIndex][QUEENSIDE] = KING_CASTLE_EMPTY_SQUARES[WHITE.arrayIndex][QUEENSIDE] | (1L << WHITE_KING_POS);
         KING_CASTLE_ATTACK_SQUARES[WHITE.arrayIndex][KINGSIDE] = KING_CASTLE_EMPTY_SQUARES[WHITE.arrayIndex][KINGSIDE] | (1L << WHITE_KING_POS);
+
+        KING_CASTLE_EMPTY_SQUARES[BLACK.arrayIndex][QUEENSIDE] |= squareToBitboard(BLACK_KING_POS + LEFT.rawArrayValue * 3);
+        KING_CASTLE_EMPTY_SQUARES[WHITE.arrayIndex][QUEENSIDE] |= squareToBitboard(WHITE_KING_POS + LEFT.rawArrayValue * 3);
     }
 
     private static void initBishopMask(int square) {
@@ -377,6 +375,14 @@ public class BitboardHelper {
         }
         bitboard &= ~(1L << index);
         return bitboard;
+    }
+
+    public static long squareToBitboard(int index) {
+        return 1L << index;
+    }
+
+    public static int firstBitToIndex(long bitboard) {
+        return Long.numberOfTrailingZeros(bitboard);
     }
 
     public static boolean isBitSet(long bitboard, int index) {

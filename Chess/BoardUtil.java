@@ -168,6 +168,10 @@ public class BoardUtil {
 		return getRow(pos) != PAWN_STARTING_ROW[color.arrayIndex];
 	}
 
+	public static int enPassantSquareToMove(PieceColor color, int enPassantSquare) {
+		return enPassantSquare + (color == PieceColor.WHITE ? Direction.UP : Direction.DOWN).rawArrayValue;
+	}
+
 	/**
 	 * Returns whether or not a piece is attacking another piece.
 	 * @param attacker The attacking piece.

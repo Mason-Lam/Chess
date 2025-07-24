@@ -6,7 +6,7 @@ public class Main {
 	
 	public static void main(String[] args) {
 		BitboardHelper.initializeBitBoard();
-		Tests.runTestsDeep(false, true);
+		Tests.runTestsDeep(true, true);
 		@SuppressWarnings("unused")
 		final ChessGame game = new ChessGame(PieceColor.COLORLESS,0);
 	}

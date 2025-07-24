@@ -58,7 +58,8 @@ public class Computer {
 		if (depth == 1) {
 			for (final ChessPiece piece : pieces) {
 				final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.getType().arrayIndex]);
-				piece.pieceMoves(moves);
+				board.getBitboard().generatePieceMoves(moves, piece.getPos(), false);
+				// piece.pieceMoves(moves);
 				if (moves.size() > 0 && piece.isPawn() && getRow(moves.get(0).getFinish()) == PROMOTION_ROW[board.getTurn().arrayIndex]){
 					count += moves.size() * 4;
 					continue;
@@ -74,7 +75,8 @@ public class Computer {
 		final BoardStorage store = board.copyData();
 		final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[6]);
 		for (final ChessPiece piece : pieces) {
-			piece.pieceMoves(moves);
+			board.getBitboard().generatePieceMoves(moves, piece.getPos(), false);
+			// piece.pieceMoves(moves);
 		}
 
 		for (final Move move : moves) {
