@@ -22,6 +22,8 @@ public class Bitboard {
 
     private final ChessPiece[] board;
 
+    private final PieceSet[] pieces;
+
     private final int[] kingPos;
 
     private long OCCUPIED;
@@ -40,6 +42,9 @@ public class Bitboard {
         PIECES = new long[2][6];
         ALL_PIECES = new long[2];
         board = new ChessPiece[64];
+        pieces = new PieceSet[2];
+        pieces[0] = new PieceSet();
+        pieces[1] = new PieceSet();
         kingPos = new int[2];
         OCCUPIED = 0L;
         ATTACKS = new long[2];
@@ -103,6 +108,7 @@ public class Bitboard {
 
                 pos++;
             }
+            else break;
 		}
     }
 
@@ -567,6 +573,7 @@ public class Bitboard {
         PIECES[piece.getColor().arrayIndex][piece.getType().arrayIndex] = setBit(PIECES[piece.getColor().arrayIndex][piece.getType().arrayIndex], index);
         ALL_PIECES[piece.getColor().arrayIndex] = setBit(ALL_PIECES[piece.getColor().arrayIndex], index);
         OCCUPIED = setBit(OCCUPIED, index);
+        pieces[piece.getColor().arrayIndex].add(piece);
 
         if (wasOccupied) return;
         for (final PieceSet[] attackerSquares : allAttackers) {
@@ -594,6 +601,7 @@ public class Bitboard {
         PIECES[piece.getColor().arrayIndex][piece.getType().arrayIndex] = clearBit(PIECES[piece.getColor().arrayIndex][piece.getType().arrayIndex], index);
         ALL_PIECES[piece.getColor().arrayIndex] = clearBit(ALL_PIECES[piece.getColor().arrayIndex], index);
         OCCUPIED = clearBit(OCCUPIED, index);
+        pieces[piece.getColor().arrayIndex].remove(piece);
 
         board[index] = ChessPiece.empty();
 
@@ -605,6 +613,14 @@ public class Bitboard {
                 updateAttacks(attackingPiece, false);
             }
         }
+    }
+
+    public PieceSet getPieces(PieceColor color) {
+        return pieces[color.arrayIndex];
+    }
+
+    public ChessPiece getPiece(int index) {
+        return board[index];
     }
 
     public int getKingPos(PieceColor color) {

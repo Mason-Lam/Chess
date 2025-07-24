@@ -57,12 +57,6 @@ public class ChessBoard {
 	/** 2d int array storing a count of all types pieces, 0 refers to BLACK, 1 for WHITE.*/
 	private final int[][] pieceCount;
 
-	/** PieceSet array storing all pieces, 0 refers to BLACK, 1 for WHITE.*/
-	private final PieceSet[] pieces;
-	
-	/** ChessPiece array representing the board.*/
-	private final ChessPiece[] board;
-
 	private PieceColor turn;
 	private int promotingPawn;
 	private int halfMove;
@@ -89,10 +83,6 @@ public class ChessBoard {
 		turn = PieceColor.BLACK;
 		halfMove = 0;
 		fullMove = 1;
-
-		pieces = new PieceSet[2];
-		pieces[PieceColor.BLACK.arrayIndex] = new PieceSet();
-		pieces[PieceColor.WHITE.arrayIndex] = new PieceSet();
 		
 		kingPos = new int[2];
 		pieceCount = new int[2][5];
@@ -100,7 +90,6 @@ public class ChessBoard {
 		pieceCount[PieceColor.WHITE.arrayIndex] = new int[5];
 		Arrays.fill(pieceCount[0], 0);
 		Arrays.fill(pieceCount[1], 0);
-		board = new ChessPiece[64];
 		promotingPawn = EMPTY;
 
 		bitboard = new Bitboard(fen);
@@ -121,7 +110,7 @@ public class ChessBoard {
 			for (int column = 0; column < 8; column++) {
 				final int pos = row * 8 + column;		//Convert row, column to position.
 
-				if (board[pos].isEmpty()) {
+				if (getPiece(pos).isEmpty()) {
 					emptySpaces++;
 					continue;
 				}
@@ -131,7 +120,7 @@ public class ChessBoard {
 					emptySpaces = 0;
 				}
 				
-				fen += pieceToChar(board[pos]);
+				fen += pieceToChar(getPiece(pos));
 			}
 
 			if (emptySpaces > 0) fen += emptySpaces;
@@ -179,87 +168,22 @@ public class ChessBoard {
 	 * @param fen The FEN String for the board position to be based on.
 	 */
 	private void fen_to_board(String fen) {
-		final int[] pieceIDs = new int[] {0, 0};	//Piece IDs to be used for discount Hash map.
-		int pos = 0;
-		boolean reachedHalfMove = false;
-		//Iterate over each character in the FEN String.
-		for (int index = 0; index < fen.length(); index++) {
-			final char letter = fen.charAt(index);
-			if (letter == ' ') continue;
-			
-			//Turn, Castling, enPassant.
-			if (pos > 63) {
-				
-				//Turn.
-				if (letter == 'w') {
-					turn = PieceColor.WHITE;
-				}
-				
-				//Castling.
-				else if (letter == 'K') {
-					bitboard.setCastlingRights(PieceColor.WHITE, KINGSIDE, true);
-				}
-				else if (letter == 'Q') {
-					bitboard.setCastlingRights(PieceColor.WHITE, QUEENSIDE, true);
-				}
-				else if (letter == 'k') {
-					bitboard.setCastlingRights(PieceColor.BLACK, KINGSIDE, true);
-				}
-				else if (letter == 'q') {
-					bitboard.setCastlingRights(PieceColor.BLACK, QUEENSIDE, true);
-				}
-				
-				//enPassant; it's garbage but I can't be bothered to clean it up.
-				else if ((int) letter <= 104 && (int) letter >= 97 && Character.isDigit(fen.charAt(index + 1))) {
-					int enPassant = squareToIndex(Character.toString(letter) + fen.charAt(index + 1));
-					enPassant = (turn == PieceColor.BLACK) ? enPassant - 8 : enPassant + 8;
-					bitboard.setEnPassant(enPassant);
-					index++;
-				}
-
-				//Handle move counts, also garbage.
-				else if (Character.isDigit(letter)) {
-					int number = Character.getNumericValue(letter);
-					int digit = index + 1;
-					while (digit < fen.length()) {
-						if (!Character.isDigit(fen.charAt(digit))) break;
-						number = number * 10 + Character.getNumericValue(fen.charAt(digit));
-						digit ++;
-					}
-					if (reachedHalfMove) fullMove = number;
-					else {
-						halfMove = number;
-						reachedHalfMove = true;
-					}
-				}
-				
-				continue;
-			}
-			
-			if (letter == '/') continue;
-
-			//Filling board with pieces.
-			final int pieceValue = Character.getNumericValue(letter);
-			//Empty squares.
-			if (pieceValue <= 8 && pieceValue > 0) {
-				for (int square = 0; square < pieceValue; square++) {
-					board[pos] = ChessPiece.empty();
-					pos ++;
-				}
-				continue;
-			}
-
-			//Create and store the piece.
-			final ChessPiece piece = charToPiece(letter, pos, this, pieceIDs);
-			board[pos] = piece;
-			pieces[piece.color.arrayIndex].add(piece);
-			
-			//Keep track of the piece.
-			if (piece.isKing()) kingPos[piece.color.arrayIndex] = pos;
-			else pieceCount[piece.color.arrayIndex][piece.getType().arrayIndex] ++;
-
-			pos++;
+		final String[] splitFen = fen.split(" ");
+		turn = splitFen[1].equals("w") ? PieceColor.WHITE : PieceColor.BLACK;
+		bitboard.setCastlingRights(PieceColor.WHITE, KINGSIDE, splitFen[2].contains("K"));
+		bitboard.setCastlingRights(PieceColor.WHITE, QUEENSIDE, splitFen[2].contains("Q"));
+		bitboard.setCastlingRights(PieceColor.BLACK, KINGSIDE, splitFen[2].contains("k"));
+		bitboard.setCastlingRights(PieceColor.BLACK, QUEENSIDE, splitFen[2].contains("q"));
+		if (splitFen[3].equals("-")) {
+			bitboard.setEnPassant(EMPTY);
 		}
+		else {
+			int enPassant = squareToIndex(splitFen[3]);
+			enPassant = (turn == PieceColor.BLACK) ? enPassant - 8 : enPassant + 8;
+			bitboard.setEnPassant(enPassant);
+		}
+		halfMove = Integer.parseInt(splitFen[4]);
+		fullMove = Integer.parseInt(splitFen[5]);
 	}
 
 	/**
@@ -269,14 +193,14 @@ public class ChessBoard {
 	public void makeMove(Move move) {
 		long prevTime = System.currentTimeMillis();
 
-		final ChessPiece movingPiece = board[move.getStart()];
+		final ChessPiece movingPiece = getPiece(move.getStart());
 
 		final boolean isAttack = bitboard.isOccupied(move.getFinish());
 
 		//Handle the captured piece.
 		if (isAttack) {
 			halfMove = EMPTY;
-			updatePosition(board[move.getFinish()], move.getFinish(), true);	//Remove the captured piece from the board.
+			updatePosition(getPiece(move.getFinish()), move.getFinish(), true);	//Remove the captured piece from the board.
 		}
 
 		int newEnPassant = EMPTY;
@@ -301,7 +225,6 @@ public class ChessBoard {
 		}
 
 		hashing.flipPiece(move.getStart(), movingPiece);
-		board[move.getStart()] = ChessPiece.empty();	//Empty the square the moving piece used to occupy.
 		bitboard.clearPiece(move.getStart());
 		
 		updatePosition(movingPiece, move.getFinish(), false);		//Move the moving piece to the new position.
@@ -328,7 +251,7 @@ public class ChessBoard {
 		halfMove = EMPTY;
 		//Captures enPassant.
 		if (move.isSpecial()) {
-			updatePosition(board[bitboard.getEnPassant()], bitboard.getEnPassant(), true);	//Remove the enPassant pawn from the board.
+			updatePosition(getPiece(bitboard.getEnPassant()), bitboard.getEnPassant(), true);	//Remove the enPassant pawn from the board.
 		}
 		//Pawn moves two squares forward.
 		if (getRowDistance(move.getStart(), move.getFinish()) == 2) {
@@ -367,12 +290,12 @@ public class ChessBoard {
 	private void makeCastleMove(Move move) {
 		final int side = move.getFinish() > move.getStart() ? KINGSIDE : QUEENSIDE;
 		final int currentRookPos = ROOK_POSITIONS[turn.arrayIndex][side];
+		final ChessPiece castledRook = getPiece(currentRookPos);
 		bitboard.clearPiece(currentRookPos);
-		final int newRookPos = move.getFinish() + (side == KINGSIDE ? Direction.LEFT : Direction.RIGHT).rawArrayValue; 
-		updatePosition(board[currentRookPos], newRookPos, false);
+		final int newRookPos = move.getFinish() + (side == KINGSIDE ? Direction.LEFT : Direction.RIGHT).rawArrayValue;
+		updatePosition(castledRook, newRookPos, false);
 
-		board[currentRookPos] = ChessPiece.empty();
-		hashing.flipPiece(currentRookPos, board[newRookPos]);
+		hashing.flipPiece(currentRookPos, castledRook);
 	}
 
 	/**
@@ -400,14 +323,13 @@ public class ChessBoard {
 
 		final Move invertedMove = move.invert();
 
-		final ChessPiece movingPiece = board[invertedMove.getStart()];
+		final ChessPiece movingPiece = getPiece(invertedMove.getStart());
 
 		//Check for castling
 		if (isCastle(invertedMove)) {
 			undoCastleMove(invertedMove);
 		}
 
-		board[invertedMove.getStart()] = ChessPiece.empty();		//Empty the square the piece used to occupy.
 		bitboard.clearPiece(invertedMove.getStart());
 		hashing.flipPiece(invertedMove.getStart(), movingPiece);
 		updatePosition(movingPiece, invertedMove.getFinish(), false);			//Move the moving piece to the new position.
@@ -431,10 +353,9 @@ public class ChessBoard {
 	private void undoCastleMove(Move invertedMove) {
 		final int side = invertedMove.getStart() > invertedMove.getFinish() ? KINGSIDE : QUEENSIDE;
 		final int castledRookPos = invertedMove.getStart() + (side == KINGSIDE ? Direction.LEFT : Direction.RIGHT).rawArrayValue;
-		final ChessPiece castledRook = board[castledRookPos];
+		final ChessPiece castledRook = getPiece(castledRookPos);
 		bitboard.clearPiece(castledRookPos);
 		updatePosition(castledRook, ROOK_POSITIONS[turn.arrayIndex][side], false);		//Move the rook to the new position.
-		board[castledRookPos] = ChessPiece.empty();			//Empty the square the rook used to occupy.
 		hashing.flipPiece(castledRookPos, castledRook);
 	}
 
@@ -449,18 +370,14 @@ public class ChessBoard {
 
 		//Remove the piece from the board and updates the tracking variables.
 		if (remove) {
-			pieces[piece.color.arrayIndex].remove(piece);
 			pieceCount[piece.color.arrayIndex][piece.getType().arrayIndex] -= 1;
-			board[pos] = ChessPiece.empty();
 			bitboard.clearPiece(pos);
 			return;
 		}
 
 		//Add the piece to the board and update the tracking variables.
-		board[pos] = piece;
 		bitboard.setPiece(pos, piece);
 		piece.setPos(pos);
-		if (pieces[piece.color.arrayIndex].add(piece)) pieceCount[piece.color.arrayIndex][piece.getType().arrayIndex] += 1;
 		
 		//Update the king position variable if the king moves.
 		if (piece.isKing()) kingPos[piece.color.arrayIndex] = pos;
@@ -471,7 +388,7 @@ public class ChessBoard {
 	 * @param type The new type of the promoted piece.
 	 */
 	public void promote(PieceType type) {
-		final ChessPiece promotingPiece = board[promotingPawn];
+		final ChessPiece promotingPiece = getPiece(promotingPawn);
 		
 		//Add the promoted piece to the board.
 		hashing.flipPiece(promotingPawn, promotingPiece);
@@ -497,7 +414,7 @@ public class ChessBoard {
 	 * @param pos The position of the promoted piece.
 	 */
 	public void unPromote(int pos) {
-		final ChessPiece unpromotingPiece = board[pos];
+		final ChessPiece unpromotingPiece = getPiece(pos);
 		hashing.flipPiece(pos, unpromotingPiece);
 		bitboard.clearPiece(pos, false);
 
@@ -512,7 +429,7 @@ public class ChessBoard {
 
 		//Reset the piece to a pawn.
 		unpromotingPiece.setType(PieceType.PAWN);
-		updatePosition(board[pos], pos, false);
+		updatePosition(unpromotingPiece, pos, false);
 
 		promotingPawn = pos;
 	}
@@ -529,7 +446,7 @@ public class ChessBoard {
 		if (hasInsufficientMaterial()) return DRAW;
 
 		//Check to see if any piece has a legal move.
-		for(final ChessPiece piece : pieces[turn.arrayIndex]) {
+		for(final ChessPiece piece : getPieces(turn)) {
 			final ArrayList<Move> moves = new ArrayList<Move>();
 			bitboard.generatePieceMoves(moves, piece.getPos(), false);
 			if(moves.size() > 0) {
@@ -595,7 +512,7 @@ public class ChessBoard {
 	 * @return True if the move is a capture through enPassant, false if it isn't.
 	 */
 	public boolean isEnPassant(Move move) {
-		return move.isSpecial() && (board[move.getStart()].isPawn() || board[move.getFinish()].isPawn());
+		return move.isSpecial() && (getPiece(move.getStart()).isPawn() || getPiece(move.getFinish()).isPawn());
 	}
 
 	/**
@@ -628,7 +545,7 @@ public class ChessBoard {
 	 * @return The ChessPiece, includes empty squares.
 	 */
 	public ChessPiece getPiece(int pos) {
-		return board[pos];
+		return bitboard.getPiece(pos);
 	}
 
 	/**
@@ -637,7 +554,7 @@ public class ChessBoard {
 	 * @return A piece set object, use enhanced for loop.
 	 */
 	public PieceSet getPieces(PieceColor color) {
-		return pieces[color.arrayIndex];
+		return bitboard.getPieces(color);
 	}
 
 	/**
