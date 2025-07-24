@@ -143,27 +143,6 @@ public class ZobristHashing {
         currentHash ^= zobristTable[tableIndex][square];
     }
 
-    // public void movePiece(int from, int to) {
-    //     int piece = board[from];
-    //     if (piece == -1) return;
-
-    //     // XOR out piece from old square
-    //     currentHash ^= zobristTable[piece][from];
-
-    //     // XOR out captured piece
-    //     if (board[to] != -1) {
-    //         int captured = board[to];
-    //         currentHash ^= zobristTable[captured][to];
-    //     }
-
-    //     // XOR in piece to new square
-    //     currentHash ^= zobristTable[piece][to];
-
-    //     // Update board
-    //     board[to] = piece;
-    //     board[from] = -1;
-    // }
-
     public long getHash() {
         return currentHash;
     }

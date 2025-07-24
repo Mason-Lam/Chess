@@ -16,9 +16,9 @@ import static Chess.BoardUtil.*;
 
 public class Bitboard {
 
-    public final long[][] PIECES;
+    private final long[][] PIECES;
 
-    public final long[] ALL_PIECES;
+    private final long[] ALL_PIECES;
 
     private final ChessPiece[] board;
 
@@ -28,9 +28,9 @@ public class Bitboard {
 
     private long OCCUPIED;
 
-    public final long[] ATTACKS;
+    private long[] ATTACKS;
 
-    public final PieceSet[][] allAttackers;
+    private PieceSet[][] allAttackers;
 
     private int enPassantSquare;
 
@@ -60,8 +60,6 @@ public class Bitboard {
 
         enPassantSquare = EMPTY;
         castlingRights = new boolean[2][2]; //Black: Queenside, Kingside, White: Queenside, Kingside
-		Arrays.fill(castlingRights[PieceColor.BLACK.arrayIndex], false);
-		Arrays.fill(castlingRights[PieceColor.WHITE.arrayIndex], false);
 
         pinningPiece = null;
         
@@ -621,6 +619,10 @@ public class Bitboard {
 
     public ChessPiece getPiece(int index) {
         return board[index];
+    }
+
+    public int getPieceCount(PieceColor color, PieceType type) {
+        return Long.bitCount(PIECES[color.arrayIndex][type.arrayIndex]);
     }
 
     public int getKingPos(PieceColor color) {

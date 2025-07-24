@@ -44,9 +44,9 @@ public class ChessGame {
 		board = new ChessBoard();	//Creates a new ChessBoard object
 		this.computer = board.getComputer();
 
-		// Tests.timeCheckBoard(board, 6);
+		Tests.timeCheckBoard(board, 6);
 		// //Current (3, 0), (4, 16), (5, 316), (6, 8018)
-		System.out.println(computer.totalMoves(6)); //Goal: (3, 0), (4, 11), (5, 259), (6, 6502)
+		// System.out.println(computer.totalMoves(6)); //Goal: (3, 0), (4, 11), (5, 259), (6, 6502)
 		
 		panel.setBorder(BorderFactory.createEmptyBorder(30,30,10,30));	//Creates a border
 		panel.setLayout(new GridLayout(8,8));		//Creates an 8*8 grid for the squares

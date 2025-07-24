@@ -1,13 +1,13 @@
 package Chess;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import Chess.Constants.DirectionConstants.Direction;
 import Chess.Constants.PieceConstants.PieceColor;
 import Chess.Constants.PieceConstants.PieceType;
 
 import static Chess.Constants.MoveConstants.*;
+import static Chess.Constants.PieceConstants.PIECE_COLORS;
 import static Chess.Constants.PositionConstants.*;
 import static Chess.Constants.EvaluateConstants.*;
 import static Chess.BoardUtil.*;
@@ -49,13 +49,7 @@ public class ChessBoard {
 			castle[1] = castling[1];
 			return castle;
 		}
-	}	
-	
-	/** int array storing the position of the kings, 0 refers to BLACK, 1 for WHITE.*/
-	private final int[] kingPos;
-	
-	/** 2d int array storing a count of all types pieces, 0 refers to BLACK, 1 for WHITE.*/
-	private final int[][] pieceCount;
+	}
 
 	private PieceColor turn;
 	private int promotingPawn;
@@ -64,9 +58,7 @@ public class ChessBoard {
 
 	private final ZobristHashing hashing;
 
-	public final Bitboard bitboard;
-
-
+	private final Bitboard bitboard;
 	
 	/**
 	 * Creates a new Chessboard object with the default starting position.
@@ -84,12 +76,6 @@ public class ChessBoard {
 		halfMove = 0;
 		fullMove = 1;
 		
-		kingPos = new int[2];
-		pieceCount = new int[2][5];
-		pieceCount[PieceColor.BLACK.arrayIndex] = new int[5];
-		pieceCount[PieceColor.WHITE.arrayIndex] = new int[5];
-		Arrays.fill(pieceCount[0], 0);
-		Arrays.fill(pieceCount[1], 0);
 		promotingPawn = EMPTY;
 
 		bitboard = new Bitboard(fen);
@@ -326,7 +312,7 @@ public class ChessBoard {
 		final ChessPiece movingPiece = getPiece(invertedMove.getStart());
 
 		//Check for castling
-		if (isCastle(invertedMove)) {
+		if (movingPiece.isKing() && move.isSpecial()) {
 			undoCastleMove(invertedMove);
 		}
 
@@ -370,7 +356,6 @@ public class ChessBoard {
 
 		//Remove the piece from the board and updates the tracking variables.
 		if (remove) {
-			pieceCount[piece.color.arrayIndex][piece.getType().arrayIndex] -= 1;
 			bitboard.clearPiece(pos);
 			return;
 		}
@@ -378,9 +363,6 @@ public class ChessBoard {
 		//Add the piece to the board and update the tracking variables.
 		bitboard.setPiece(pos, piece);
 		piece.setPos(pos);
-		
-		//Update the king position variable if the king moves.
-		if (piece.isKing()) kingPos[piece.color.arrayIndex] = pos;
 	}
 
 	/**
@@ -395,10 +377,6 @@ public class ChessBoard {
 		bitboard.setPiece(promotingPawn, promotingPiece);
 		promotingPiece.setType(type);
 		updatePosition(promotingPiece, promotingPawn, false);
-
-		//Update tracking variables.
-		pieceCount[turn.arrayIndex][type.arrayIndex] += 1;
-		pieceCount[turn.arrayIndex][PieceType.PAWN.arrayIndex] -= 1;
 
 		//Next turn.
 		halfMove ++;
@@ -422,10 +400,6 @@ public class ChessBoard {
 		halfMove --;
 		if (turn == PieceColor.WHITE) fullMove --;
 		next_turn();
-
-		//Update tracking variables.
-		pieceCount[turn.arrayIndex][unpromotingPiece.getType().arrayIndex] --;
-		pieceCount[turn.arrayIndex][PieceType.PAWN.arrayIndex] ++;
 
 		//Reset the piece to a pawn.
 		unpromotingPiece.setType(PieceType.PAWN);
@@ -463,10 +437,10 @@ public class ChessBoard {
 	 */
 	private boolean hasInsufficientMaterial() {
 		//Check each side to see if there's enough pieces.
-		for (int color = 0; color < 2; color++) {
-			if (pieceCount[color][PieceType.PAWN.arrayIndex] > 0 || pieceCount[color][PieceType.KNIGHT.arrayIndex] > 2 
-				|| pieceCount[color][PieceType.BISHOP.arrayIndex] > 1 || pieceCount[color][PieceType.ROOK.arrayIndex] > 0 
-				|| pieceCount[color][PieceType.QUEEN.arrayIndex] > 0) return false;
+		for (final PieceColor color : PIECE_COLORS) {
+			if (bitboard.getPieceCount(color, PieceType.PAWN) > 0 || bitboard.getPieceCount(color, PieceType.KNIGHT) > 2
+				|| bitboard.getPieceCount(color, PieceType.BISHOP) > 1 || bitboard.getPieceCount(color, PieceType.ROOK) > 0
+				|| bitboard.getPieceCount(color, PieceType.QUEEN) > 0) return false;
 		}
 		return true;
 	}
@@ -486,24 +460,6 @@ public class ChessBoard {
 	 */
 	public boolean[] getCastlingPotential(PieceColor color) {
 		return bitboard.getCastlingRights(color);
-	}
-
-	/**
-	 * Returns the king's position on the board.
-	 * @param color The color of the king.
-	 * @return The king's position from 0 to 63.
-	 */
-	public int getKingPos(PieceColor color) {
-		return kingPos[color.arrayIndex];
-	}
-
-	/**
-	 * Checks if a move castles the king.
-	 * @param move The move being played.
-	 * @return True if the move is a castle, false if it isn't.
-	 */
-	public boolean isCastle(Move move) {
-		return move.isSpecial() && (move.contains(getKingPos(turn)));
 	}
 
 	/**
