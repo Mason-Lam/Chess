@@ -561,7 +561,7 @@ public class Bitboard {
 
         if (wasOccupied) clearPiece(index, false);
 
-        if (piece.isKing()) kingPos[piece.color.arrayIndex] = index;
+        if (piece.isKing()) kingPos[piece.getColor().arrayIndex] = index;
 
         board[index] = piece;
         piece.setPos(index);

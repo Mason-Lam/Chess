@@ -58,7 +58,7 @@ public class BoardUtil {
 	 * @return A character representing the chess piece.
 	 */
 	public static char pieceToChar(ChessPiece piece) {
-		return piece.getType().characterRepresentation;
+		return (piece.getColor() == PieceColor.WHITE ? Character.toUpperCase(piece.getType().characterRepresentation) : piece.getType().characterRepresentation);
 	}
 
 	/**

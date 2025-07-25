@@ -73,7 +73,7 @@ public class ZobristHashing {
         for (int square = 0; square < NUM_SQUARES; square++) {
             final ChessPiece piece = board.getPiece(square);
             if (piece.isEmpty()) continue;
-            int tableIndex = piece.getType().arrayIndex + (piece.color == PieceColor.WHITE ? 0 : 6);
+            int tableIndex = piece.getType().arrayIndex + (piece.getColor() == PieceColor.WHITE ? 0 : 6);
             currentHash ^= zobristTable[tableIndex][square];
         }
 
@@ -139,7 +139,7 @@ public class ZobristHashing {
     }
 
     public void flipPiece(int square, ChessPiece piece) {
-        int tableIndex = piece.getType().arrayIndex + (piece.color == PieceColor.WHITE ? 0 : 6);
+        int tableIndex = piece.getType().arrayIndex + (piece.getColor() == PieceColor.WHITE ? 0 : 6);
         currentHash ^= zobristTable[tableIndex][square];
     }
 

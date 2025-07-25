@@ -46,6 +46,55 @@ public class BitboardHelper {
         FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H
     };
 
+    public static final long DOWN_DIAGONAL_1 = 0x0000000000000080L;
+    public static final long DOWN_DIAGONAL_2 = 0x0000000000008040L;
+    public static final long DOWN_DIAGONAL_3 = 0x0000000000804020L;
+    public static final long DOWN_DIAGONAL_4 = 0x0000000080402010L;
+    public static final long DOWN_DIAGONAL_5 = 0x0000008040201008L;
+    public static final long DOWN_DIAGONAL_6 = 0x0000804020100804L;
+    public static final long DOWN_DIAGONAL_7 = 0x0080402010080402L;
+    public static final long DOWN_DIAGONAL_8 = 0x8040201008040201L;
+    public static final long DOWN_DIAGONAL_9 = 0x4020100804020100L;
+    public static final long DOWN_DIAGONAL_10 = 0x2010080402010000L;
+    public static final long DOWN_DIAGONAL_11 = 0x1008040201000000L;
+    public static final long DOWN_DIAGONAL_12 = 0x0804020100000000L;
+    public static final long DOWN_DIAGONAL_13 = 0x0402010000000000L;
+    public static final long DOWN_DIAGONAL_14 = 0x0201000000000000L;
+    public static final long DOWN_DIAGONAL_15 = 0x0100000000000000L;
+
+    public static final long[] DOWN_DIAGONALS = {
+        DOWN_DIAGONAL_1, DOWN_DIAGONAL_2, DOWN_DIAGONAL_3, DOWN_DIAGONAL_4, DOWN_DIAGONAL_5, DOWN_DIAGONAL_6, DOWN_DIAGONAL_7, 
+        DOWN_DIAGONAL_8,
+        DOWN_DIAGONAL_9, DOWN_DIAGONAL_10, DOWN_DIAGONAL_11, DOWN_DIAGONAL_12, DOWN_DIAGONAL_13, DOWN_DIAGONAL_14, DOWN_DIAGONAL_15
+    };
+
+    public static final long[] DOWN_DIAGONALS_BOARD = new long[64];
+
+    public static final long UP_DIAGONAL_1 = 0x0000000000000001L;
+    public static final long UP_DIAGONAL_2 = 0x0000000000000102L;
+    public static final long UP_DIAGONAL_3 = 0x0000000000010204L;
+    public static final long UP_DIAGONAL_4 = 0x0000000001020408L;
+    public static final long UP_DIAGONAL_5 = 0x0000000102040810L;
+    public static final long UP_DIAGONAL_6 = 0x0000010204081020L;
+    public static final long UP_DIAGONAL_7 = 0x0001020408102040L;
+    public static final long UP_DIAGONAL_8 = 0x0102040810204080L;
+    public static final long UP_DIAGONAL_9 = 0x0204081020408000L;
+    public static final long UP_DIAGONAL_10 = 0x0408102040800000L;
+    public static final long UP_DIAGONAL_11 = 0x0810204080000000L;
+    public static final long UP_DIAGONAL_12 = 0x1020408000000000L;
+    public static final long UP_DIAGONAL_13 = 0x2040800000000000L;
+    public static final long UP_DIAGONAL_14 = 0x4080000000000000L;
+    public static final long UP_DIAGONAL_15 = 0x8000000000000000L;
+
+    public static final long[] UP_DIAGONALS = {
+        UP_DIAGONAL_1, UP_DIAGONAL_2, UP_DIAGONAL_3, UP_DIAGONAL_4, UP_DIAGONAL_5, UP_DIAGONAL_6, UP_DIAGONAL_7,
+        UP_DIAGONAL_8,
+        UP_DIAGONAL_9, UP_DIAGONAL_10, UP_DIAGONAL_11, UP_DIAGONAL_12, UP_DIAGONAL_13, UP_DIAGONAL_14, UP_DIAGONAL_15
+    };
+
+    public static final long[] UP_DIAGONALS_BOARD = new long[64];
+
+
     public static final long[][] PAWN_MOVES = new long[2][64];
 
     public static final long[][] PAWN_ATTACKS = new long[2][64];
@@ -66,6 +115,7 @@ public class BitboardHelper {
     public static final long[][] ROOK_MOVES = new long[64][];
 
     public static void initializeBitBoard() {
+        initDiagonals();
         
         readMagicNumberFile();
 
@@ -94,6 +144,16 @@ public class BitboardHelper {
         // System.out.println();
         // displayBitboard(generateBlockerPermutations(mask)[blockerPermutation]);
 
+    }
+
+    private static void initDiagonals() {
+        for (final long diagonal : DOWN_DIAGONALS) {
+            applyFunctionByBitIndices(diagonal, (int index) -> DOWN_DIAGONALS_BOARD[index] = diagonal);
+        }
+
+        for (final long diagonal : UP_DIAGONALS) {
+            applyFunctionByBitIndices(diagonal, (int index) -> UP_DIAGONALS_BOARD[index] = diagonal);
+        }
     }
 
     private static void initPawnMoves(int square) {
@@ -363,16 +423,10 @@ public class BitboardHelper {
 
 
     public static long setBit(long bitboard, int index) {
-        if (index < 0 || index >= 64) {
-            throw new IllegalArgumentException("Index must be between 0 and 63.");
-        }
         return bitboard |= (1L << index);
     }
 
     public static long clearBit(long bitboard, int index) {
-        if (index < 0 || index >= 64) {
-            throw new IllegalArgumentException("Index must be between 0 and 63.");
-        }
         bitboard &= ~(1L << index);
         return bitboard;
     }
@@ -386,9 +440,6 @@ public class BitboardHelper {
     }
 
     public static boolean isBitSet(long bitboard, int index) {
-        if (index < 0 || index >= 64) {
-            throw new IllegalArgumentException("Index must be between 0 and 63.");
-        }
         return (bitboard & (1L << index)) != 0;
     }
 

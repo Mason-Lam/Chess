@@ -177,8 +177,6 @@ public class ChessBoard {
 	 * @param move The move to be made.
 	 */
 	public void makeMove(Move move) {
-		long prevTime = System.currentTimeMillis();
-
 		final ChessPiece movingPiece = getPiece(move.getStart());
 
 		final boolean isAttack = bitboard.isOccupied(move.getFinish());
@@ -197,12 +195,12 @@ public class ChessBoard {
 		
 		//Removes castling rights when a rook moves.
 		if (movingPiece.isRook()) {
-			updateCastlingOnRookMove(move.getStart(), movingPiece.color);
+			updateCastlingOnRookMove(move.getStart(), movingPiece.getColor());
 		}
 		
 		//Handles king moves.
 		if (movingPiece.isKing()) {
-			bitboard.clearCastlingRights(movingPiece.color);             //King can no longer castle.
+			bitboard.clearCastlingRights(movingPiece.getColor());             //King can no longer castle.
 			hashing.setCastlingRights(turn, new boolean[] {false, false});
 			//Handle castling.
 			if (move.isSpecial()) {
@@ -224,8 +222,6 @@ public class ChessBoard {
 			if (turn == PieceColor.BLACK) fullMove ++;
 			next_turn();
 		}
-		
-		Tests.timeMakeMove += System.currentTimeMillis() - prevTime;
 	}
 
 	/**
@@ -291,7 +287,6 @@ public class ChessBoard {
 	 * @param store Data that's lost when a move is made: halfmove, enPassant, and castling.
 	 */
 	public void undoMove(Move move, ChessPiece capturedPiece, BoardStorage store) {
-		long prevTime = System.currentTimeMillis();
 
 		//Back up a turn if a promotion isn't happenning.
 		if (!is_promote()) {
@@ -327,8 +322,6 @@ public class ChessBoard {
 		if (!capturedPiece.isEmpty()) updatePosition(capturedPiece, capturedPiece.getPos(), false);
 		
 		promotingPawn = EMPTY;
-
-		Tests.timeUndoMove += System.currentTimeMillis() - prevTime;
 	}
 
 	/**
@@ -374,7 +367,6 @@ public class ChessBoard {
 		
 		//Add the promoted piece to the board.
 		hashing.flipPiece(promotingPawn, promotingPiece);
-		bitboard.setPiece(promotingPawn, promotingPiece);
 		promotingPiece.setType(type);
 		updatePosition(promotingPiece, promotingPawn, false);
 

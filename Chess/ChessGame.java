@@ -104,7 +104,7 @@ public class ChessGame {
 			else {
 				address += "G";
 			}
-			if(board.getPiece(count).color == PieceColor.WHITE) {
+			if(board.getPiece(count).getColor() == PieceColor.WHITE) {
 				address += "W";
 			}
 			address += letter +".png";
@@ -157,7 +157,7 @@ public class ChessGame {
 			return;	//Nope
 		}
 		//Checks if the click is on the correct Chess pieces.
-		if(board.getPiece(pos).color == board.getTurn() && !board.getPiece(pos).isEmpty()) {
+		if(board.getPiece(pos).getColor() == board.getTurn() && !board.getPiece(pos).isEmpty()) {
 			click1 = pos;		//Stores the users first click
 			legal.clear();
 			board.getBitboard().generatePieceMoves(legal, pos, false);

@@ -13,7 +13,7 @@ public class ChessPiece {
 	private PieceType type;
 	private int pos;
 	
-	public PieceColor color;
+	private final PieceColor color;
 	private final int pieceID;
 	
 	/**
@@ -46,10 +46,6 @@ public class ChessPiece {
 	 */
 	public void setType(PieceType newType) {
 		type = newType;
-	}
-
-	public void setColor(PieceColor newColor) {
-		color = newColor;
 	}
 
 	/**
