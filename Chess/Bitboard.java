@@ -3,6 +3,7 @@ package Chess;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static Chess.Constants.DirectionConstants.Direction.*;
 import static Chess.Constants.PieceConstants.PIECE_COLORS;
@@ -111,6 +112,10 @@ public class Bitboard {
     }
 
     public void generatePieceMoves(List<Move> moves, int index, boolean attacksOnly) {
+        generatePieceMoves((Move move) -> moves.add(move), index, attacksOnly);
+    }
+
+    public void generatePieceMoves(Consumer<Move> moves, int index, boolean attacksOnly) {
         final ChessPiece piece = board[index];
         if (!piece.isKing() && kingInDoubleCheck(piece.getColor())) return; //If the king is double checked, then the king is the only piece that can move.
 
@@ -141,7 +146,7 @@ public class Bitboard {
 		pinningPiece = null;
     }
 
-    private void generatePawnMoves(List<Move> moves, ChessPiece piece, boolean attacksOnly) {
+    private void generatePawnMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
         final long pawnBitboard = generatePawnBitboard(piece.getColor(), piece.getPos(), attacksOnly);
         addMoves(moves, piece, pawnBitboard);
         if (enPassantSquare != EMPTY) {
@@ -149,36 +154,36 @@ public class Bitboard {
             final int enPassantMove = enPassantSquareToMove(piece.getColor(), enPassantSquare);
             if ((pawnAttacks & squareToBitboard(enPassantMove)) != 0) {
                 final Move move = new Move(piece.getPos(), enPassantMove, true);
-                if (isLegalMove(move)) moves.add(move);
+                if (isLegalMove(move)) moves.accept(move);
             }
         }
     }
 
-    private void generateKnightMoves(List<Move> moves, ChessPiece piece, boolean attacksOnly) {
+    private void generateKnightMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
         final long knightBitboard = generateKnightBitboard(piece.getColor(), piece.getPos(), attacksOnly);
         addMoves(moves, piece, knightBitboard);
     }
 
-    private void generateBishopMoves(List<Move> moves, ChessPiece piece, boolean attacksOnly) {
+    private void generateBishopMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
         final long bishopBitboard = generateBishopBitboard(piece.getColor(), piece.getPos(), attacksOnly);
         addMoves(moves, piece, bishopBitboard);
     }
 
-    private void generateRookMoves(List<Move> moves, ChessPiece piece, boolean attacksOnly) {
+    private void generateRookMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
         final long rookBitboard = generateRookBitboard(piece.getColor(), piece.getPos(), attacksOnly);
         addMoves(moves, piece, rookBitboard);
     }
 
-    private void generateQueenMoves(List<Move> moves, ChessPiece piece, boolean attacksOnly) {
+    private void generateQueenMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
         final long queenBitboard = generateQueenBitboard(piece.getColor(), piece.getPos(), attacksOnly);
         addMoves(moves, piece, queenBitboard);
     }
 
-    private void generateKingMoves(List<Move> moves, ChessPiece piece, boolean attacksOnly) {
+    private void generateKingMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
         final long kingBitboard = generateKingBitboard(piece.getColor(), piece.getPos(), attacksOnly);
         addMoves(moves, piece, kingBitboard);
-        if (canCastle(piece, QUEENSIDE)) moves.add(new Move(piece.getPos(), KING_CASTLE_MOVES[piece.getColor().arrayIndex][QUEENSIDE], true));
-        if (canCastle(piece, KINGSIDE)) moves.add(new Move(piece.getPos(), KING_CASTLE_MOVES[piece.getColor().arrayIndex][KINGSIDE], true));
+        if (canCastle(piece, QUEENSIDE)) moves.accept(new Move(piece.getPos(), KING_CASTLE_MOVES[piece.getColor().arrayIndex][QUEENSIDE], true));
+        if (canCastle(piece, KINGSIDE)) moves.accept(new Move(piece.getPos(), KING_CASTLE_MOVES[piece.getColor().arrayIndex][KINGSIDE], true));
     }
 
     public long generatePawnBitboard(PieceColor color, int square, boolean attacksOnly) {
@@ -230,12 +235,12 @@ public class Bitboard {
         return kingMoves;
     }
 
-    private void addMoves(List<Move> moves, ChessPiece piece, long bitboard) {
+    private void addMoves(Consumer<Move> moves, ChessPiece piece, long bitboard) {
         applyFunctionByBitIndices(bitboard, (int index) -> addMove(moves, new Move(piece.getPos(), index)));
     }
 
-    private void addMove(List<Move> moves, Move move) {
-        if (isLegalMove(move)) moves.add(move);
+    private void addMove(Consumer<Move> moves, Move move) {
+        if (isLegalMove(move)) moves.accept(move);
     }
 
     private boolean canCastle(ChessPiece piece, int side) {

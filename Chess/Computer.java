@@ -33,7 +33,7 @@ public class Computer {
 	 * @param depth The depth to search to.
 	 * @return The total number of possible moves.
 	 */
-	public int totalMoves(int depth) {
+	public int totalMoves(final int depth) {
 		return totalMoves(depth, false);
 	}
 
@@ -43,7 +43,7 @@ public class Computer {
 	 * @param useZobristHashing Whether or not to use hashing optimization: Warning can result in wrong answers.
 	 * @return The total number of possible moves.
 	 */
-	public int totalMoves(int depth, boolean useZobristHashing) {
+	public int totalMoves(final int depth, final boolean useZobristHashing) {
 		if (useZobristHashing) {
 			TTEntry entry = table.lookup(board.hash());
 			if (entry != null && entry.depth == depth) {
@@ -57,14 +57,19 @@ public class Computer {
 		//Base case.
 		if (depth == 1) {
 			for (final ChessPiece piece : pieces) {
-				final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.getType().arrayIndex]);
-				board.getBitboard().generatePieceMoves(moves, piece.getPos(), false);
-				// piece.pieceMoves(moves);
-				if (moves.size() > 0 && piece.isPawn() && getRow(moves.get(0).getFinish()) == PROMOTION_ROW[board.getTurn().arrayIndex]){
-					count += moves.size() * 4;
+				if (piece.isPawn()) {
+					final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.getType().arrayIndex]);
+					board.getBitboard().generatePieceMoves(moves, piece.getPos(), false);
+					if (moves.size() > 0 && getRow(moves.get(0).getFinish()) == PROMOTION_ROW[board.getTurn().arrayIndex]){
+						count += moves.size() * 4;
+						continue;
+					}
+					count += moves.size();
 					continue;
 				}
-				count += moves.size();
+				int[] moveCounter = new int[1];
+				board.getBitboard().generatePieceMoves((Move move) -> moveCounter[0] ++, piece.getPos(), false);
+				count += moveCounter[0];
 				continue;
 			}
 			if (useZobristHashing) table.store(board.hash(), 1, count, 0, 0);
