@@ -209,6 +209,14 @@ public class Constants {
 			PieceType.KNIGHT, PieceType.BISHOP, PieceType.ROOK, PieceType.QUEEN
 		};
 
+		public static final PieceType[] NON_KING_PIECES = new PieceType[] {
+			PieceType.PAWN, PieceType.KNIGHT, PieceType.BISHOP, PieceType.ROOK, PieceType.QUEEN
+		};
+
+		public static final PieceType[] PINNING_PIECE_TYPES = new PieceType[] {
+			PieceType.BISHOP, PieceType.ROOK, PieceType.QUEEN
+		};
+
 		
 		public static final char[] COLUMNS = new char[] {
 			'a',

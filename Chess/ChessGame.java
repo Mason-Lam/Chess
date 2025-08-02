@@ -239,7 +239,6 @@ public class ChessGame {
 		check_Win();		//Checks for a win
 		update_display();	//Updates the display
 		System.out.println(board.getFenString());
-		BitboardHelper.displayBitboard(board.getBitboard().generateKingBitboard(PieceColor.WHITE, 60, false));
 		// BitboardHelper.displayBitboard(board.getBitboard().ATTACKS[0]);
 		// BitboardHelper.displayBitboard(board.getBitboard().ATTACKS[1]);
 		// board.displayAttacks();

@@ -23,6 +23,7 @@ public class ChessBoard {
 	public static class BoardStorage {
 		public final int enPassant;
 		public final int halfMove;
+		public final boolean isChecked;
 		private final boolean[] castling;
 
 		/**
@@ -31,9 +32,10 @@ public class ChessBoard {
 		 * @param halfMove The halfmove count.
 		 * @param castling The castling ability of both sides.
 		 */
-		public BoardStorage(int enPassant, int halfMove, boolean[] castling) {
+		public BoardStorage(int enPassant, int halfMove, boolean isChecked, boolean[] castling) {
 			this.enPassant = enPassant;
 			this.halfMove = halfMove;
+			this.isChecked = isChecked;
 			this.castling = new boolean[2];
 			this.castling[QUEENSIDE] = castling[QUEENSIDE];
 			this.castling[KINGSIDE] = castling[KINGSIDE];
@@ -294,6 +296,7 @@ public class ChessBoard {
 			if (turn == PieceColor.WHITE) fullMove --;
 			next_turn();
 		}
+		bitboard.setCheck(store.isChecked);
 
 		//Reset castling data and enPassant data.
 		bitboard.setCastlingRights(turn, store.getCastling());
@@ -386,7 +389,7 @@ public class ChessBoard {
 	public void unPromote(int pos) {
 		final ChessPiece unpromotingPiece = getPiece(pos);
 		hashing.flipPiece(pos, unpromotingPiece);
-		bitboard.clearPiece(pos, false);
+		bitboard.clearPiece(pos);
 
 		//Backup a turn.
 		halfMove --;
@@ -420,7 +423,7 @@ public class ChessBoard {
 			}
 		}
 		//If the king is in check, it's checkmate, if not draw. 
-		return bitboard.kingInCheck(turn) ? WIN : DRAW;
+		return bitboard.isChecked() ? WIN : DRAW;
 	}
 	
 	/**
@@ -442,6 +445,7 @@ public class ChessBoard {
 	 */
 	public void next_turn() {
 		turn = flipColor(turn);
+		bitboard.updateCheck(turn);
 		hashing.toggleSideToMove();
 	}
 
@@ -510,7 +514,7 @@ public class ChessBoard {
 	 * @return A BoardStorage object containing enPassant, halfMove, and castling potential.
 	 */
 	public BoardStorage copyData() {
-		return new BoardStorage(getEnPassant(), halfMove, getCastlingPotential(getTurn()));
+		return new BoardStorage(getEnPassant(), halfMove, bitboard.isChecked(), getCastlingPotential(getTurn()));
 	}
 
 	/**

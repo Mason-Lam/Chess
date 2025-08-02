@@ -19,6 +19,10 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.IntConsumer;
 
+import Chess.Constants.DirectionConstants.Direction;
+import Chess.Constants.PieceConstants.PieceColor;
+import Chess.Constants.PieceConstants.PieceType;
+
 public class BitboardHelper {
     public static final long RANK1 = 0x00000000000000FFL;
     public static final long RANK2 = 0x000000000000FF00L;
@@ -363,15 +367,6 @@ public class BitboardHelper {
 
             if (count % 10000000 == 0) System.out.println(count);
         }
-        // for (long count = 5710000000L; count < Long.MAX_VALUE; count++) {
-        //     if (isMagic(blockerPermutations, masks[square], count)) {
-        //         System.out.println("Magic number found for " + type + " on square " + square + ": " + count);
-        //         return count;
-        //     }
-        //     if (count % 10000000 == 0) System.out.println(count);
-        // }
-        // System.out.println("No magic number found for " + type + " on square " + square);
-        // return 0;
     }
 
     private static boolean isMagic(long[] blockerPermutations, long mask, long magic) {
@@ -420,6 +415,115 @@ public class BitboardHelper {
         return attacks;
     }
 
+    public static long generateKnightBitboard(long validSquares, int knightSquare) {
+        final long knightMoves = KNIGHT_MOVES[knightSquare];
+        return knightMoves & validSquares;
+    }
+
+    public static long generateBishopBitboard(long validSquares, long occupiedSquares, int bishopSquare) {
+        final long bishopMask = BISHOP_MASKS[bishopSquare];
+        final long blockers = bishopMask & occupiedSquares;
+        final long bishopMagicNumber = BISHOP_MAGIC_NUMBERS[bishopSquare];
+        final long bishopMoves = BISHOP_MOVES[bishopSquare][(int) ((blockers * bishopMagicNumber) >>> (64 - Long.bitCount(bishopMask)))];
+        return bishopMoves & validSquares;
+    }
+
+    public static long generateRookBitboard(long validSquares, long occupiedSquares, int rookSquare) {
+        final long rookMask = ROOK_MASKS[rookSquare];
+        final long blockers = rookMask & occupiedSquares;
+        final long rookMagicNumber = ROOK_MAGIC_NUMBERS[rookSquare];
+        final long rookMoves = ROOK_MOVES[rookSquare][(int) ((blockers * rookMagicNumber) >>> (64 - Long.bitCount(rookMask)))];
+        return rookMoves & validSquares;
+    }
+
+    public static long generateKingBitboard(long validSquares, int kingSquare) {
+        final long kingMoves = KING_MOVES[kingSquare];
+        return kingMoves & validSquares;
+    }
+
+    public static long generatePawnBitboardAttacksLeft(PieceColor color, long pawns, long opposingPieces) {
+        final long filteredPawns = pawns & ~FILES[0]; // Exclude leftmost file to avoid overflow
+
+        final long leftAttacks = color == PieceColor.WHITE ? filteredPawns >>> UPLEFT.absoluteArrayValue : filteredPawns << DOWNLEFT.absoluteArrayValue;
+
+        return leftAttacks & opposingPieces;
+    }
+
+    public static long generatePawnBitboardAttacksRight(PieceColor color, long pawns, long opposingPieces) {
+        final long filteredPawns = pawns & ~FILES[7]; // Exclude rightmost file to avoid overflow
+
+        final long rightAttacks = color == PieceColor.WHITE ? filteredPawns >>> UPRIGHT.absoluteArrayValue : filteredPawns << DOWNRIGHT.rawArrayValue;
+
+        return rightAttacks & opposingPieces;
+    }
+
+    public static boolean sacrificesKing(PieceType pinType, long pinningPieces, long occupiedBitboard, long kingBitboard) {
+        if (pinType == PieceType.ROOK) {
+            while (pinningPieces != 0) {
+                final int attackerPos = Long.numberOfTrailingZeros(pinningPieces);
+                final long attackerMoves = generateRookBitboard(kingBitboard, occupiedBitboard, attackerPos);
+                if (attackerMoves != 0) return true;
+                pinningPieces &= pinningPieces - 1;
+            }
+        }
+        else {
+            while (pinningPieces != 0) {
+                final int attackerPos = Long.numberOfTrailingZeros(pinningPieces);
+                final long attackerMoves = generateBishopBitboard(kingBitboard, occupiedBitboard, attackerPos);
+                if (attackerMoves != 0) return true;
+                pinningPieces &= pinningPieces - 1;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isAttacked(PieceColor color, long[] pieces, long occupied, long validSquares) {
+        return getAttackerType(color, pieces, occupied, validSquares) != PieceType.EMPTY;
+    }
+
+    public static PieceType getAttackerType(PieceColor color, long[] pieces, long occupied, long validSquares) {
+        final PieceColor opposingColor = flipColor(color);
+
+        //Pawns
+        final long pawns = pieces[PieceType.PAWN.arrayIndex];
+        final long pawnAttacks = generatePawnBitboardAttacksLeft(opposingColor, pawns, validSquares) | generatePawnBitboardAttacksRight(opposingColor, pawns, validSquares);
+        if (pawnAttacks != 0) return PieceType.PAWN;
+
+        //Knights
+        long knights = pieces[PieceType.KNIGHT.arrayIndex];
+        while (knights != 0) {
+            final int knightPos = Long.numberOfTrailingZeros(knights);
+            final long knightMoves = generateKnightBitboard(validSquares, knightPos);
+            if (knightMoves != 0) return PieceType.KNIGHT;
+            knights &= knights - 1;
+        }
+
+        long king = pieces[PieceType.KING.arrayIndex];
+        while (king != 0) {
+            final int kingPos = Long.numberOfTrailingZeros(king);
+            final long kingMoves = generateKingBitboard(validSquares, kingPos);
+            if (kingMoves != 0) return PieceType.KING;
+            king &= king - 1;
+        }
+
+        long diagonalAttackers = pieces[PieceType.BISHOP.arrayIndex] | pieces[PieceType.QUEEN.arrayIndex];
+        while (diagonalAttackers != 0) {
+            final int attackerPos = Long.numberOfTrailingZeros(diagonalAttackers);
+            final long attackerMoves = generateBishopBitboard(validSquares, occupied, attackerPos);
+            if (attackerMoves != 0) return PieceType.BISHOP;
+            diagonalAttackers &= diagonalAttackers - 1;
+        }
+
+        long straightAttackers = pieces[PieceType.ROOK.arrayIndex] | pieces[PieceType.QUEEN.arrayIndex];
+        while (straightAttackers != 0) {
+            final int attackerPos = Long.numberOfTrailingZeros(straightAttackers);
+            final long attackerMoves = generateRookBitboard(validSquares, occupied, attackerPos);
+            if (attackerMoves != 0) return PieceType.ROOK;
+            straightAttackers &= straightAttackers - 1;
+        }
+
+        return PieceType.EMPTY;
+    }
 
 
     public static long setBit(long bitboard, int index) {
