@@ -172,6 +172,8 @@ public class ChessBoard {
 		}
 		halfMove = Integer.parseInt(splitFen[4]);
 		fullMove = Integer.parseInt(splitFen[5]);
+
+		bitboard.updateCheck(turn);
 	}
 
 	/**

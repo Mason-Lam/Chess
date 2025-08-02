@@ -477,6 +477,25 @@ public class BitboardHelper {
         return false;
     }
 
+    public static PieceType getPinType(long[] pieces, long occupied, long validSquares) {
+        long diagonalAttackers = pieces[PieceType.BISHOP.arrayIndex] | pieces[PieceType.QUEEN.arrayIndex];
+        while (diagonalAttackers != 0) {
+            final int attackerPos = Long.numberOfTrailingZeros(diagonalAttackers);
+            final long attackerMoves = generateBishopBitboard(validSquares, occupied, attackerPos);
+            if (attackerMoves != 0) return PieceType.BISHOP;
+            diagonalAttackers &= diagonalAttackers - 1;
+        }
+
+        long straightAttackers = pieces[PieceType.ROOK.arrayIndex] | pieces[PieceType.QUEEN.arrayIndex];
+        while (straightAttackers != 0) {
+            final int attackerPos = Long.numberOfTrailingZeros(straightAttackers);
+            final long attackerMoves = generateRookBitboard(validSquares, occupied, attackerPos);
+            if (attackerMoves != 0) return PieceType.ROOK;
+            straightAttackers &= straightAttackers - 1;
+        }
+        return PieceType.EMPTY;
+    }
+
     public static boolean isAttacked(PieceColor color, long[] pieces, long occupied, long validSquares) {
         return getAttackerType(color, pieces, occupied, validSquares) != PieceType.EMPTY;
     }

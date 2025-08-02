@@ -277,8 +277,9 @@ public class Bitboard {
         final long kingBitboard = PIECES[piece.getColor().arrayIndex][PieceType.KING.arrayIndex];
 
         final long occupiedBitboard = clearBit(OCCUPIED, piece.getPos());
+        final long[] opposingPieces = PIECES[flipColor(piece.getColor()).arrayIndex];
 
-        return getAttackerType(piece.getColor(), occupiedBitboard, kingBitboard);
+        return BitboardHelper.getPinType(opposingPieces, occupiedBitboard, kingBitboard);
     }
 
     private boolean isAttacked(PieceColor color, long occupiedBitboard, long validSquares) {
