@@ -415,6 +415,19 @@ public class BitboardHelper {
         return attacks;
     }
 
+    public static long generatePawnBitboard(PieceColor color, long validAttackSquares, long occupiedSquares, int pawnSquare, boolean attacksOnly) {
+        final long pawnAttacks = PAWN_ATTACKS[color.arrayIndex][pawnSquare] & validAttackSquares;
+        if (attacksOnly) return pawnAttacks;
+        long pawnMoves = PAWN_MOVES[color.arrayIndex][pawnSquare] & ~occupiedSquares;
+        if (getRow(pawnSquare) == PAWN_STARTING_ROW[color.arrayIndex]) {
+            final int numMoves = Long.bitCount(pawnMoves);
+            if (numMoves == 1) {
+                pawnMoves &= ~(color == PieceColor.WHITE ? RANK5 : RANK4);
+            }
+        }
+        return pawnAttacks | pawnMoves;
+    }
+
     public static long generateKnightBitboard(long validSquares, int knightSquare) {
         final long knightMoves = KNIGHT_MOVES[knightSquare];
         return knightMoves & validSquares;
@@ -441,6 +454,20 @@ public class BitboardHelper {
         return kingMoves & validSquares;
     }
 
+    public static long generatePawnBitboardOneSquare(PieceColor color, long pawns, long occupiedBitboard) {
+        if (color == PieceColor.WHITE) {
+            return pawns >>> UP.absoluteArrayValue & ~occupiedBitboard;
+        }
+        return pawns << DOWN.absoluteArrayValue & ~occupiedBitboard;
+    }
+
+    public static long generatePawnBitboardTwoSquares(PieceColor color, long pawnBitboardOneSquare, long occupiedBitboard) {
+        final long validPawns = pawnBitboardOneSquare & (color == PieceColor.WHITE ? RANK6 : RANK3);
+
+        final long twoSpacesAhead = (color == PieceColor.WHITE ? validPawns >>> UP.absoluteArrayValue : validPawns << DOWN.absoluteArrayValue);
+        return twoSpacesAhead & ~occupiedBitboard;
+    }
+
     public static long generatePawnBitboardAttacksLeft(PieceColor color, long pawns, long opposingPieces) {
         final long filteredPawns = pawns & ~FILES[0]; // Exclude leftmost file to avoid overflow
 
@@ -455,6 +482,14 @@ public class BitboardHelper {
         final long rightAttacks = color == PieceColor.WHITE ? filteredPawns >>> UPRIGHT.absoluteArrayValue : filteredPawns << DOWNRIGHT.rawArrayValue;
 
         return rightAttacks & opposingPieces;
+    }
+
+    public static long generatePawnBitboardEnPassant(PieceColor color, long pawns, int enPassantSquare) {
+        if (enPassantSquare == EMPTY) return 0L;
+        final long epBitBoard = squareToBitboard(enPassantSquare);
+        final long leftPawn = (epBitBoard & ~FILES[0]) >>> LEFT.absoluteArrayValue;
+        final long rightPawn = (epBitBoard & ~FILES[7]) << RIGHT.absoluteArrayValue;
+        return (leftPawn | rightPawn) & pawns;
     }
 
     public static boolean sacrificesKing(PieceType pinType, long pinningPieces, long occupiedBitboard, long kingBitboard) {

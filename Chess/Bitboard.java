@@ -126,8 +126,10 @@ public class Bitboard {
     }
 
     private void generatePawnMoves(Consumer<Move> moves, ChessPiece piece, PieceType pinType, boolean attacksOnly) {
-        final long pawnBitboard = generatePawnBitboard(piece.getColor(), piece.getPos(), attacksOnly);
+        final long validAttackSquares = ALL_PIECES[flipColor(piece.getColor()).arrayIndex];
+        final long pawnBitboard = BitboardHelper.generatePawnBitboard(piece.getColor(), validAttackSquares, OCCUPIED, piece.getPos(), attacksOnly);
         addMoves(moves, piece, pinType, pawnBitboard);
+
         if (enPassantSquare != EMPTY) {
             final long pawnAttacks = PAWN_ATTACKS[piece.getColor().arrayIndex][piece.getPos()];
             final int enPassantMove = enPassantSquareToMove(piece.getColor(), enPassantSquare);
@@ -139,83 +141,39 @@ public class Bitboard {
     }
 
     private void generateKnightMoves(Consumer<Move> moves, ChessPiece piece, PieceType pinType, boolean attacksOnly) {
-        final long knightBitboard = generateKnightBitboard(piece.getColor(), piece.getPos(), attacksOnly);
+        final long validSquares = ALL_PIECES[flipColor(piece.getColor()).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
+        final long knightBitboard = BitboardHelper.generateKnightBitboard(validSquares, piece.getPos());
         addMoves(moves, piece, pinType, knightBitboard);
     }
 
     private void generateBishopMoves(Consumer<Move> moves, ChessPiece piece, PieceType pinType, boolean attacksOnly) {
-        final long bishopBitboard = generateBishopBitboard(piece.getColor(), piece.getPos(), attacksOnly);
+        final long validSquares = ALL_PIECES[flipColor(piece.getColor()).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
+        final long bishopBitboard = BitboardHelper.generateBishopBitboard(validSquares, OCCUPIED, piece.getPos());
         addMoves(moves, piece, pinType, bishopBitboard);
     }
 
     private void generateRookMoves(Consumer<Move> moves, ChessPiece piece, PieceType pinType, boolean attacksOnly) {
-        final long rookBitboard = generateRookBitboard(piece.getColor(), piece.getPos(), attacksOnly);
+        final long validSquares = ALL_PIECES[flipColor(piece.getColor()).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
+        final long rookBitboard = BitboardHelper.generateRookBitboard(validSquares, OCCUPIED, piece.getPos());
         addMoves(moves, piece, pinType, rookBitboard);
     }
 
     private void generateQueenMoves(Consumer<Move> moves, ChessPiece piece, PieceType pinType, boolean attacksOnly) {
-        final long queenBitboard = generateQueenBitboard(piece.getColor(), piece.getPos(), attacksOnly);
+        final long validSquares = ALL_PIECES[flipColor(piece.getColor()).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
+        final long queenBitboard = BitboardHelper.generateBishopBitboard(validSquares, OCCUPIED, piece.getPos()) | BitboardHelper.generateRookBitboard(validSquares, OCCUPIED, piece.getPos());
         addMoves(moves, piece, pinType, queenBitboard);
     }
 
     private void generateKingMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
-        final long kingBitboard = generateKingBitboard(piece.getColor(), piece.getPos(), attacksOnly);
+        final long validSquares = ALL_PIECES[flipColor(piece.getColor()).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
+        final long kingBitboard = BitboardHelper.generateKingBitboard(validSquares, piece.getPos());
         applyFunctionByBitIndices(kingBitboard, (int index) -> {
             final Move move = new Move(piece.getPos(), index);
             if (isLegalKingMove(move, piece.getColor())) moves.accept(move);
         });
+        if (attacksOnly) return;
         if (canCastle(piece, QUEENSIDE)) moves.accept(new Move(piece.getPos(), KING_CASTLE_MOVES[piece.getColor().arrayIndex][QUEENSIDE], true));
         if (canCastle(piece, KINGSIDE)) moves.accept(new Move(piece.getPos(), KING_CASTLE_MOVES[piece.getColor().arrayIndex][KINGSIDE], true));
-    }
-
-    public long generatePawnBitboard(PieceColor color, int square, boolean attacksOnly) {
-        final long validAttackSquares = ALL_PIECES[flipColor(color).arrayIndex];
-        final long pawnAttacks = PAWN_ATTACKS[color.arrayIndex][square] & validAttackSquares;
-        if (attacksOnly) return pawnAttacks;
-        long pawnMoves = PAWN_MOVES[color.arrayIndex][square] & ~OCCUPIED;
-        if (getRow(square) == PAWN_STARTING_ROW[color.arrayIndex]) {
-            final int numMoves = Long.bitCount(pawnMoves);
-            if (numMoves == 1) {
-                pawnMoves &= ~(color == PieceColor.WHITE ? RANK5 : RANK4);
-            }
-        }
-        return pawnAttacks | pawnMoves;
-    }
-
-    public long generateKnightBitboard(PieceColor color, int square, boolean attacksOnly) {
-        final long knightMoves = KNIGHT_MOVES[square];
-        final long viableSquares = ALL_PIECES[flipColor(color).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
-        return knightMoves & viableSquares;
-    }
-
-    public long generateBishopBitboard(PieceColor color, int square, boolean attacksOnly) {
-        final long bishopMask = BISHOP_MASKS[square];
-        final long blockers = bishopMask & OCCUPIED;
-        final long bishopMagicNumber = BISHOP_MAGIC_NUMBERS[square];
-        final long bishopMoves = BISHOP_MOVES[square][(int) ((blockers * bishopMagicNumber) >>> (64 - Long.bitCount(bishopMask)))];
-        final long viableSquares = ALL_PIECES[flipColor(color).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
-        return bishopMoves & viableSquares;
-    }
-
-    public long generateRookBitboard(PieceColor color, int square, boolean attacksOnly) {
-        final long rookMask = ROOK_MASKS[square];
-        final long blockers = rookMask & OCCUPIED;
-        final long rookMagicNumber = ROOK_MAGIC_NUMBERS[square];
-        final long rookMoves = ROOK_MOVES[square][(int) ((blockers * rookMagicNumber) >>> (64 - Long.bitCount(rookMask)))];
-        final long viableSquares = ALL_PIECES[flipColor(color).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
-        return rookMoves & viableSquares;
-    }
-
-    public long generateQueenBitboard(PieceColor color, int square, boolean attacksOnly) {
-        return generateBishopBitboard(color, square, attacksOnly) | generateRookBitboard(color, square, attacksOnly);
-    }
-
-    public long generateKingBitboard(PieceColor color, int square, boolean attacksOnly) {
-        final long possibleKingMoves = KING_MOVES[square];
-        final long viableSquares = ALL_PIECES[flipColor(color).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
-        // final long kingMoves = filterIllegalKingMoves(color, possibleKingMoves & viableSquares);
-        // return kingMoves;
-        return possibleKingMoves & viableSquares;
     }
 
     private void addMoves(Consumer<Move> moves, ChessPiece piece, PieceType pinType, long bitboard) {
@@ -236,8 +194,6 @@ public class Bitboard {
 
         final long attackBitboard = KING_CASTLE_ATTACK_SQUARES[piece.getColor().arrayIndex][side];
         if (isAttacked(piece.getColor(), OCCUPIED, attackBitboard)) return false;
-
-        // if ((KING_CASTLE_ATTACK_SQUARES[piece.getColor().arrayIndex][side] & ATTACKS[flipColor(piece.getColor()).arrayIndex]) != 0) return false;
 
         return true;
     }
@@ -292,7 +248,7 @@ public class Bitboard {
         return BitboardHelper.getAttackerType(color, opposingPieces, occupiedBitboard, validSquares);
     }
 
-    public static int[][] pawnIndexOffsets = {
+    private static int[][] pawnIndexOffsets = {
         {
             UP.rawArrayValue,
             UP.rawArrayValue * 2,
@@ -310,11 +266,11 @@ public class Bitboard {
     public void generateAllPawnMoves(ArrayList<Move> moves, PieceColor color) {
         final long pawns = PIECES[color.arrayIndex][PieceType.PAWN.arrayIndex];
         final long opposingPieces = ALL_PIECES[flipColor(color).arrayIndex];
-        final long pawnBitboardOneSquare = generatePawnBitboardOneSquare(color);
-        final long pawnBitboardTwoSquares = generatePawnBitboardTwoSquares(color, pawnBitboardOneSquare);
+        final long pawnBitboardOneSquare = generatePawnBitboardOneSquare(color, pawns, OCCUPIED);
+        final long pawnBitboardTwoSquares = generatePawnBitboardTwoSquares(color, pawnBitboardOneSquare, OCCUPIED);
         final long pawnBitboardAttacksLeft = generatePawnBitboardAttacksLeft(color, pawns, opposingPieces);
         final long pawnBitboardAttacksRight = generatePawnBitboardAttacksRight(color, pawns, opposingPieces);
-        final long pawnBitboardEnPassant = generatePawnBitboardEnPassant(color);
+        final long pawnBitboardEnPassant = generatePawnBitboardEnPassant(color, pawns, enPassantSquare);
 
         final int[] pawnOffsets = pawnIndexOffsets[color.arrayIndex];
 
@@ -323,37 +279,6 @@ public class Bitboard {
         applyFunctionByBitIndices(pawnBitboardAttacksLeft, (int index) -> moves.add(new Move(index + pawnOffsets[2], index)));
         applyFunctionByBitIndices(pawnBitboardAttacksRight, (int index) -> moves.add(new Move(index + pawnOffsets[3], index)));
         applyFunctionByBitIndices(pawnBitboardEnPassant, (int index) -> moves.add(new Move(index, enPassantSquare)));
-    }
-
-    private long generatePawnBitboardOneSquare(PieceColor color) {
-        final long pawns = PIECES[color.arrayIndex][PieceType.PAWN.arrayIndex];
-        if (color == PieceColor.WHITE) {
-            return pawns >>> UP.absoluteArrayValue & ~OCCUPIED;
-        }
-        return pawns << DOWN.absoluteArrayValue & ~OCCUPIED;
-    }
-
-    private long generatePawnBitboardTwoSquares(PieceColor color, long pawnBitboardOneSquare) {
-        final long pawns = PIECES[color.arrayIndex][PieceType.PAWN.arrayIndex];
-        final long startingRow = RANKS[PAWN_STARTING_ROW[color.arrayIndex]];
-
-        final long pawnsOnStartingRow = pawns & startingRow;
-
-        final long pawnsThatCanMoveOneSquare = pawns & (color == PieceColor.WHITE ? pawnBitboardOneSquare << DOWN.absoluteArrayValue : pawnBitboardOneSquare >>> UP.absoluteArrayValue);
-        final long potentialPawns = (pawnsThatCanMoveOneSquare & pawnsOnStartingRow);
-
-        final long twoSpacesAhead = color == PieceColor.WHITE ? potentialPawns >>> UP.absoluteArrayValue * 2 : potentialPawns << DOWN.absoluteArrayValue * 2;
-        return twoSpacesAhead & ~OCCUPIED;
-    }
-
-
-    private long generatePawnBitboardEnPassant(PieceColor color) {
-        if (enPassantSquare == EMPTY) return 0L;
-        final long epBitBoard = 1L << enPassantSquare;
-        final long leftPawn = (epBitBoard & ~FILES[0]) >>> LEFT.absoluteArrayValue;
-        final long rightPawn = (epBitBoard & ~FILES[7]) << RIGHT.absoluteArrayValue;
-        final long pawns = PIECES[color.arrayIndex][PieceType.PAWN.arrayIndex];
-        return (leftPawn | rightPawn) & pawns;
     }
 
     public void setPiece(int index, ChessPiece piece) {
