@@ -33,6 +33,8 @@ public class Bitboard {
 
     private boolean isChecked;
 
+    private final PieceType[] pins;
+
     public Bitboard(String fen) {
         PIECES = new long[2][6];
         ALL_PIECES = new long[2];
@@ -49,6 +51,8 @@ public class Bitboard {
         for (int i = 0; i < 64; i ++) {
             board[i] = ChessPiece.empty();
         }
+
+        pins = new PieceType[64];
 
         initializeFromFen(fen);
     }
@@ -91,6 +95,28 @@ public class Bitboard {
 		}
     }
 
+    public void generateAllMoves(ArrayList<Move> moves, PieceColor color, boolean attacksOnly) {
+        generateAllMoves((Move move) -> moves.add(move), color, attacksOnly);
+    }
+
+    public void generateAllMoves(Consumer<Move> moves, PieceColor color, boolean attacksOnly) {
+        final long[] movingPieces = PIECES[color.arrayIndex];
+        for (int index = 0; index < movingPieces.length; index++) {
+            final long bitboard = movingPieces[index];
+            if (bitboard == 0L) continue; //No pieces of this type.
+            try {
+            applyFunctionByBitIndices(bitboard, (int pieceIndex) -> generatePieceMoves(moves, pieceIndex, attacksOnly));
+            } catch (Exception e) {
+                System.out.println(index);
+                displayBitboard(OCCUPIED);
+                displayBitboard(ALL_PIECES[0]);
+                displayBitboard(ALL_PIECES[1]);
+                displayBitboard(bitboard);
+                throw new IllegalArgumentException();
+            }
+        }
+    }
+
     public void generatePieceMoves(List<Move> moves, int index, boolean attacksOnly) {
         generatePieceMoves((Move move) -> moves.add(move), index, attacksOnly);
     }
@@ -102,66 +128,64 @@ public class Bitboard {
             return;
         }
 
-        final PieceType pinType = !isChecked ? getPinType(piece) : PieceType.EMPTY;
-
 		switch (piece.getType()) {
 			case PAWN: 
-				generatePawnMoves(moves, piece, pinType, attacksOnly);
+				generatePawnMoves(moves, piece, attacksOnly);
 				break;
 			case KNIGHT: 
-				generateKnightMoves(moves, piece, pinType, attacksOnly);
+				generateKnightMoves(moves, piece, attacksOnly);
 				break;
             case BISHOP:
-                generateBishopMoves(moves, piece, pinType, attacksOnly);
+                generateBishopMoves(moves, piece, attacksOnly);
                 break;
             case ROOK:
-                generateRookMoves(moves, piece, pinType, attacksOnly);
+                generateRookMoves(moves, piece, attacksOnly);
                 break;
             case QUEEN:
-                generateQueenMoves(moves, piece, pinType, attacksOnly);
+                generateQueenMoves(moves, piece, attacksOnly);
                 break;
             default:
                 throw new IllegalArgumentException("Illegal empty square fed to function.");
 		}
     }
 
-    private void generatePawnMoves(Consumer<Move> moves, ChessPiece piece, PieceType pinType, boolean attacksOnly) {
+    private void generatePawnMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
         final long validAttackSquares = ALL_PIECES[flipColor(piece.getColor()).arrayIndex];
         final long pawnBitboard = BitboardHelper.generatePawnBitboard(piece.getColor(), validAttackSquares, OCCUPIED, piece.getPos(), attacksOnly);
-        addMoves(moves, piece, pinType, pawnBitboard);
+        addMoves(moves, piece, pawnBitboard);
 
         if (enPassantSquare != EMPTY) {
             final long pawnAttacks = PAWN_ATTACKS[piece.getColor().arrayIndex][piece.getPos()];
             final int enPassantMove = enPassantSquareToMove(piece.getColor(), enPassantSquare);
             if ((pawnAttacks & squareToBitboard(enPassantMove)) != 0) {
                 final Move move = new Move(piece.getPos(), enPassantMove, true);
-                if (isLegalMove(move, piece.getColor(), pinType, true)) moves.accept(move);
+                if (isLegalMove(move, piece.getColor(), true)) moves.accept(move);
             }
         }
     }
 
-    private void generateKnightMoves(Consumer<Move> moves, ChessPiece piece, PieceType pinType, boolean attacksOnly) {
+    private void generateKnightMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
         final long validSquares = ALL_PIECES[flipColor(piece.getColor()).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
         final long knightBitboard = BitboardHelper.generateKnightBitboard(validSquares, piece.getPos());
-        addMoves(moves, piece, pinType, knightBitboard);
+        addMoves(moves, piece, knightBitboard);
     }
 
-    private void generateBishopMoves(Consumer<Move> moves, ChessPiece piece, PieceType pinType, boolean attacksOnly) {
+    private void generateBishopMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
         final long validSquares = ALL_PIECES[flipColor(piece.getColor()).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
         final long bishopBitboard = BitboardHelper.generateBishopBitboard(validSquares, OCCUPIED, piece.getPos());
-        addMoves(moves, piece, pinType, bishopBitboard);
+        addMoves(moves, piece, bishopBitboard);
     }
 
-    private void generateRookMoves(Consumer<Move> moves, ChessPiece piece, PieceType pinType, boolean attacksOnly) {
+    private void generateRookMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
         final long validSquares = ALL_PIECES[flipColor(piece.getColor()).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
         final long rookBitboard = BitboardHelper.generateRookBitboard(validSquares, OCCUPIED, piece.getPos());
-        addMoves(moves, piece, pinType, rookBitboard);
+        addMoves(moves, piece, rookBitboard);
     }
 
-    private void generateQueenMoves(Consumer<Move> moves, ChessPiece piece, PieceType pinType, boolean attacksOnly) {
+    private void generateQueenMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
         final long validSquares = ALL_PIECES[flipColor(piece.getColor()).arrayIndex] | (!attacksOnly ? ~OCCUPIED : 0L);
         final long queenBitboard = BitboardHelper.generateBishopBitboard(validSquares, OCCUPIED, piece.getPos()) | BitboardHelper.generateRookBitboard(validSquares, OCCUPIED, piece.getPos());
-        addMoves(moves, piece, pinType, queenBitboard);
+        addMoves(moves, piece, queenBitboard);
     }
 
     private void generateKingMoves(Consumer<Move> moves, ChessPiece piece, boolean attacksOnly) {
@@ -176,12 +200,12 @@ public class Bitboard {
         if (canCastle(piece, KINGSIDE)) moves.accept(new Move(piece.getPos(), KING_CASTLE_MOVES[piece.getColor().arrayIndex][KINGSIDE], true));
     }
 
-    private void addMoves(Consumer<Move> moves, ChessPiece piece, PieceType pinType, long bitboard) {
-        applyFunctionByBitIndices(bitboard, (int index) -> addMove(moves, new Move(piece.getPos(), index), piece.getColor(), pinType));
+    private void addMoves(Consumer<Move> moves, ChessPiece piece, long bitboard) {
+        applyFunctionByBitIndices(bitboard, (int index) -> addMove(moves, new Move(piece.getPos(), index), piece.getColor()));
     }
 
-    private void addMove(Consumer<Move> moves, Move move, PieceColor color, PieceType pinType) {
-        if (isLegalMove(move, color, pinType, isChecked)) moves.accept(move);
+    private void addMove(Consumer<Move> moves, Move move, PieceColor color) {
+        if (isLegalMove(move, color, isChecked)) moves.accept(move);
     }
 
     private boolean canCastle(ChessPiece piece, int side) {
@@ -208,8 +232,16 @@ public class Bitboard {
         return !BitboardHelper.isAttacked(color, updatedAttackingPieces, occupiedBitboard, squareToBitboard(move.getFinish()));
     }
 
-    private boolean isLegalMove(Move move, PieceColor color, PieceType pinType, boolean isChecked) {
-        if (!isChecked && pinType == PieceType.EMPTY) return true;
+    private boolean isLegalMove(Move move, PieceColor color, boolean isChecked) {
+        PieceType pinType = pins[move.getStart()];
+        if (!isChecked) {
+            if (pinType == null) {
+                pinType = getPinType(board[move.getStart()]);
+                pins[move.getStart()] = pinType;
+            }
+            if (pinType == PieceType.EMPTY) return true;
+        }
+        
         final long kingBitboard = PIECES[color.arrayIndex][PieceType.KING.arrayIndex];
         long occupiedBitboard = setBit(clearBit(OCCUPIED, move.getStart()), move.getFinish());
         if (move.isSpecial()) occupiedBitboard = clearBit(occupiedBitboard, enPassantSquare);
@@ -306,6 +338,10 @@ public class Bitboard {
         pieces[piece.getColor().arrayIndex].remove(piece);
 
         board[index] = ChessPiece.empty();
+    }
+
+    public void resetPins() {
+        Arrays.fill(pins, null);
     }
 
     public void updateCheck(PieceColor color) {

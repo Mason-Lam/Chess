@@ -41,8 +41,14 @@ public class ChessGame {
 		winner = false;
 		click1 = -1;		//sets var as no clicks
 
+		// Tests.test10.runTest(true);
 		board = new ChessBoard();	//Creates a new ChessBoard object
 		this.computer = board.getComputer();
+
+		// board.makeMove(new Move(11, 27));
+		// board.makeMove(new Move(26, 18));
+		// board.makeMove(new Move(31, 15));
+		// board.makeMove(new Move(18, 10));
 
 		Tests.timeCheckBoard(board, 6);
 		// //Current (3, 0), (4, 16), (5, 316), (6, 8018)

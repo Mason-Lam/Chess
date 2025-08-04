@@ -34,7 +34,7 @@ public class Computer {
 	 * @return The total number of possible moves.
 	 */
 	public int totalMoves(final int depth) {
-		return totalMoves(depth, false);
+		return totalMoves(depth, true);
 	}
 
 	/**
@@ -51,38 +51,29 @@ public class Computer {
 			}
 		}
 
-		int count = 0;
-		final PieceSet pieces = board.getPieces(board.getTurn());
-
 		//Base case.
 		if (depth == 1) {
-			for (final ChessPiece piece : pieces) {
-				if (piece.isPawn()) {
-					final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[piece.getType().arrayIndex]);
-					board.getBitboard().generatePieceMoves(moves, piece.getPos(), false);
-					if (moves.size() > 0 && getRow(moves.get(0).getFinish()) == PROMOTION_ROW[board.getTurn().arrayIndex]){
-						count += moves.size() * 4;
-						continue;
+			int[] moveCounter = new int[1];
+			board.getBitboard().generateAllMoves((Move move) ->  {
+				if (board.getPiece(move.getStart()).isPawn()) {
+					if (getRow(move.getFinish()) == PROMOTION_ROW[board.getTurn().arrayIndex]) {
+						moveCounter[0] += 4;
+						return;
 					}
-					count += moves.size();
-					continue;
 				}
-				int[] moveCounter = new int[1];
-				board.getBitboard().generatePieceMoves((Move move) -> moveCounter[0] ++, piece.getPos(), false);
-				count += moveCounter[0];
-				continue;
-			}
-			if (useZobristHashing) table.store(board.hash(), 1, count, 0, 0);
-			return count;
+				moveCounter[0] ++;
+			}, board.getTurn(), false);
+
+			if (useZobristHashing) table.store(board.hash(), 1, moveCounter[0], 0, 0);
+			return moveCounter[0];
 		}
 
 		//Recursive case.
+		int count = 0;
+
 		final BoardStorage store = board.copyData();
 		final ArrayList<Move> moves = new ArrayList<Move>(MAX_MOVES[6]);
-		for (final ChessPiece piece : pieces) {
-			board.getBitboard().generatePieceMoves(moves, piece.getPos(), false);
-			// piece.pieceMoves(moves);
-		}
+		board.getBitboard().generateAllMoves(moves, board.getTurn(), false);
 
 		for (final Move move : moves) {
 			final ChessPiece capturedPiece = board.isEnPassant(move) ? board.getPiece(board.getEnPassant()) : board.getPiece(move.getFinish());

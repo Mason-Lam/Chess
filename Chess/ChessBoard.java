@@ -220,11 +220,13 @@ public class ChessBoard {
 		bitboard.setEnPassant(newEnPassant);
 		hashing.setEnPassantFile(newEnPassant != EMPTY ? getColumn(newEnPassant) : newEnPassant);
 
+		bitboard.resetPins();
+
 		//Move on to the next turn if a promotion isn't happenning.
 		if (!is_promote()) {
 			halfMove ++;
 			if (turn == PieceColor.BLACK) fullMove ++;
-			next_turn();
+			next_turn(true);
 		}
 	}
 
@@ -291,14 +293,14 @@ public class ChessBoard {
 	 * @param store Data that's lost when a move is made: halfmove, enPassant, and castling.
 	 */
 	public void undoMove(Move move, ChessPiece capturedPiece, BoardStorage store) {
+		bitboard.setCheck(store.isChecked);
 
 		//Back up a turn if a promotion isn't happenning.
 		if (!is_promote()) {
 			halfMove = store.halfMove;
 			if (turn == PieceColor.WHITE) fullMove --;
-			next_turn();
+			next_turn(false);
 		}
-		bitboard.setCheck(store.isChecked);
 
 		//Reset castling data and enPassant data.
 		bitboard.setCastlingRights(turn, store.getCastling());
@@ -360,7 +362,6 @@ public class ChessBoard {
 
 		//Add the piece to the board and update the tracking variables.
 		bitboard.setPiece(pos, piece);
-		piece.setPos(pos);
 	}
 
 	/**
@@ -372,13 +373,14 @@ public class ChessBoard {
 		
 		//Add the promoted piece to the board.
 		hashing.flipPiece(promotingPawn, promotingPiece);
+		bitboard.clearPiece(promotingPawn);
 		promotingPiece.setType(type);
 		updatePosition(promotingPiece, promotingPawn, false);
 
 		//Next turn.
 		halfMove ++;
 		if (turn == PieceColor.BLACK) fullMove ++;
-		next_turn();
+		next_turn(true);
 
 		promotingPawn = EMPTY;
 
@@ -393,14 +395,14 @@ public class ChessBoard {
 		hashing.flipPiece(pos, unpromotingPiece);
 		bitboard.clearPiece(pos);
 
-		//Backup a turn.
-		halfMove --;
-		if (turn == PieceColor.WHITE) fullMove --;
-		next_turn();
-
 		//Reset the piece to a pawn.
 		unpromotingPiece.setType(PieceType.PAWN);
 		updatePosition(unpromotingPiece, pos, false);
+
+		//Backup a turn.
+		halfMove --;
+		if (turn == PieceColor.WHITE) fullMove --;
+		next_turn(true);
 
 		promotingPawn = pos;
 	}
@@ -445,9 +447,9 @@ public class ChessBoard {
 	/**
 	 * Moves on to the next turn.
 	 */
-	public void next_turn() {
+	public void next_turn(boolean shouldUpdateChecks) {
 		turn = flipColor(turn);
-		bitboard.updateCheck(turn);
+		if (shouldUpdateChecks) bitboard.updateCheck(turn);
 		hashing.toggleSideToMove();
 	}
 
