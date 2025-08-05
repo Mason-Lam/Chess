@@ -53,7 +53,7 @@ public class Computer {
 
 		//Base case.
 		if (depth == 1) {
-			int[] moveCounter = new int[1];
+			final int[] moveCounter = new int[1];
 			board.getBitboard().generateAllMoves((Move move) ->  {
 				if (board.getPiece(move.getStart()).isPawn()) {
 					if (getRow(move.getFinish()) == PROMOTION_ROW[board.getTurn().arrayIndex]) {

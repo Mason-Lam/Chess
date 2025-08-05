@@ -37,6 +37,8 @@ public class BitboardHelper {
         RANK1, RANK2, RANK3, RANK4, RANK5, RANK6, RANK7, RANK8
     };
 
+    public static final long[] RANKS_BOARD = new long[64];
+
     public static final long FILE_A = 0x0101010101010101L;
     public static final long FILE_B = 0x0202020202020202L;
     public static final long FILE_C = 0x0404040404040404L;
@@ -49,6 +51,8 @@ public class BitboardHelper {
     public static final long[] FILES = {
         FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H
     };
+
+    public static final long[] FILES_BOARD = new long[64];
 
     public static final long DOWN_DIAGONAL_1 = 0x0000000000000080L;
     public static final long DOWN_DIAGONAL_2 = 0x0000000000008040L;
@@ -119,7 +123,7 @@ public class BitboardHelper {
     public static final long[][] ROOK_MOVES = new long[64][];
 
     public static void initializeBitBoard() {
-        initDiagonals();
+        initPositionBoards();
         
         readMagicNumberFile();
 
@@ -150,13 +154,21 @@ public class BitboardHelper {
 
     }
 
-    private static void initDiagonals() {
+    private static void initPositionBoards() {
         for (final long diagonal : DOWN_DIAGONALS) {
             applyFunctionByBitIndices(diagonal, (int index) -> DOWN_DIAGONALS_BOARD[index] = diagonal);
         }
 
         for (final long diagonal : UP_DIAGONALS) {
             applyFunctionByBitIndices(diagonal, (int index) -> UP_DIAGONALS_BOARD[index] = diagonal);
+        }
+
+        for (final long rank : RANKS) {
+            applyFunctionByBitIndices(rank, (int index) -> RANKS_BOARD[index] = rank);
+        }
+
+        for (final long file : FILES) {
+            applyFunctionByBitIndices(file, (int index) -> FILES_BOARD[index] = file);
         }
     }
 
@@ -512,22 +524,28 @@ public class BitboardHelper {
         return false;
     }
 
-    public static PieceType getPinType(long[] pieces, long occupied, long validSquares) {
-        long diagonalAttackers = pieces[PieceType.BISHOP.arrayIndex] | pieces[PieceType.QUEEN.arrayIndex];
-        while (diagonalAttackers != 0) {
-            final int attackerPos = Long.numberOfTrailingZeros(diagonalAttackers);
-            final long attackerMoves = generateBishopBitboard(validSquares, occupied, attackerPos);
-            if (attackerMoves != 0) return PieceType.BISHOP;
-            diagonalAttackers &= diagonalAttackers - 1;
+    public static PieceType getPinType(long[] pieces, long occupied, long validSquares, int piecePos) {
+
+        if (onDiagonal(validSquares, piecePos)) {
+            long diagonalAttackers = pieces[PieceType.BISHOP.arrayIndex] | pieces[PieceType.QUEEN.arrayIndex];
+            while (diagonalAttackers != 0) {
+                final int attackerPos = Long.numberOfTrailingZeros(diagonalAttackers);
+                final long attackerMoves = generateBishopBitboard(validSquares, occupied, attackerPos);
+                if (attackerMoves != 0) return PieceType.BISHOP;
+                diagonalAttackers &= diagonalAttackers - 1;
+            }
         }
 
-        long straightAttackers = pieces[PieceType.ROOK.arrayIndex] | pieces[PieceType.QUEEN.arrayIndex];
-        while (straightAttackers != 0) {
-            final int attackerPos = Long.numberOfTrailingZeros(straightAttackers);
-            final long attackerMoves = generateRookBitboard(validSquares, occupied, attackerPos);
-            if (attackerMoves != 0) return PieceType.ROOK;
-            straightAttackers &= straightAttackers - 1;
+        if (onLine(validSquares, piecePos)) {
+            long straightAttackers = pieces[PieceType.ROOK.arrayIndex] | pieces[PieceType.QUEEN.arrayIndex];
+            while (straightAttackers != 0) {
+                final int attackerPos = Long.numberOfTrailingZeros(straightAttackers);
+                final long attackerMoves = generateRookBitboard(validSquares, occupied, attackerPos);
+                if (attackerMoves != 0) return PieceType.ROOK;
+                straightAttackers &= straightAttackers - 1;
+            }
         }
+
         return PieceType.EMPTY;
     }
 
@@ -559,7 +577,7 @@ public class BitboardHelper {
             if (kingMoves != 0) return PieceType.KING;
             king &= king - 1;
         }
-
+ 
         long diagonalAttackers = pieces[PieceType.BISHOP.arrayIndex] | pieces[PieceType.QUEEN.arrayIndex];
         while (diagonalAttackers != 0) {
             final int attackerPos = Long.numberOfTrailingZeros(diagonalAttackers);
@@ -577,6 +595,38 @@ public class BitboardHelper {
         }
 
         return PieceType.EMPTY;
+    }
+
+    public static boolean onDiagonal(int square1, int square2) {
+        return DOWN_DIAGONALS_BOARD[square1] == DOWN_DIAGONALS_BOARD[square2] || UP_DIAGONALS_BOARD[square1] == UP_DIAGONALS_BOARD[square2];
+    }
+
+    public static boolean onDiagonal(long bitboard, int index) {
+        return ((DOWN_DIAGONALS_BOARD[index] | UP_DIAGONALS_BOARD[index]) & bitboard) != 0;
+    }
+
+    public static boolean onLine(int square1, int square2) {
+        return onFile(square1, square2) || onRank(square1, square2);
+    }
+
+    public static boolean onLine(long bitboard, int index) {
+        return onFile(bitboard, index) || onRank(bitboard, index);
+    }
+
+    public static boolean onFile(int square1, int square2) {
+        return FILES_BOARD[square1] == FILES_BOARD[square2];
+    }
+
+    public static boolean onFile(long bitboard, int index) {
+        return (FILES_BOARD[index] & bitboard) != 0;
+    }
+
+    public static boolean onRank(int square1, int square2) {
+        return RANKS_BOARD[square1] == RANKS_BOARD[square2];
+    }
+
+    public static boolean onRank(long bitboard, int index) {
+        return (RANKS_BOARD[index] & bitboard) != 0;
     }
 
 

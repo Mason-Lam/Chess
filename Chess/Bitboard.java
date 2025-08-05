@@ -54,7 +54,6 @@ public class Bitboard {
 
     public void initializeFromFen(String fen) {
         int pos = 0;
-        final int[] pieceIDs = new int[] {0, 0};	//Piece IDs to be used for discount Hash map.
 		//Iterate over each character in the FEN String.
 		for (int index = 0; index < fen.length(); index++) {
             if (pos < 64) {
@@ -253,7 +252,7 @@ public class Bitboard {
         final long occupiedBitboard = clearBit(OCCUPIED, piece.getPos());
         final long[] opposingPieces = PIECES[flipColor(piece.getColor()).arrayIndex];
 
-        return BitboardHelper.getPinType(opposingPieces, occupiedBitboard, kingBitboard);
+        return BitboardHelper.getPinType(opposingPieces, occupiedBitboard, kingBitboard, piece.getPos());
     }
 
     private boolean isAttacked(PieceColor color, long occupiedBitboard, long validSquares) {
