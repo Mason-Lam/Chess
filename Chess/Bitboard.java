@@ -100,20 +100,12 @@ public class Bitboard {
     }
 
     public void generateAllMoves(Consumer<Move> moves, PieceColor color, boolean attacksOnly) {
+        generateAllPawnMoves(moves, color, attacksOnly);
         final long[] movingPieces = PIECES[color.arrayIndex];
-        for (int index = 0; index < movingPieces.length; index++) {
+        for (int index = 1; index < movingPieces.length; index++) {
             final long bitboard = movingPieces[index];
             if (bitboard == 0L) continue; //No pieces of this type.
-            try {
             applyFunctionByBitIndices(bitboard, (int pieceIndex) -> generatePieceMoves(moves, pieceIndex, attacksOnly));
-            } catch (Exception e) {
-                System.out.println(index);
-                displayBitboard(OCCUPIED);
-                displayBitboard(ALL_PIECES[0]);
-                displayBitboard(ALL_PIECES[1]);
-                displayBitboard(bitboard);
-                throw new IllegalArgumentException();
-            }
         }
     }
 
@@ -295,22 +287,34 @@ public class Bitboard {
         }
     };
 
-    public void generateAllPawnMoves(ArrayList<Move> moves, PieceColor color) {
+    public void generateAllPawnMoves(List<Move> moves, PieceColor color, boolean attacksOnly) {
+        generateAllPawnMoves((Move move) -> moves.add(move), color, attacksOnly);
+    }
+
+    public void generateAllPawnMoves(Consumer<Move> moves, PieceColor color, boolean attacksOnly) {
         final long pawns = PIECES[color.arrayIndex][PieceType.PAWN.arrayIndex];
         final long opposingPieces = ALL_PIECES[flipColor(color).arrayIndex];
-        final long pawnBitboardOneSquare = generatePawnBitboardOneSquare(color, pawns, OCCUPIED);
-        final long pawnBitboardTwoSquares = generatePawnBitboardTwoSquares(color, pawnBitboardOneSquare, OCCUPIED);
+        final int[] pawnOffsets = pawnIndexOffsets[color.arrayIndex];
+
         final long pawnBitboardAttacksLeft = generatePawnBitboardAttacksLeft(color, pawns, opposingPieces);
         final long pawnBitboardAttacksRight = generatePawnBitboardAttacksRight(color, pawns, opposingPieces);
         final long pawnBitboardEnPassant = generatePawnBitboardEnPassant(color, pawns, enPassantSquare);
 
-        final int[] pawnOffsets = pawnIndexOffsets[color.arrayIndex];
+        applyFunctionByBitIndices(pawnBitboardAttacksLeft, (int index) -> addMove(moves, new Move(index + pawnOffsets[2], index), color));
+        applyFunctionByBitIndices(pawnBitboardAttacksRight, (int index) -> addMove(moves, new Move(index + pawnOffsets[3], index), color));
+        applyFunctionByBitIndices(pawnBitboardEnPassant, (int index) -> {
+            final int enPassantMove = enPassantSquareToMove(color, enPassantSquare);
+            final Move move = new Move(index, enPassantMove, true);
+            if (isLegalMove(move, color, true)) moves.accept(move);
+        });
 
-        applyFunctionByBitIndices(pawnBitboardOneSquare, (int index) -> moves.add(new Move(index + pawnOffsets[0], index)));
-        applyFunctionByBitIndices(pawnBitboardTwoSquares, (int index) -> moves.add(new Move(index + pawnOffsets[1], index)));
-        applyFunctionByBitIndices(pawnBitboardAttacksLeft, (int index) -> moves.add(new Move(index + pawnOffsets[2], index)));
-        applyFunctionByBitIndices(pawnBitboardAttacksRight, (int index) -> moves.add(new Move(index + pawnOffsets[3], index)));
-        applyFunctionByBitIndices(pawnBitboardEnPassant, (int index) -> moves.add(new Move(index, enPassantSquare)));
+        if (attacksOnly) return;
+
+        final long pawnBitboardOneSquare = generatePawnBitboardOneSquare(color, pawns, OCCUPIED);
+        final long pawnBitboardTwoSquares = generatePawnBitboardTwoSquares(color, pawnBitboardOneSquare, OCCUPIED);
+
+        applyFunctionByBitIndices(pawnBitboardOneSquare, (int index) -> addMove(moves, new Move(index + pawnOffsets[0], index), color));
+        applyFunctionByBitIndices(pawnBitboardTwoSquares, (int index) -> addMove(moves, new Move(index + pawnOffsets[1], index), color));
     }
 
     public void setPiece(int index, ChessPiece piece) {

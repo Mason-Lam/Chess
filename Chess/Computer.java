@@ -34,7 +34,7 @@ public class Computer {
 	 * @return The total number of possible moves.
 	 */
 	public int totalMoves(final int depth) {
-		return totalMoves(depth, true);
+		return totalMoves(depth, false);
 	}
 
 	/**
