@@ -8,13 +8,12 @@ import static Chess.BoardUtil.*;
  * Class representing an individual chess piece.
  */
 public class ChessPiece {
-	private static final ChessPiece emptySquare = new ChessPiece(PieceType.EMPTY, PieceColor.COLORLESS, EMPTY, null, EMPTY);
+	private static final ChessPiece emptySquare = new ChessPiece(PieceType.EMPTY, PieceColor.COLORLESS, EMPTY);
 
 	private PieceType type;
 	private int pos;
 	
 	private final PieceColor color;
-	private final int pieceID;
 	
 	/**
 	 * Constructs a new Chess Piece.
@@ -33,11 +32,10 @@ public class ChessPiece {
 	 * @param board ChessBoard object the piece occupies.
 	 * @param pieceID Unique identifier for the chess piece.
 	 */
-	public ChessPiece(PieceType type, PieceColor color, int pos, ChessBoard board, int pieceID) {
+	public ChessPiece(PieceType type, PieceColor color, int pos) {
 		this.type = type;
 		this.pos = pos;
 		this.color = color;
-		this.pieceID = pieceID;
 	}
 
 	/**
@@ -151,21 +149,6 @@ public class ChessPiece {
 	@Override
 	public String toString() {
 		return Character.toString(pieceToChar(this));
-	}
-	
-	@Override
-	public boolean equals(Object anObject) {
-		if (this == anObject) return true;
-		if (anObject instanceof ChessPiece) {
-			final ChessPiece piece = (ChessPiece) anObject;
-			return ((piece.type == type) && (piece.color == color) && (piece.pos == pos) && (piece.pieceID == pieceID));
-		}
-		return false;
-	}
-
-	@Override
-	public int hashCode() {
-		return pieceID;
 	}
 	
 	/**

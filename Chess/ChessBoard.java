@@ -419,13 +419,11 @@ public class ChessBoard {
 		if (hasInsufficientMaterial()) return DRAW;
 
 		//Check to see if any piece has a legal move.
-		for(final ChessPiece piece : getPieces(turn)) {
-			final ArrayList<Move> moves = new ArrayList<Move>();
-			bitboard.generatePieceMoves(moves, piece.getPos(), false);
-			if(moves.size() > 0) {
-				return CONTINUE;
-			}
-		}
+		final ArrayList<Move> moves = new ArrayList<Move>();
+		bitboard.generateAllMoves(moves, turn, false);
+
+		if (moves.size() > 0) return CONTINUE;	//If there are legal moves, game continues.
+
 		//If the king is in check, it's checkmate, if not draw. 
 		return bitboard.isChecked() ? WIN : DRAW;
 	}
@@ -505,15 +503,6 @@ public class ChessBoard {
 	}
 
 	/**
-	 * Returns all pieces of a specific color.
-	 * @param color The color of the pieces.
-	 * @return A piece set object, use enhanced for loop.
-	 */
-	public PieceSet getPieces(PieceColor color) {
-		return bitboard.getPieces(color);
-	}
-
-	/**
 	 * Returns a copy of data that's lost when a move is made.
 	 * @return A BoardStorage object containing enPassant, halfMove, and castling potential.
 	 */
@@ -547,27 +536,6 @@ public class ChessBoard {
 			pos += direction.rawArrayValue;
 		}
 		return true;
-	}
-
-	/**
-	 * Debugging tool to display the attacks of each piece, checks for negative attacks.
-	 */
-	public void displayAttacks(PieceSet[][] temp) {
-		boolean valid = true;
-		for (int color = 0; color < 2; color++) {
-			final var colorAttacks = temp[color];
-			for (int i = 0; i < 8; i++) {
-				for (int j = 0; j < 8; j++) {
-					int attacks = colorAttacks[i * 8 + j].size();
-					if (attacks < 0) valid = false;
-					System.out.print(attacks + " ");
-				}
-				System.out.println();
-			}
-			System.out.println();
-		}
-		System.out.println(getFenString());
-		if (!valid) System.out.println("ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR, ERROR");
 	}
 
 	@Override

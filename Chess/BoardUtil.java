@@ -41,12 +41,11 @@ public class BoardUtil {
 	 * @param pieceIDs int array used to assign unique IDs to pieces.
 	 * @return A new ChessPiece object.
 	 */
-	public static ChessPiece charToPiece(char letter, int pos, ChessBoard board, int[] pieceIDs) {
+	public static ChessPiece charToPiece(char letter, int pos) {
 		final PieceColor color = Character.isLowerCase(letter) ? PieceColor.BLACK : PieceColor.WHITE;
 		for (final PieceType pieceType : PIECE_TYPES) {
 			if (Character.toLowerCase(letter) == pieceType.characterRepresentation) {
-				pieceIDs[color.arrayIndex] ++;
-				return new ChessPiece(pieceType, color, pos, board, pieceIDs[color.arrayIndex] - 1);
+				return new ChessPiece(pieceType, color, pos);
 			}
 		}
 		throw new IllegalArgumentException("Invalid piece character");

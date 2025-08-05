@@ -45,11 +45,6 @@ public class ChessGame {
 		board = new ChessBoard();	//Creates a new ChessBoard object
 		this.computer = board.getComputer();
 
-		// board.makeMove(new Move(11, 27));
-		// board.makeMove(new Move(26, 18));
-		// board.makeMove(new Move(31, 15));
-		// board.makeMove(new Move(18, 10));
-
 		Tests.timeCheckBoard(board, 6);
 		// //Current (3, 0), (4, 16), (5, 316), (6, 8018)
 		// System.out.println(computer.totalMoves(6)); //Goal: (3, 0), (4, 11), (5, 259), (6, 6502)

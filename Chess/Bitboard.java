@@ -1,8 +1,7 @@
 package Chess;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Collection;
 import java.util.function.Consumer;
 
 import static Chess.Constants.DirectionConstants.Direction.*;
@@ -23,8 +22,6 @@ public class Bitboard {
 
     private final ChessPiece[] board;
 
-    private final PieceSet[] pieces;
-
     private long OCCUPIED;
 
     private int enPassantSquare;
@@ -39,9 +36,6 @@ public class Bitboard {
         PIECES = new long[2][6];
         ALL_PIECES = new long[2];
         board = new ChessPiece[64];
-        pieces = new PieceSet[2];
-        pieces[0] = new PieceSet();
-        pieces[1] = new PieceSet();
         OCCUPIED = 0L;
 
         enPassantSquare = EMPTY;
@@ -85,7 +79,7 @@ public class Bitboard {
                 // final PieceType type = charToPieceType(letter);
                 // final PieceColor color = Character.isLowerCase(letter) ? PieceColor.BLACK : PieceColor.WHITE;
                 // final ChessPiece piece = new ChessPiece(type, color, pos, null, pieceValue)
-                final ChessPiece piece = charToPiece(letter, pos, null, pieceIDs);
+                final ChessPiece piece = charToPiece(letter, pos);
 
                 setPiece(pos, piece);
 
@@ -95,7 +89,7 @@ public class Bitboard {
 		}
     }
 
-    public void generateAllMoves(ArrayList<Move> moves, PieceColor color, boolean attacksOnly) {
+    public void generateAllMoves(Collection<Move> moves, PieceColor color, boolean attacksOnly) {
         generateAllMoves((Move move) -> moves.add(move), color, attacksOnly);
     }
 
@@ -109,7 +103,7 @@ public class Bitboard {
         }
     }
 
-    public void generatePieceMoves(List<Move> moves, int index, boolean attacksOnly) {
+    public void generatePieceMoves(Collection<Move> moves, int index, boolean attacksOnly) {
         generatePieceMoves((Move move) -> moves.add(move), index, attacksOnly);
     }
 
@@ -287,7 +281,7 @@ public class Bitboard {
         }
     };
 
-    public void generateAllPawnMoves(List<Move> moves, PieceColor color, boolean attacksOnly) {
+    public void generateAllPawnMoves(Collection<Move> moves, PieceColor color, boolean attacksOnly) {
         generateAllPawnMoves((Move move) -> moves.add(move), color, attacksOnly);
     }
 
@@ -329,7 +323,6 @@ public class Bitboard {
         PIECES[piece.getColor().arrayIndex][piece.getType().arrayIndex] = setBit(PIECES[piece.getColor().arrayIndex][piece.getType().arrayIndex], index);
         ALL_PIECES[piece.getColor().arrayIndex] = setBit(ALL_PIECES[piece.getColor().arrayIndex], index);
         OCCUPIED = setBit(OCCUPIED, index);
-        pieces[piece.getColor().arrayIndex].add(piece);
     }
 
     public void clearPiece(int index) {
@@ -339,7 +332,6 @@ public class Bitboard {
         PIECES[piece.getColor().arrayIndex][piece.getType().arrayIndex] = clearBit(PIECES[piece.getColor().arrayIndex][piece.getType().arrayIndex], index);
         ALL_PIECES[piece.getColor().arrayIndex] = clearBit(ALL_PIECES[piece.getColor().arrayIndex], index);
         OCCUPIED = clearBit(OCCUPIED, index);
-        pieces[piece.getColor().arrayIndex].remove(piece);
 
         board[index] = ChessPiece.empty();
     }
@@ -358,10 +350,6 @@ public class Bitboard {
 
     public boolean isChecked() {
         return isChecked;
-    }
-
-    public PieceSet getPieces(PieceColor color) {
-        return pieces[color.arrayIndex];
     }
 
     public ChessPiece getPiece(int index) {
