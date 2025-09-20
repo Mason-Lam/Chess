@@ -74,10 +74,6 @@ public class Bitboard {
                     continue;
                 }
 
-                //Create and store the piece.
-                // final PieceType type = charToPieceType(letter);
-                // final PieceColor color = Character.isLowerCase(letter) ? PieceColor.BLACK : PieceColor.WHITE;
-                // final ChessPiece piece = new ChessPiece(type, color, pos, null, pieceValue)
                 final ChessPiece piece = charToPiece(letter, pos);
 
                 setPiece(pos, piece);

@@ -36,9 +36,7 @@ public class ChessBoard {
 			this.enPassant = enPassant;
 			this.halfMove = halfMove;
 			this.isChecked = isChecked;
-			this.castling = new boolean[2];
-			this.castling[QUEENSIDE] = castling[QUEENSIDE];
-			this.castling[KINGSIDE] = castling[KINGSIDE];
+			this.castling = castling.clone();
 		}
 
 		/**
@@ -46,10 +44,7 @@ public class ChessBoard {
 		 * @return A boolean array storing the ability to castle.
 		 */
 		public boolean[] getCastling() {
-			final boolean[] castle = new boolean[2];
-			castle[0] = castling[0];
-			castle[1] = castling[1];
-			return castle;
+			return castling.clone();
 		}
 	}
 

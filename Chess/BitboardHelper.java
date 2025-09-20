@@ -141,17 +141,6 @@ public class BitboardHelper {
             initRookMoves(square);
         }
         initKingCastleMoves();
-        // final int square = 0;
-        // final int blockerPermutation = 24;
-        // final long mask = BISHOP_MASKS[square];
-        // final long blockers = generateBlockerPermutations(mask)[blockerPermutation];
-        // final long moves = BISHOP_MOVES[square][(int) ((blockers * BISHOP_MAGIC_NUMBERS[square]) >>> (64 - Long.bitCount(mask)))];
-        // displayBitboard(mask);
-        // System.out.println();
-        // displayBitboard(moves);
-        // System.out.println();
-        // displayBitboard(generateBlockerPermutations(mask)[blockerPermutation]);
-
     }
 
     private static void initPositionBoards() {
@@ -628,7 +617,6 @@ public class BitboardHelper {
     public static boolean onRank(long bitboard, int index) {
         return (RANKS_BOARD[index] & bitboard) != 0;
     }
-
 
     public static long setBit(long bitboard, int index) {
         return bitboard |= (1L << index);
